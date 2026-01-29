@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Daniel",
+    "about": "Daniel är en senior IT-arkitekt med 15 års erfarenhet av molnmigreringar som sänker kostnader och säkrar driften. Han balanserar teknisk expertis med affärsmål för att skapa hållbar tillväxt. Rolig fakta: Daniel har sprungit tre maraton och kodar bäst med 80-talssynth i lurarna.",
+    "focus": "Molnarkitektur & Strategi",
+    "photo": "daniel.png"
+  },
+  {
+    "name": "Gunnar",
+    "about": "Med 20 års erfarenhet är Gunnar en expert på cybersäkerhet och kvantresistenta lösningar för globala finansbolag. Han ser till att säkerhet är en möjligörare för affärskontinuitet snarare än ett hinder. Rolig fakta: Gunnar är en hobbysnickare som har byggt sin egen bastu från grunden.",
+    "focus": "Cybersäkerhet & Riskhantering",
+    "photo": "gunnar.png"
+  },
+  {
+    "name": "Jonathan",
+    "about": "Jonathan är en lösningsarkitekt som specialiserar sig på AI-integrationer som ger mätbar ROI och minskar stilleståndstider. Han förvandlar komplex teknik till praktiska verktyg för stora organisationer. Rolig fakta: Han är en hängiven surdegsbagare som aldrig misslyckas med en jäsning.",
+    "focus": "Digital Transformation & AI",
+    "photo": "jonathan.png"
+  },
+  {
+    "name": "Mattias",
+    "about": "Mattias optimerar DevOps-pipelines och mjukvaruleveranser för att öka både hastighet och kodkvalitet. Han drivs av att skapa en innovationskultur i högpresterande team. Rolig fakta: Mattias samlar på sällsynta vinylskivor och har över 2 000 album i sin samling.",
+    "focus": "DevOps & IT-strategi",
+    "photo": "mattias.png"
+  },
+  {
+    "name": "Olle",
+    "about": "Olle bemästrar storskaliga ERP-implementeringar och dataarkitektur för globala verksamheter. Han är expert på att omvandla data till strategiska beslutsunderlag för ledningsgrupper. Rolig fakta: Olle är en gammal tävlingssimmare som fortfarande startar varje morgon med ett dopp i sjön.",
+    "focus": "Dataarkitektur & ERP",
+    "photo": "olle.png"
+  },
+  {
+    "name": "Shane",
+    "about": "Shane moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Shane talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
+    "focus": "Infrastruktur & Modernisering",
+    "photo": "shane.png"
+  }
+]
