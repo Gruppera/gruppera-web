@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AspectRatio,
   Badge,
   Card,
   Group,
@@ -33,12 +34,13 @@ export const ConsultantGrid = ({ consultants }: ConsultantGridProps) => (
             overflow: "hidden",
           }}
         >
-          <Image
-            alt={`${consultant.name} portrait`}
-            src={`/photos/${consultant.photo}`}
-            h={{ base: 220, sm: 240, md: 260 }}
-            fit="cover"
-          />
+          <AspectRatio ratio={320 / 260}>
+            <Image
+              alt={`${consultant.name} portrait`}
+              src={`/photos/${consultant.photo}`}
+              fit="cover"
+            />
+          </AspectRatio>
         </Card.Section>
         <Stack gap="xs" mt={{ base: "md", md: "lg" }}>
           <Title order={4}>{consultant.name}</Title>
