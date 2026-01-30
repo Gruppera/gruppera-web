@@ -1,17 +1,14 @@
 import { Container, Stack, Text, Title } from "@mantine/core";
-import { FeaturesGrid } from "../../components/FeaturesGrid";
 
-export default function OmOssPage() {
+export default function KunderPage() {
   return (
     <Container size="lg" py={{ base: "lg", sm: "xl" }}>
       <Stack gap="sm">
         <Title order={1} fz={{ base: 36, md: 52 }}>
-          Om oss
+          Kunder
         </Title>
-        <FeaturesGrid>
-
-        </FeaturesGrid>
       </Stack>
+      <></>
     </Container>
   );
 }
