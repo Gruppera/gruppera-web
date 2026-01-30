@@ -1,9 +1,10 @@
 import '@mantine/core/styles.css';
 
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
+import { Box, ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import { Poppins } from 'next/font/google';
 
 import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 import { grupperaTheme } from '@/styles/theme';
 
 const poppins = Poppins({
@@ -28,8 +29,20 @@ export default function RootLayout({
       </head>
       <body className={poppins.className}>
         <MantineProvider defaultColorScheme="dark" theme={grupperaTheme}>
-          <SiteHeader />
-          {children}
+          <Box
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              paddingBottom: 'var(--site-footer-height, 200px)',
+            }}
+          >
+            <SiteHeader />
+            <Box component="main" style={{ flex: 1 }}>
+              {children}
+            </Box>
+            <SiteFooter />
+          </Box>
         </MantineProvider>
       </body>
     </html>
