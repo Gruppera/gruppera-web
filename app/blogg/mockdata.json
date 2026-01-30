@@ -1,7 +1,10 @@
 [
   {
     "id": "post-001",
-    "image": "/photos/kul/IMG_6113.jpg",
+    "images": [
+      "/photos/kul/IMG_6113.jpg",
+      "/photos/kul/20251112_085828.JPG"
+    ],
     "date": "20 jan 2026",
     "title": "Tre principer för hållbar molnarkitektur 2026",
     "excerpt": "Vi ser ett tydligt skifte mot kostnadsstyrda molnval. Här är tre principer vi använder för att säkra både prestanda och ekonomi i nya plattformar.",
@@ -9,7 +12,10 @@
   },
   {
     "id": "post-002",
-    "image": "/photos/kul/20260114_191113.jpg",
+    "images": [
+      "/photos/kul/20260114_191113.jpg",
+      "/photos/kul/20260114_191210.jpg"
+    ],
     "date": "12 jan 2026",
     "title": "Zero Trust i praktiken – vad vi gör annorlunda",
     "excerpt": "Zero Trust är inte ett projekt, det är ett arbetssätt. Så här hjälper vi team att bygga in säkerhet i varje leverans utan att tappa tempo.",
@@ -17,7 +23,10 @@
   },
   {
     "id": "post-003",
-    "image": "/photos/kul/IMG_2581.jpg",
+    "images": [
+      "/photos/kul/IMG_2581.jpg",
+      "/photos/kul/IMG_4397.jpg"
+    ],
     "date": "5 jan 2026",
     "title": "Data som affärstillgång – från rapporter till beslut",
     "excerpt": "Vi visar hur ledningsgrupper får realtidsunderlag genom att kombinera modern dataarkitektur med governance som faktiskt används.",

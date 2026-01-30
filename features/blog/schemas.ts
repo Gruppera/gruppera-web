@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const blogPostSchema = z.object({
   id: z.string(),
-  image: z.string(),
+  images: z.array(z.string()).min(1),
   date: z.string(),
   title: z.string(),
   excerpt: z.string(),
