@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Box, Container, Group, Image, Text } from "@mantine/core";
 import { useWindowScroll } from "@mantine/hooks";
 
@@ -10,7 +11,7 @@ const COMPACT_HEIGHT = 64;
 
 export const SiteHeader = () => {
   const [{ y }] = useWindowScroll();
-  const isCompact = y > 32;
+  const [isCompact, setIsCompact] = useState(false);
   const pathname = usePathname();
 
   const links = [
@@ -18,6 +19,16 @@ export const SiteHeader = () => {
     { label: "Vilka är vi", href: "/vilka-ar-vi" },
     { label: "Hitta till oss", href: "/hitta-till-oss" },
   ];
+
+  useEffect(() => {
+    const compactThreshold = 48;
+    const expandThreshold = 16;
+    setIsCompact((prev) => {
+      if (!prev && y > compactThreshold) return true;
+      if (prev && y < expandThreshold) return false;
+      return prev;
+    });
+  }, [y]);
 
   return (
     <Box
@@ -45,10 +56,13 @@ export const SiteHeader = () => {
             <Image
               src="/gruppera-logo-sprout-white.svg"
               alt="Gruppera logo"
-              w={{ base: 120, sm: isCompact ? 140 : 160 }}
+              w={{ base: 120, sm: 160 }}
               h="auto"
               style={{
-                transition: "width 180ms ease",
+                transform: `scale(${isCompact ? 0.875 : 1})`,
+                transformOrigin: "left center",
+                transition: "transform 180ms ease",
+                willChange: "transform",
               }}
             />
             <Group gap={{ base: "md", md: "xl" }} wrap="wrap">

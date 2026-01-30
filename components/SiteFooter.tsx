@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Box, Container, Divider, SimpleGrid, Stack, Text } from "@mantine/core";
-import { useResizeObserver } from "@mantine/hooks";
+import { useResizeObserver, useViewportSize, useWindowScroll } from "@mantine/hooks";
 
 export const SiteFooter = () => {
   const { ref, height } = useResizeObserver();
+  const [{ y }] = useWindowScroll();
+  const { height: viewportHeight } = useViewportSize();
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  useEffect(() => {
+    const scrollHeight = document.documentElement.scrollHeight;
+    setIsAtBottom(y + viewportHeight >= scrollHeight - 8);
+  }, [y, viewportHeight]);
 
   useEffect(() => {
     if (height) {
@@ -27,26 +35,34 @@ export const SiteFooter = () => {
         right: 0,
         bottom: 0,
         zIndex: 900,
+        transition: "height 180ms ease",
       }}
     >
-      <Container size="lg" py="xl">
-        <Stack gap="md">
-          <Divider color="dark.6" />
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
+      <Container size="lg" py={isAtBottom ? "xl" : "sm"}>
+        <Stack gap={isAtBottom ? "md" : 0}>
+          {isAtBottom ? <Divider color="dark.6" /> : null}
+          <SimpleGrid
+            cols={{ base: 1, sm: isAtBottom ? 2 : 1 }}
+            spacing="xl"
+          >
             <Stack gap={4}>
               <Text fw={600}>Gruppera Development AB</Text>
-              <Text size="sm" c="cloud.0">
-                Organisationsnummer: 559058-7043
-              </Text>
+              {isAtBottom ? (
+                <Text size="sm" c="cloud.0">
+                  Organisationsnummer: 559058-7043
+                </Text>
+              ) : null}
             </Stack>
-            <Stack gap={4}>
-              <Text size="sm" c="cloud.0">
-                Kammakargatan 29
-              </Text>
-              <Text size="sm" c="cloud.0">
-                111 60 Stockholm
-              </Text>
-            </Stack>
+            {isAtBottom ? (
+              <Stack gap={4}>
+                <Text size="sm" c="cloud.0">
+                  Kammakargatan 29
+                </Text>
+                <Text size="sm" c="cloud.0">
+                  111 60 Stockholm
+                </Text>
+              </Stack>
+            ) : null}
           </SimpleGrid>
         </Stack>
       </Container>
