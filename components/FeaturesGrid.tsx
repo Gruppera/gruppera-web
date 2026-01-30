@@ -62,13 +62,21 @@ export function FeaturesGrid() {
 
   return (
     <Container className={classes.wrapper}>
-      <Title className={classes.title}>Rätt lösning på rätt plats</Title>
+      <div className={classes.hero}>
+        <div className={classes.titleBox}>
+          <Title className={classes.title}>
+            <span className={classes.titleText}>Rätt lösning på rätt plats</span>
+          </Title>
 
-      <Container size={560} p={0}>
-        <Text size="sm" className={classes.description}>
-          Vi på Gruppera hjälper ert team att leverera värde till era kunder och användare
-        </Text>
-      </Container>
+          <Text size="sm" className={classes.description}>
+            <span className={classes.descriptionText}>
+              Vi på Gruppera hjälper ert team att leverera värde till era kunder och användare
+            </span>
+          </Text>
+        </div>
+      </div>
+
+      <Container size={560} p={0} />
 
       <SimpleGrid
         mt={60}
