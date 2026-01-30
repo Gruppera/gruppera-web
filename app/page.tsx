@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+import { Container, Stack } from "@mantine/core";
+
+import { FeaturesGrid } from "../components/FeaturesGrid";
 
 export default function Home() {
-  redirect("/vilka-ar-vi");
+  return (
+    <Container size="lg" py={{ base: "lg", sm: "xl" }}>
+      <Stack gap="sm">
+        <FeaturesGrid />
+      </Stack>
+    </Container>
+  );
 }

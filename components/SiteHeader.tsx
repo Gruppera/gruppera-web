@@ -16,7 +16,7 @@ export const SiteHeader = () => {
   const [opened, { close, toggle }] = useDisclosure(false);
 
   const links = [
-    { label: "Om oss", href: "/om-oss" },
+    { label: "Gruppera", href: "/" },
     { label: "Vilka är vi", href: "/vilka-ar-vi" },
     { label: "Blogg", href: "/blogg" },
     { label: "Hitta till oss", href: "/hitta-till-oss" },
@@ -55,18 +55,27 @@ export const SiteHeader = () => {
           }}
         >
           <Group gap="sm" align="center" justify="space-between" w="100%">
-            <Image
-              src="/gruppera-logo-sprout-white.svg"
-              alt="Gruppera logo"
-              w={{ base: 120, sm: 160 }}
-              h="auto"
+            <Box
+              component={Link}
+              href="/"
               style={{
-                transform: `scale(${isCompact ? 0.875 : 1})`,
-                transformOrigin: "left center",
-                transition: "transform 180ms ease",
-                willChange: "transform",
+                display: "inline-flex",
+                alignItems: "center",
               }}
-            />
+            >
+              <Image
+                src="/gruppera-logo-sprout-white.svg"
+                alt="Gruppera logo"
+                w={{ base: 120, sm: 160 }}
+                h="auto"
+                style={{
+                  transform: `scale(${isCompact ? 0.875 : 1})`,
+                  transformOrigin: "left center",
+                  transition: "transform 180ms ease",
+                  willChange: "transform",
+                }}
+              />
+            </Box>
             <Group gap={{ base: "md", md: "xl" }} wrap="wrap" visibleFrom="sm">
               {links.map((link) => {
                 const isActive = pathname === link.href;
