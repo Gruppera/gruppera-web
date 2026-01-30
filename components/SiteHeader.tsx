@@ -128,12 +128,20 @@ export const SiteHeader = () => {
                 aria-label="Toggle color scheme"
               />
             </Group>
-            <Burger
-              opened={opened}
-              onClick={toggle}
-              hiddenFrom="sm"
-              aria-label={opened ? "Close menu" : "Open menu"}
-            />
+            <Group gap="xs" hiddenFrom="sm">
+              <Switch
+                checked={isDark}
+                onChange={toggleColorScheme}
+                color="sprout"
+                size="sm"
+                aria-label="Toggle color scheme"
+              />
+              <Burger
+                opened={opened}
+                onClick={toggle}
+                aria-label={opened ? "Close menu" : "Open menu"}
+              />
+            </Group>
           </Group>
         </Container>
       </Box>
@@ -147,34 +155,33 @@ export const SiteHeader = () => {
         withCloseButton
         styles={{
           content: {
-            backgroundColor: "var(--mantine-color-grafite-7)",
+            backgroundColor: isDark
+              ? "var(--mantine-color-grafite-7)"
+              : "var(--mantine-color-chamonix-0)",
           },
           header: {
-            backgroundColor: "var(--mantine-color-grafite-7)",
+            backgroundColor: isDark
+              ? "var(--mantine-color-grafite-7)"
+              : "var(--mantine-color-chamonix-0)",
           },
           body: {
             paddingTop: "var(--mantine-spacing-lg)",
           },
           close: {
-            color: "var(--mantine-color-chamonix-0)",
+            color: isDark
+              ? "var(--mantine-color-chamonix-0)"
+              : "var(--mantine-color-grafite-7)",
           },
           title: {
-            color: "var(--mantine-color-chamonix-0)",
+            color: isDark
+              ? "var(--mantine-color-chamonix-0)"
+              : "var(--mantine-color-grafite-7)",
           },
         }}
         overlayProps={{ opacity: 0.4, blur: 4 }}
         hiddenFrom="sm"
       >
         <Stack gap="md" pt="sm">
-          <Switch
-            checked={isDark}
-            onChange={toggleColorScheme}
-            color="sprout"
-            size="md"
-            offLabel="Light"
-            onLabel="Dark"
-            aria-label="Toggle color scheme"
-          />
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
