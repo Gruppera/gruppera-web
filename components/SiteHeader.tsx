@@ -3,18 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Burger,
-  Container,
-  Drawer,
-  Group,
-  Image,
-  Stack,
-  Switch,
-  Text,
-  useMantineColorScheme,
-} from "@mantine/core";
+import { Box, Burger, Container, Drawer, Group, Image, Stack, Text } from "@mantine/core";
 import { useDisclosure, useWindowScroll } from "@mantine/hooks";
 
 const EXPANDED_HEIGHT = 88;
@@ -25,9 +14,6 @@ export const SiteHeader = () => {
   const [isCompact, setIsCompact] = useState(false);
   const pathname = usePathname();
   const [opened, { close, toggle }] = useDisclosure(false);
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [mounted, setMounted] = useState(false);
-  const isDark = (mounted ? colorScheme : "dark") === "dark";
 
   const links = [
     { label: "Om oss", href: "/om-oss" },
@@ -44,10 +30,6 @@ export const SiteHeader = () => {
       return prev;
     });
   }, [y]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <Box
@@ -73,11 +55,7 @@ export const SiteHeader = () => {
         >
           <Group gap="sm" align="center" justify="space-between" w="100%">
             <Image
-              src={
-                isDark
-                  ? "/gruppera-logo-sprout-white.svg"
-                  : "/gruppera-logo-sprout-granite.svg"
-              }
+              src="/gruppera-logo-sprout-white.svg"
               alt="Gruppera logo"
               w={{ base: 120, sm: 160 }}
               h="auto"
@@ -117,39 +95,7 @@ export const SiteHeader = () => {
                 );
               })}
             </Group>
-            <Group gap="xs" visibleFrom="sm">
-              <Switch
-                checked={isDark}
-                onChange={toggleColorScheme}
-                color={isDark ? "moss" : "grafite"}
-                size="md"
-                offLabel="Light"
-                onLabel="Dark"
-                aria-label="Toggle color scheme"
-                styles={{
-                  track: {
-                    backgroundColor: isDark
-                      ? "var(--mantine-color-moss-6)"
-                      : "var(--mantine-color-grafite-6)",
-                  },
-                }}
-              />
-            </Group>
             <Group gap="xs" hiddenFrom="sm">
-              <Switch
-                checked={isDark}
-                onChange={toggleColorScheme}
-                color={isDark ? "moss" : "grafite"}
-                size="sm"
-                aria-label="Toggle color scheme"
-                styles={{
-                  track: {
-                    backgroundColor: isDark
-                      ? "var(--mantine-color-moss-6)"
-                      : "var(--mantine-color-grafite-6)",
-                  },
-                }}
-              />
               <Burger
                 opened={opened}
                 onClick={toggle}
@@ -169,27 +115,19 @@ export const SiteHeader = () => {
         withCloseButton
         styles={{
           content: {
-            backgroundColor: isDark
-              ? "var(--mantine-color-grafite-7)"
-              : "var(--mantine-color-chamonix-0)",
+            backgroundColor: "var(--mantine-color-grafite-7)",
           },
           header: {
-            backgroundColor: isDark
-              ? "var(--mantine-color-grafite-7)"
-              : "var(--mantine-color-chamonix-0)",
+            backgroundColor: "var(--mantine-color-grafite-7)",
           },
           body: {
             paddingTop: "var(--mantine-spacing-lg)",
           },
           close: {
-            color: isDark
-              ? "var(--mantine-color-chamonix-0)"
-              : "var(--mantine-color-grafite-7)",
+            color: "var(--mantine-color-chamonix-0)",
           },
           title: {
-            color: isDark
-              ? "var(--mantine-color-chamonix-0)"
-              : "var(--mantine-color-grafite-7)",
+            color: "var(--mantine-color-chamonix-0)",
           },
         }}
         overlayProps={{ opacity: 0.4, blur: 4 }}
