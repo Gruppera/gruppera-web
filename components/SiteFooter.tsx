@@ -19,7 +19,7 @@ export const SiteFooter = () => {
   return (
     <Box
       component="footer"
-      bg="dark.9"
+      bg="grafite.7"
       ref={ref}
       style={{
         position: "fixed",

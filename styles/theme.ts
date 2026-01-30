@@ -68,6 +68,12 @@ const CLOUD = '#C3CED9';
 const COGNAC = '#824529';
 const PATCH = '#E0CCBE';
 
+const darkScale: MantineColor = (() => {
+  const scale = createScale(GRAFITE);
+  scale[7] = GRAFITE;
+  return scale;
+})();
+
 export const grupperaTheme = createTheme({
   fontFamily: FONT_FAMILY,
   headings: {
@@ -96,7 +102,7 @@ export const grupperaTheme = createTheme({
     cloud: createScale(CLOUD),
     cognac: createScale(COGNAC),
     patch: createScale(PATCH),
-    dark: createScale(GRAFITE),
+    dark: darkScale,
   },
   primaryColor: 'sprout',
   black: GRAFITE,

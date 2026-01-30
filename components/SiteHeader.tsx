@@ -18,7 +18,7 @@ export const SiteHeader = () => {
       style={{ zIndex: 1000 }}
     >
       <Box
-        bg="dark.9"
+        bg="grafite.7"
         style={{
           height: isCompact ? COMPACT_HEIGHT : EXPANDED_HEIGHT,
           transition: "height 180ms ease",
