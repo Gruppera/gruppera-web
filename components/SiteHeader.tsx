@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Box, Container, Group, Image, Text } from "@mantine/core";
-import { useWindowScroll } from "@mantine/hooks";
+import { Box, Burger, Container, Drawer, Group, Image, Stack, Text } from "@mantine/core";
+import { useDisclosure, useWindowScroll } from "@mantine/hooks";
 
 const EXPANDED_HEIGHT = 88;
 const COMPACT_HEIGHT = 64;
@@ -13,6 +13,7 @@ export const SiteHeader = () => {
   const [{ y }] = useWindowScroll();
   const [isCompact, setIsCompact] = useState(false);
   const pathname = usePathname();
+  const [opened, { close, toggle }] = useDisclosure(false);
 
   const links = [
     { label: "Om oss", href: "/om-oss" },
@@ -65,7 +66,7 @@ export const SiteHeader = () => {
                 willChange: "transform",
               }}
             />
-            <Group gap={{ base: "md", md: "xl" }} wrap="wrap">
+            <Group gap={{ base: "md", md: "xl" }} wrap="wrap" visibleFrom="sm">
               {links.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -94,9 +95,74 @@ export const SiteHeader = () => {
                 );
               })}
             </Group>
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              aria-label={opened ? "Close menu" : "Open menu"}
+            />
           </Group>
         </Container>
       </Box>
+      <Drawer
+        opened={opened}
+        onClose={close}
+        position="right"
+        padding="lg"
+        size="xs"
+        title="Meny"
+        withCloseButton
+        styles={{
+          content: {
+            backgroundColor: "var(--mantine-color-grafite-7)",
+          },
+          header: {
+            backgroundColor: "var(--mantine-color-grafite-7)",
+          },
+          body: {
+            paddingTop: "var(--mantine-spacing-lg)",
+          },
+          close: {
+            color: "var(--mantine-color-chamonix-0)",
+          },
+          title: {
+            color: "var(--mantine-color-chamonix-0)",
+          },
+        }}
+        overlayProps={{ opacity: 0.4, blur: 4 }}
+        hiddenFrom="sm"
+      >
+        <Stack gap="md" pt="sm">
+          {links.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Group key={link.href} gap={8} align="center">
+                <Box
+                  w={10}
+                  style={{
+                    opacity: isActive ? 1 : 0,
+                    transition: "opacity 180ms ease",
+                  }}
+                >
+                  <Text c="sprout.4" fw={600}>
+                    &gt;
+                  </Text>
+                </Box>
+                <Text
+                  component={Link}
+                  href={link.href}
+                  onClick={close}
+                  c={isActive ? "chamonix.0" : "cloud.1"}
+                  fw={isActive ? 600 : 500}
+                  size="md"
+                >
+                  {link.label}
+                </Text>
+              </Group>
+            );
+          })}
+        </Stack>
+      </Drawer>
     </Box>
   );
 };
