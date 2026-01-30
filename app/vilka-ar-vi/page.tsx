@@ -15,7 +15,7 @@ export default function VilkaArViPage() {
             <Title order={1} fz={{ base: 36, md: 52 }}>
               Våra konsulter
             </Title>
-            <Text c="cloud.0" fz={{ base: 14, sm: 16 }}>
+            <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
               Specialister som kombinerar teknik, affärsnytta och leveransfokus
               för att skapa hållbar utveckling.
             </Text>

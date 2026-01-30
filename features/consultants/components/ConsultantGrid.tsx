@@ -1,6 +1,15 @@
 "use client";
 
-import { Badge, Card, Group, Image, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import {
+  Badge,
+  Card,
+  Group,
+  Image,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 
 import type { Consultant } from "../types";
 
@@ -11,7 +20,12 @@ type ConsultantGridProps = {
 export const ConsultantGrid = ({ consultants }: ConsultantGridProps) => (
   <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl" verticalSpacing="xl">
     {consultants.map((consultant) => (
-      <Card key={consultant.name} bg="dark.7" radius="md" p={{ base: "lg", md: "xl" }}>
+      <Card
+        key={consultant.name}
+        radius="md"
+        p={{ base: "lg", md: "xl" }}
+        style={{ backgroundColor: "var(--mantine-color-body)" }}
+      >
         <Card.Section
           bg="sprout.6"
           style={{
@@ -31,7 +45,7 @@ export const ConsultantGrid = ({ consultants }: ConsultantGridProps) => (
           <Badge color="sprout" variant="light" size="sm">
             {consultant.focus}
           </Badge>
-          <Text c="cloud.0" size="sm">
+          <Text c="dimmed" size="sm">
             {consultant.about}
           </Text>
         </Stack>

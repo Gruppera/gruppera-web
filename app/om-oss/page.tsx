@@ -7,7 +7,7 @@ export default function OmOssPage() {
         <Title order={1} fz={{ base: 36, md: 52 }}>
           Om oss
         </Title>
-        <Text c="cloud.0" fz={{ base: 14, sm: 16 }}>
+        <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
           Innehåll kommer snart.
         </Text>
       </Stack>

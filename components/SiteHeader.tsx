@@ -3,7 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Box, Burger, Container, Drawer, Group, Image, Stack, Text } from "@mantine/core";
+import {
+  Box,
+  Burger,
+  Container,
+  Drawer,
+  Group,
+  Image,
+  Stack,
+  Switch,
+  Text,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { useDisclosure, useWindowScroll } from "@mantine/hooks";
 
 const EXPANDED_HEIGHT = 88;
@@ -14,6 +25,9 @@ export const SiteHeader = () => {
   const [isCompact, setIsCompact] = useState(false);
   const pathname = usePathname();
   const [opened, { close, toggle }] = useDisclosure(false);
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const [mounted, setMounted] = useState(false);
+  const isDark = (mounted ? colorScheme : "dark") === "dark";
 
   const links = [
     { label: "Om oss", href: "/om-oss" },
@@ -31,6 +45,10 @@ export const SiteHeader = () => {
     });
   }, [y]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <Box
       component="header"
@@ -39,7 +57,7 @@ export const SiteHeader = () => {
       style={{ zIndex: 1000 }}
     >
       <Box
-        bg="grafite.7"
+        bg="var(--mantine-color-body)"
         style={{
           height: isCompact ? COMPACT_HEIGHT : EXPANDED_HEIGHT,
           transition: "height 180ms ease",
@@ -55,7 +73,11 @@ export const SiteHeader = () => {
         >
           <Group gap="sm" align="center" justify="space-between" w="100%">
             <Image
-              src="/gruppera-logo-sprout-white.svg"
+              src={
+                isDark
+                  ? "/gruppera-logo-sprout-white.svg"
+                  : "/gruppera-logo-sprout-granite.svg"
+              }
               alt="Gruppera logo"
               w={{ base: 120, sm: 160 }}
               h="auto"
@@ -85,7 +107,7 @@ export const SiteHeader = () => {
                     <Text
                       component={Link}
                       href={link.href}
-                      c={isActive ? "chamonix.0" : "cloud.0"}
+                      c={isActive ? "var(--mantine-color-text)" : "dimmed"}
                       fw={isActive ? 600 : 500}
                       size="sm"
                     >
@@ -94,6 +116,17 @@ export const SiteHeader = () => {
                   </Group>
                 );
               })}
+            </Group>
+            <Group gap="xs" visibleFrom="sm">
+              <Switch
+                checked={isDark}
+                onChange={toggleColorScheme}
+                color="sprout"
+                size="md"
+                offLabel="Light"
+                onLabel="Dark"
+                aria-label="Toggle color scheme"
+              />
             </Group>
             <Burger
               opened={opened}
@@ -133,6 +166,15 @@ export const SiteHeader = () => {
         hiddenFrom="sm"
       >
         <Stack gap="md" pt="sm">
+          <Switch
+            checked={isDark}
+            onChange={toggleColorScheme}
+            color="sprout"
+            size="md"
+            offLabel="Light"
+            onLabel="Dark"
+            aria-label="Toggle color scheme"
+          />
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -152,7 +194,7 @@ export const SiteHeader = () => {
                   component={Link}
                   href={link.href}
                   onClick={close}
-                  c={isActive ? "chamonix.0" : "cloud.1"}
+                  c={isActive ? "var(--mantine-color-text)" : "dimmed"}
                   fw={isActive ? 600 : 500}
                   size="md"
                 >

@@ -27,7 +27,7 @@ export const SiteFooter = () => {
   return (
     <Box
       component="footer"
-      bg="grafite.7"
+      bg="var(--mantine-color-body)"
       ref={ref}
       style={{
         position: "fixed",
@@ -40,7 +40,7 @@ export const SiteFooter = () => {
     >
       <Container size="lg" py={isAtBottom ? "xl" : "sm"}>
         <Stack gap={isAtBottom ? "md" : 0}>
-          {isAtBottom ? <Divider color="dark.6" /> : null}
+          {isAtBottom ? <Divider /> : null}
           <SimpleGrid
             cols={{ base: 1, sm: isAtBottom ? 2 : 1 }}
             spacing="xl"
@@ -48,17 +48,17 @@ export const SiteFooter = () => {
             <Stack gap={4}>
               <Text fw={600}>Gruppera Development AB</Text>
               {isAtBottom ? (
-                <Text size="sm" c="cloud.0">
-                  Organisationsnummer: 559058-7043
-                </Text>
+              <Text size="sm" c="dimmed">
+                Organisationsnummer: 559058-7043
+              </Text>
               ) : null}
             </Stack>
             {isAtBottom ? (
               <Stack gap={4}>
-                <Text size="sm" c="cloud.0">
+                <Text size="sm" c="dimmed">
                   Kammakargatan 29
                 </Text>
-                <Text size="sm" c="cloud.0">
+                <Text size="sm" c="dimmed">
                   111 60 Stockholm
                 </Text>
               </Stack>

@@ -1,8 +1,9 @@
 import '@mantine/core/styles.css';
 
-import { Box, ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
+import { Box, ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import { Poppins } from 'next/font/google';
 
+import { Providers } from '@/components/Providers';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { ScrollbarCompensation } from '@/components/ScrollbarCompensation';
@@ -26,10 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
-        <ColorSchemeScript />
+        <ColorSchemeScript defaultColorScheme="dark" />
       </head>
       <body className={poppins.className}>
-        <MantineProvider defaultColorScheme="dark" theme={grupperaTheme}>
+        <Providers theme={grupperaTheme}>
           <ScrollbarCompensation />
           <Box
             style={{
@@ -47,8 +48,8 @@ export default function RootLayout({
               {children}
             </Box>
             <SiteFooter />
-          </Box>
-        </MantineProvider>
+            </Box>
+        </Providers>
       </body>
     </html>
   );
