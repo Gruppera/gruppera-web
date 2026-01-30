@@ -4,6 +4,37 @@ body {
   overflow-x: hidden;
 }
 
+:root[data-mantine-color-scheme="dark"] {
+  --mantine-color-text: #EEEDEB;
+  --mantine-color-dimmed: #EEEDEB;
+}
+
+:root[data-mantine-color-scheme="light"] {
+  --mantine-color-body: #757263 !important;
+  --mantine-color-text: #0D0D0C !important;
+  --mantine-color-dimmed: #0D0D0C !important;
+}
+
+html[data-mantine-color-scheme="light"] body {
+  background: #757263 !important;
+  color: #0D0D0C !important;
+}
+
+header,
+footer {
+  background: var(--mantine-color-body);
+}
+
+html[data-mantine-color-scheme="light"] header,
+html[data-mantine-color-scheme="light"] footer {
+  background: #757263 !important;
+}
+
+html[data-mantine-color-scheme="light"] header,
+html[data-mantine-color-scheme="light"] footer {
+  background: #757263;
+}
+
 body {
   color: var(--mantine-color-text);
   background: var(--mantine-color-body);

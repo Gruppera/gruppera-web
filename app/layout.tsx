@@ -1,4 +1,5 @@
 import '@mantine/core/styles.css';
+import './globals.css';
 
 import { Box, ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import { Poppins } from 'next/font/google';
