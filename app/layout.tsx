@@ -16,8 +16,8 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: 'My Mantine app',
-  description: 'I have followed setup instructions carefully',
+  title: 'Gruppera',
+  description: 'Världens bästa IT-konsulter samlade på ett och samma ställe.',
 };
 
 export default function RootLayout({

@@ -8,7 +8,7 @@ type ProvidersProps = {
 };
 
 export const Providers = ({ children, theme }: ProvidersProps) => (
-  <MantineProvider defaultColorScheme="dark" theme={theme}>
+  <MantineProvider defaultColorScheme="dark" forceColorScheme="dark" theme={theme}>
     {children}
   </MantineProvider>
 );
