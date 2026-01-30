@@ -1,6 +1,8 @@
 "use client";
 
-import { Box, Container, Group, Image } from "@mantine/core";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Box, Container, Group, Image, Text } from "@mantine/core";
 import { useWindowScroll } from "@mantine/hooks";
 
 const EXPANDED_HEIGHT = 88;
@@ -9,6 +11,13 @@ const COMPACT_HEIGHT = 64;
 export const SiteHeader = () => {
   const [{ y }] = useWindowScroll();
   const isCompact = y > 32;
+  const pathname = usePathname();
+
+  const links = [
+    { label: "Om oss", href: "/om-oss" },
+    { label: "Vilka är vi", href: "/vilka-ar-vi" },
+    { label: "Hitta till oss", href: "/hitta-till-oss" },
+  ];
 
   return (
     <Box
@@ -32,7 +41,7 @@ export const SiteHeader = () => {
             alignItems: "center",
           }}
         >
-          <Group gap="sm" align="center">
+          <Group gap="sm" align="center" justify="space-between" w="100%">
             <Image
               src="/gruppera-logo-sprout-white.svg"
               alt="Gruppera logo"
@@ -42,6 +51,35 @@ export const SiteHeader = () => {
                 transition: "width 180ms ease",
               }}
             />
+            <Group gap={{ base: "md", md: "xl" }} wrap="wrap">
+              {links.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Group key={link.href} gap={6} align="center">
+                    <Box
+                      w={10}
+                      style={{
+                        opacity: isActive ? 1 : 0,
+                        transition: "opacity 180ms ease",
+                      }}
+                    >
+                      <Text c="sprout.4" fw={600}>
+                        &gt;
+                      </Text>
+                    </Box>
+                    <Text
+                      component={Link}
+                      href={link.href}
+                      c={isActive ? "chamonix.0" : "cloud.0"}
+                      fw={isActive ? 600 : 500}
+                      size="sm"
+                    >
+                      {link.label}
+                    </Text>
+                  </Group>
+                );
+              })}
+            </Group>
           </Group>
         </Container>
       </Box>
