@@ -121,20 +121,34 @@ export const SiteHeader = () => {
               <Switch
                 checked={isDark}
                 onChange={toggleColorScheme}
-                color="sprout"
+                color={isDark ? "moss" : "grafite"}
                 size="md"
                 offLabel="Light"
                 onLabel="Dark"
                 aria-label="Toggle color scheme"
+                styles={{
+                  track: {
+                    backgroundColor: isDark
+                      ? "var(--mantine-color-moss-6)"
+                      : "var(--mantine-color-grafite-6)",
+                  },
+                }}
               />
             </Group>
             <Group gap="xs" hiddenFrom="sm">
               <Switch
                 checked={isDark}
                 onChange={toggleColorScheme}
-                color="sprout"
+                color={isDark ? "moss" : "grafite"}
                 size="sm"
                 aria-label="Toggle color scheme"
+                styles={{
+                  track: {
+                    backgroundColor: isDark
+                      ? "var(--mantine-color-moss-6)"
+                      : "var(--mantine-color-grafite-6)",
+                  },
+                }}
               />
               <Burger
                 opened={opened}
