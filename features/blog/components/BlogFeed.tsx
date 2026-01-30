@@ -75,10 +75,10 @@ export const BlogFeed = ({ posts }: BlogFeedProps) => (
         p={{ base: "lg", md: "xl" }}
         style={{ backgroundColor: "var(--mantine-color-body)" }}
       >
-        <Flex direction={{ base: "column", md: "row" }} gap="lg" align="flex-start">
+        <Flex direction={{ base: "column", sm: "row" }} gap="lg" align="flex-start">
           <Box
-            w={{ base: 320, md: 240 }}
-            h={{ base: 200, md: 180 }}
+            w={{ base: 320, sm: 240 }}
+            h={{ base: 200, sm: 180 }}
             style={{
               borderRadius: "var(--mantine-radius-md)",
               overflow: "hidden",
