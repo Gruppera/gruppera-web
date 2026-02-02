@@ -5,7 +5,7 @@ import { Box, Container, Divider, SimpleGrid, Stack, Text } from "@mantine/core"
 import { useResizeObserver, useViewportSize, useWindowScroll } from "@mantine/hooks";
 
 export const SiteFooter = () => {
-  const { ref, height } = useResizeObserver();
+  const [footerRef, { height }] = useResizeObserver();
   const [{ y }] = useWindowScroll();
   const { height: viewportHeight } = useViewportSize();
   const [isAtBottom, setIsAtBottom] = useState(false);
@@ -28,7 +28,7 @@ export const SiteFooter = () => {
     <Box
       component="footer"
       bg="var(--mantine-color-body)"
-      ref={ref}
+      ref={footerRef}
       style={{
         position: "fixed",
         left: 0,
