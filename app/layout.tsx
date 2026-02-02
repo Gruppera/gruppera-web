@@ -39,16 +39,14 @@ export default function RootLayout({
               display: 'flex',
               flexDirection: 'column',
               paddingBottom: 'var(--site-footer-height, 200px)',
-              width: '100vw',
               boxSizing: 'border-box',
-              paddingRight: 'var(--scrollbar-width, 0px)',
             }}
           >
             <SiteHeader />
             <Box component="main" style={{ flex: 1, paddingTop: '88px' }}>
               {children}
             </Box>
-            <Box id="footer-sentinel" aria-hidden="true" style={{ height: 24 }} />
+            <Box id="footer-sentinel" aria-hidden="true" style={{ height: 1 }} />
             <SiteFooter />
           </Box>
         </Providers>
