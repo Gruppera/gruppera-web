@@ -76,7 +76,7 @@ export const SiteHeader = () => {
                 }}
               />
             </Box>
-            <Group gap={{ base: "md", md: "xl" }} wrap="wrap" visibleFrom="sm">
+            <Group gap="md" wrap="wrap" visibleFrom="sm">
               {links.map((link) => {
                 const isActive = pathname === link.href;
                 return (
