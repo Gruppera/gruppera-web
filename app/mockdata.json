@@ -1,68 +1,68 @@
 [
   {
     "name": "Daniel",
-    "about": "Daniel är en senior IT-arkitekt med 15 års erfarenhet av molnmigreringar som sänker kostnader och säkrar driften. Han balanserar teknisk expertis med affärsmål för att skapa hållbar tillväxt. Rolig fakta: Daniel har sprungit tre maraton och kodar bäst med 80-talssynth i lurarna.",
-    "focus": "Molnarkitektur & Strategi",
+    "about": "Daniel är konsult och IT-arkitekt med 15 års erfarenhet av molnplattformar och hybridlösningar. Han hjälper bolag att välja rätt målarkitektur och få kontroll på kostnader, säkerhet och drift. Rolig fakta: Daniel har sprungit tre maraton och kodar bäst med 80-talssynth i lurarna.",
+    "focus": "Molnarkitektur & Plattformar",
     "photo": "daniel.png"
   },
   {
     "name": "Gunnar",
-    "about": "Med 20 års erfarenhet är Gunnar en expert på cybersäkerhet och kvantresistenta lösningar för globala finansbolag. Han ser till att säkerhet är en möjligörare för affärskontinuitet snarare än ett hinder. Rolig fakta: Gunnar är en hobbysnickare som har byggt sin egen bastu från grunden.",
-    "focus": "Cybersäkerhet & Riskhantering",
+    "about": "Gunnar är konsult med fokus på säkerhet och identitet för större organisationer. Han designar robusta säkerhetsmodeller och gör risker begripliga för både teknik och ledning. Rolig fakta: Gunnar är hobbysnickare och har byggt en bastu från grunden.",
+    "focus": "Cybersäkerhet & IAM",
     "photo": "gunnar.png"
   },
   {
     "name": "Jonathan",
-    "about": "Jonathan är en lösningsarkitekt som specialiserar sig på AI-integrationer som ger mätbar ROI och minskar stilleståndstider. Han förvandlar komplex teknik till praktiska verktyg för stora organisationer. Rolig fakta: Han är en hängiven surdegsbagare som aldrig misslyckas med en jäsning.",
-    "focus": "Digital Transformation & AI",
+    "about": "Jonathan är konsult och IT-arkitekt som kopplar ihop affärsbehov med teknikval. Han är särskilt vass på integrationer och dataflöden mellan system. Rolig fakta: Han är hängiven surdegsbagare som aldrig misslyckas med en jäsning.",
+    "focus": "Integrationer & Systemdesign",
     "photo": "jonathan.png"
   },
   {
     "name": "Mattias",
-    "about": "Mattias optimerar DevOps-pipelines och mjukvaruleveranser för att öka både hastighet och kodkvalitet. Han drivs av att skapa en innovationskultur i högpresterande team. Rolig fakta: Mattias samlar på sällsynta vinylskivor och har över 2 000 album i sin samling.",
-    "focus": "DevOps & IT-strategi",
+    "about": "Mattias är konsult med bakgrund som utvecklare och teknisk lead. Han hjälper team att få jämn kvalitet i leveranser och bygger stabila CI/CD-flöden. Rolig fakta: Mattias samlar på sällsynta vinylskivor och har över 2 000 album.",
+    "focus": "DevOps & Leveransflöden",
     "photo": "mattias.png"
   },
   {
     "name": "Olle",
-    "about": "Olle bemästrar storskaliga ERP-implementeringar och dataarkitektur för globala verksamheter. Han är expert på att omvandla data till strategiska beslutsunderlag för ledningsgrupper. Rolig fakta: Olle är en gammal tävlingssimmare som fortfarande startar varje morgon med ett dopp i sjön.",
-    "focus": "Dataarkitektur & ERP",
+    "about": "Olle tar uppdrag där han leder utvecklingsteam och driver leverans från plan till produktion. Han kombinerar teknisk hands‑on med tydlig styrning och kommunikation. Rolig fakta: Olle är en gammal tävlingssimmare som fortfarande startar varje morgon med ett dopp i sjön.",
+    "focus": "Tech Lead & Teamledning",
     "photo": "olle.png"
   },
   {
     "name": "Shane",
-    "about": "Shane moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Shane talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "Shane är konsult och utvecklare med fokus på modernisering av äldre system. Han gillar att ta fram stegvisa migrationsplaner som minskar risk och säkrar driften. Rolig fakta: Shane talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
+    "focus": "Modernisering & Migration",
     "photo": "shane.png"
   },
-    {
+  {
     "name": "Anton",
-    "about": "Anton moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Anton talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "Anton är konsult och fullstackutvecklare som bygger stabila webbtjänster med tydlig struktur. Han är mån om prestanda, tillgänglighet och rena kodbaser. Rolig fakta: Anton spelar gärna jazzpiano efter jobbet.",
+    "focus": "Fullstackutveckling",
     "photo": "anton.png"
   },
-    {
+  {
     "name": "Christopher",
-    "about": "Christopher moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Christopher talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "Christopher är konsult och IT-arkitekt som hjälper kunder att tydliggöra målbild och tekniska beroenden. Han skapar arkitekturprinciper som håller över tid. Rolig fakta: Christopher fotograferar analogt och framkallar i eget mörkrum.",
+    "focus": "Arkitektur & Målbild",
     "photo": "christopher.png"
   },
-    {
+  {
     "name": "Sara",
-    "about": "Sara moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Sara talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "Sara är VD och rådgivare med lång erfarenhet av att bygga konsultteam och leverera affärsnytta. Hon stöttar kunder i strategiska vägval och ser till att rätt kompetens hamnar i rätt uppdrag. Rolig fakta: Sara har lett flera internationella förändringsprogram.",
+    "focus": "VD & Strategisk rådgivning",
     "photo": "sara.png"
   },
-    {
+  {
     "name": "Henrik",
-    "about": "Henrik moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: Henrik talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "Henrik är konsult och projektledare inom IT‑projekt. Han driver leveranser med tydlig planering, riskhantering och kommunikation mellan verksamhet och teknik. Rolig fakta: Henrik springer trail och har som mål att tävla i fjällmaraton.",
+    "focus": "IT‑projektledning",
     "photo": "henrik.png"
   },
-    {
+  {
     "name": "James",
-    "about": "James moderniserar äldre IT-infrastruktur och leder nätverksövergripande projekt med focus på nollavbrott. Han är känd för att hantera högtryckssituationer med lugn och precision. Rolig fakta: James talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Infrastruktur & Modernisering",
+    "about": "James är konsult och utvecklare med fokus på skalbara backend‑lösningar och API:er. Han trivs i komplexa domäner och bygger stabila tjänster som är enkla att vidareutveckla. Rolig fakta: James är en hängiven klättrare och planerar sina resor efter berg.",
+    "focus": "Backend & API‑utveckling",
     "photo": "james.png"
   }
 ]
