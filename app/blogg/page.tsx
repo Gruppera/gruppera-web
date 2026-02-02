@@ -10,7 +10,7 @@ export default function BloggPage() {
   return (
     <Box>
       <Container size="lg" py={{ base: "lg", sm: "xl" }}>
-        <Stack gap={{ base: "lg", md: "xl" }}>
+        <Stack gap="lg">
           <Stack gap="sm">
             <Title order={1} fz={{ base: 36, md: 52 }}>
               Blogg
