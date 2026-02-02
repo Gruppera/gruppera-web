@@ -48,8 +48,9 @@ export default function RootLayout({
             <Box component="main" style={{ flex: 1, paddingTop: '88px' }}>
               {children}
             </Box>
+            <Box id="footer-sentinel" aria-hidden="true" style={{ height: 24 }} />
             <SiteFooter />
-            </Box>
+          </Box>
         </Providers>
       </body>
     </html>

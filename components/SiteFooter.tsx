@@ -2,18 +2,35 @@
 
 import { useEffect, useState } from "react";
 import { Box, Container, Divider, SimpleGrid, Stack, Text } from "@mantine/core";
-import { useResizeObserver, useViewportSize, useWindowScroll } from "@mantine/hooks";
+import { useResizeObserver } from "@mantine/hooks";
 
 export const SiteFooter = () => {
   const [footerRef, { height }] = useResizeObserver();
-  const [{ y }] = useWindowScroll();
-  const { height: viewportHeight } = useViewportSize();
   const [isAtBottom, setIsAtBottom] = useState(false);
 
   useEffect(() => {
-    const scrollHeight = document.documentElement.scrollHeight;
-    setIsAtBottom(y + viewportHeight >= scrollHeight - 8);
-  }, [y, viewportHeight]);
+    const sentinel = document.getElementById("footer-sentinel");
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setIsAtBottom(entries.some((entry) => entry.isIntersecting));
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px 160px 0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (height) {
@@ -48,9 +65,9 @@ export const SiteFooter = () => {
             <Stack gap={4}>
               <Text fw={600}>Gruppera Development AB</Text>
               {isAtBottom ? (
-              <Text size="sm" c="dimmed">
-                Organisationsnummer: 559058-7043
-              </Text>
+                <Text size="sm" c="dimmed">
+                  Organisationsnummer: 559058-7043
+                </Text>
               ) : null}
             </Stack>
             {isAtBottom ? (
