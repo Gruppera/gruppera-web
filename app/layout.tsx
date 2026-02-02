@@ -45,7 +45,7 @@ export default function RootLayout({
             }}
           >
             <SiteHeader />
-            <Box component="main" style={{ flex: 1 }}>
+            <Box component="main" style={{ flex: 1, paddingTop: '88px' }}>
               {children}
             </Box>
             <SiteFooter />
