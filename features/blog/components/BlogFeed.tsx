@@ -39,8 +39,6 @@ const PostImageCarousel = ({ images, alt }: PostImageCarouselProps) => {
       getEmblaApi={setEmbla}
       withIndicators={hasMultiple}
       withControls={hasMultiple}
-      loop={hasMultiple}
-      align="start"
       onTouchStart={() => setIsInteracting(true)}
       onTouchEnd={() => setIsInteracting(false)}
       onMouseDown={() => setIsInteracting(true)}
