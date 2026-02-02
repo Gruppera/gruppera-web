@@ -1,0 +1,42 @@
+services:
+  web:
+    container_name: gruppera-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Traefik ska vara enda ingressen, så vi exponerar bara internt
+    expose:
+      - "3000"
+
+    environment:
+      NODE_ENV: production
+    env_file:
+      - .env
+    restart: unless-stopped
+
+    labels:
+      - "traefik.enable=true"
+
+      # HTTPS-router (new.gruppera.se)
+      - "traefik.http.routers.gruppera-web.rule=Host(`new.gruppera.se`)"
+      - "traefik.http.routers.gruppera-web.entrypoints=websecure"
+      - "traefik.http.routers.gruppera-web.tls=true"
+      - "traefik.http.routers.gruppera-web.tls.certresolver=letsencrypt"
+
+      # Vilken port appen lyssnar på i containern
+      - "traefik.http.services.gruppera-web.loadbalancer.server.port=3000"
+
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.gruppera-web-http.rule=Host(`new.gruppera.se`)"
+      - "traefik.http.routers.gruppera-web-http.entrypoints=web"
+      - "traefik.http.routers.gruppera-web-http.middlewares=gruppera-web-https-redirect"
+      - "traefik.http.middlewares.gruppera-web-https-redirect.redirectscheme.scheme=https"
+
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
+    name: traefik-net
