@@ -22,7 +22,21 @@ Create a `.env.local` file in the project root with:
 
 ```bash
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token
+ALLOWED_EMAIL_DOMAINS=gruppera.se
+AUTH_COOKIE_SECRET=your_random_secret
+AUTH_SESSION_DAYS=7
+SMTP_HOST=smtp-relay.gmail.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=no-reply@gruppera.se
+SMTP_SECURE=false
 ```
+
+### Login/OTP notes
+- Inloggning sker via e-post + engångskod på `/login` och sätter en signerad, HTTP-only cookie först efter lyckad verifiering.
+- Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
+- OTP-koder lagras i minnet. Vid flera instanser behöver en delad store (t.ex. Redis).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

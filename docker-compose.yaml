@@ -11,6 +11,15 @@ services:
 
     environment:
       NODE_ENV: production
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-gruppera.se}
+      AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
+      AUTH_SESSION_DAYS: ${AUTH_SESSION_DAYS:-7}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@gruppera.se}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
     env_file:
       - .env
     restart: unless-stopped
