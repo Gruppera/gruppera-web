@@ -119,12 +119,13 @@ const ConsultantCard = ({ consultant, isEditable, onUpdate }: ConsultantCardProp
           {editingField === "name" ? (
             <TextInput
               value={draft.name}
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
                 setDraft((prev) => ({
                   ...prev,
-                  name: event.currentTarget?.value ?? "",
-                }))
-              }
+                  name: value,
+                }));
+              }}
               style={{ flex: 1 }}
               size="sm"
             />
@@ -140,12 +141,13 @@ const ConsultantCard = ({ consultant, isEditable, onUpdate }: ConsultantCardProp
           {editingField === "focus" ? (
             <TextInput
               value={draft.focus}
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
                 setDraft((prev) => ({
                   ...prev,
-                  focus: event.currentTarget?.value ?? "",
-                }))
-              }
+                  focus: value,
+                }));
+              }}
               style={{ flex: 1 }}
               size="sm"
             />
@@ -161,12 +163,13 @@ const ConsultantCard = ({ consultant, isEditable, onUpdate }: ConsultantCardProp
           {editingField === "about" ? (
             <Textarea
               value={draft.about}
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
                 setDraft((prev) => ({
                   ...prev,
-                  about: event.currentTarget?.value ?? "",
-                }))
-              }
+                  about: value,
+                }));
+              }}
               autosize
               minRows={3}
               maxRows={6}
@@ -174,7 +177,7 @@ const ConsultantCard = ({ consultant, isEditable, onUpdate }: ConsultantCardProp
               size="sm"
             />
           ) : (
-            <Text c="dimmed" size="sm" style={{ flex: 1 }}>
+            <Text c="dimmed" size="sm" style={{ flex: 1, whiteSpace: "pre-line" }}>
               {consultant.about}
             </Text>
           )}
