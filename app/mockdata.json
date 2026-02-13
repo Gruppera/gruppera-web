@@ -1,68 +1,62 @@
 [
   {
     "name": "Daniel",
-    "about": "Daniel är konsult och IT-arkitekt med 15 års erfarenhet av molnplattformar och hybridlösningar. Han hjälper bolag att välja rätt målarkitektur och få kontroll på kostnader, säkerhet och drift. Rolig fakta: Daniel har sprungit tre maraton och kodar bäst med 80-talssynth i lurarna.",
+    "about": "Daniel är senior arkitekt och utvecklare med lång erfarenhet av att designa och bygga affärskritiska system på Microsoftplattformen. Han kombinerar djup teknisk kompetens med fokus på affärsnytta, kvalitet och hållbar arkitektur. Daniel tar ofta roller som arkitekt, lead developer eller mentor och trivs i komplexa miljöer där teknik och verksamhet möts.",
     "focus": "Molnarkitektur & Plattformar",
     "photo": "daniel.png"
   },
   {
     "name": "Gunnar",
-    "about": "Gunnar är konsult med fokus på säkerhet och identitet för större organisationer. Han designar robusta säkerhetsmodeller och gör risker begripliga för både teknik och ledning. Rolig fakta: Gunnar är hobbysnickare och har byggt en bastu från grunden.",
+    "about": "Gunnar är senior fullstackutvecklare med särskilt fokus på moderna webbapplikationer och API-lösningar. Han har arbetat som både utvecklare, arkitekt och team lead och är van att ta ansvar för tekniska vägval och helhetslösningar. Med lång erfarenhet av agila arbetssätt bidrar han till stabila leveranser och starka team.",
     "focus": "Cybersäkerhet & IAM",
     "photo": "gunnar.png"
   },
   {
     "name": "Jonathan",
-    "about": "Jonathan är konsult och IT-arkitekt som kopplar ihop affärsbehov med teknikval. Han är särskilt vass på integrationer och dataflöden mellan system. Rolig fakta: Han är hängiven surdegsbagare som aldrig misslyckas med en jäsning.",
+    "about": "Jonathan är senior utvecklare med bred erfarenhet av backend-tunga system och molnbaserade lösningar. Han har arbetat med mikrotjänster, integrationer och CI/CD i komplexa organisationer med höga krav på säkerhet och kvalitet. Jonathan kombinerar tekniskt djup med ett strukturerat arbetssätt och har även erfarenhet som Scrum Master.",
     "focus": "Integrationer & Systemdesign",
     "photo": "jonathan.png"
   },
   {
     "name": "Mattias",
-    "about": "Mattias är konsult med bakgrund som utvecklare och teknisk lead. Han hjälper team att få jämn kvalitet i leveranser och bygger stabila CI/CD-flöden. Rolig fakta: Mattias samlar på sällsynta vinylskivor och har över 2 000 album.",
+    "about": "Mattias är systemutvecklare med lång erfarenhet av både app- och webbutveckling i större organisationer. Han har arbetat med mikrotjänster, eventdriven arkitektur och moderna frontendramverk med höga krav på prestanda och användarupplevelse. Mattias är noggrann, pragmatisk och van att ta ansvar i komplexa miljöer.",
     "focus": "DevOps & Leveransflöden",
     "photo": "mattias.png"
   },
   {
     "name": "Olle",
-    "about": "Olle tar uppdrag där han leder utvecklingsteam och driver leverans från plan till produktion. Han kombinerar teknisk hands‑on med tydlig styrning och kommunikation. Rolig fakta: Olle är en gammal tävlingssimmare som fortfarande startar varje morgon med ett dopp i sjön.",
-    "focus": "Tech Lead & Teamledning",
+    "about": "Olle är agil coach och engineering manager med lång erfarenhet av att leda utvecklingsteam och stärka samarbeten. Han har arbetat som Scrum Master, teamcoach och ledare i både produkt- och konsultorganisationer. Olle kombinerar struktur och tydlighet med ett coachande förhållningssätt som får team att växa och leverera.",
+    "focus": "Agil coachning & Teamutveckling",
     "photo": "olle.png"
   },
   {
     "name": "Shane",
-    "about": "Shane är konsult och utvecklare med fokus på modernisering av äldre system. Han gillar att ta fram stegvisa migrationsplaner som minskar risk och säkrar driften. Rolig fakta: Shane talar fyra språk flytande och har rest genom över 50 länder med bara en ryggsäck.",
-    "focus": "Modernisering & Migration",
+    "about": "Shane är senior systemutvecklare och arkitekt med gedigen erfarenhet av .NET, mikrotjänster och molnbaserade lösningar. Han har arbetat med allt från legacy-modernisering till skalbara e-handelsplattformar i Kubernetes och AWS. Med stark kompetens inom arkitektur, CI/CD och DevOps driver han tekniska förbättringar som minskar teknisk skuld och stärker leveransförmågan.",
+    "focus": "Systemarkitektur & .NET",
     "photo": "shane.png"
   },
   {
     "name": "Anton",
-    "about": "Anton är konsult och fullstackutvecklare som bygger stabila webbtjänster med tydlig struktur. Han är mån om prestanda, tillgänglighet och rena kodbaser. Rolig fakta: Anton spelar gärna jazzpiano efter jobbet.",
+    "about": "Anton är fullstackutvecklare med erfarenhet av moderna webbapplikationer byggda i .NET och JavaScript-ramverk. Han har arbetat i både mindre team och större organisationer med ansvar för hela utvecklingskedjan – från arkitektur och implementation till CI/CD och molndrift. Anton är en lagspelare som värdesätter kvalitet och tydlig struktur i kodbasen.",
     "focus": "Fullstackutveckling",
     "photo": "anton.png"
   },
   {
     "name": "Christopher",
-    "about": "Christopher är konsult och IT-arkitekt som hjälper kunder att tydliggöra målbild och tekniska beroenden. Han skapar arkitekturprinciper som håller över tid. Rolig fakta: Christopher fotograferar analogt och framkallar i eget mörkrum.",
+    "about": "Christopher är senior utvecklare och arkitekt med djup erfarenhet av .NET, mikrotjänster och molnplattformar. Han har arbetat i både mindre team och större organisationer med ansvar för systemdesign, integrationer och CI/CD-lösningar. Med ett agilt arbetssätt och stark helhetssyn skapar han hållbara och skalbara lösningar.",
     "focus": "Arkitektur & Målbild",
     "photo": "christopher.png"
   },
   {
     "name": "Sara",
-    "about": "Sara är VD och rådgivare med lång erfarenhet av att bygga konsultteam och leverera affärsnytta. Hon stöttar kunder i strategiska vägval och ser till att rätt kompetens hamnar i rätt uppdrag. Rolig fakta: Sara har lett flera internationella förändringsprogram.",
-    "focus": "VD & Strategisk rådgivning",
+    "about": "Sara är VD på Gruppera med ansvar för bolagets strategi, tillväxt och kultur. Hon har bakgrund som agil coach och certifierad Scrum Master, där hon arbetat med att stärka team, ledarskap och leveransförmåga i både svenska och internationella miljöer. Idag kombinerar hon sitt coachande ledarskap med affärsutveckling och långsiktiga kundrelationer för att driva bolaget framåt.",
+    "focus": "VD & Strategiskt ledarskap",
     "photo": "sara.png"
   },
   {
     "name": "Henrik",
-    "about": "Henrik är konsult och projektledare inom IT‑projekt. Han driver leveranser med tydlig planering, riskhantering och kommunikation mellan verksamhet och teknik. Rolig fakta: Henrik springer trail och har som mål att tävla i fjällmaraton.",
-    "focus": "IT‑projektledning",
+    "about": "Henrik är teknisk projektledare med lång erfarenhet från bank och finans, där säkerhet, regelverk och komplexa IT-miljöer står i centrum. Han leder uppdrag med tydlig struktur och fokus på kvalitet, riskhantering och samordning mellan verksamhet och IT. Henrik är van att arbeta i agila miljöer och i initiativ med höga regulatoriska krav.",
+    "focus": "IT-projektledning",
     "photo": "henrik.png"
-  },
-  {
-    "name": "James",
-    "about": "James är konsult och utvecklare med fokus på skalbara backend‑lösningar och API:er. Han trivs i komplexa domäner och bygger stabila tjänster som är enkla att vidareutveckla. Rolig fakta: James är en hängiven klättrare och planerar sina resor efter berg.",
-    "focus": "Backend & API‑utveckling",
-    "photo": "james.png"
   }
 ]

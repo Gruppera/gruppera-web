@@ -6,6 +6,9 @@ import { consultantListSchema } from "@/features/consultants/schemas";
 
 export default function VilkaArViPage() {
   const consultants = consultantListSchema.parse(mockData);
+  const sortedConsultants = [...consultants].sort((a, b) =>
+    a.name.localeCompare(b.name, "sv"),
+  );
 
   return (
     <Box>
@@ -21,7 +24,7 @@ export default function VilkaArViPage() {
             </Text>
           </Stack>
 
-          <ConsultantGrid consultants={consultants} />
+          <ConsultantGrid consultants={sortedConsultants} />
         </Stack>
       </Container>
     </Box>
