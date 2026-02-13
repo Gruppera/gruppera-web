@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, Group, Stack, Text, TextInput } from "@mantine/core";
 
 const requestOtp = async (email: string) => {
@@ -33,7 +32,6 @@ const verifyOtp = async (email: string, code: string) => {
 type Step = "request" | "verify";
 
 export const LoginForm = () => {
-  const router = useRouter();
   const [step, setStep] = useState<Step>("request");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -58,7 +56,7 @@ export const LoginForm = () => {
     setIsLoading(true);
     try {
       await verifyOtp(email, code);
-      router.replace("/");
+      window.location.assign("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Något gick fel");
     } finally {

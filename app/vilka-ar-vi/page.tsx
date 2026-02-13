@@ -1,11 +1,15 @@
 import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
-import mockData from "../mockdata.json";
 import { ConsultantGrid } from "@/features/consultants/components/ConsultantGrid";
-import { consultantListSchema } from "@/features/consultants/schemas";
+import { readConsultants } from "@/features/consultants/api/consultantsStorage";
+import { getAuthSession } from "@/lib/auth";
 
-export default function VilkaArViPage() {
-  const consultants = consultantListSchema.parse(mockData);
+export const dynamic = "force-dynamic";
+
+export default async function VilkaArViPage() {
+  const consultants = await readConsultants();
+  const session = await getAuthSession();
+  const isEditable = Boolean(session);
   const sortedConsultants = [...consultants].sort((a, b) =>
     a.name.localeCompare(b.name, "sv"),
   );
@@ -22,9 +26,14 @@ export default function VilkaArViPage() {
               Specialister som kombinerar teknik, affärsnytta och leveransfokus
               för att skapa hållbar utveckling.
             </Text>
+            {process.env.NODE_ENV !== "production" ? (
+              <Text c="dimmed" fz={{ base: 12, sm: 12 }}>
+                Debug: {session ? `Inloggad som ${session.email}` : "Inte inloggad"}
+              </Text>
+            ) : null}
           </Stack>
 
-          <ConsultantGrid consultants={sortedConsultants} />
+          <ConsultantGrid consultants={sortedConsultants} isEditable={isEditable} />
         </Stack>
       </Container>
     </Box>

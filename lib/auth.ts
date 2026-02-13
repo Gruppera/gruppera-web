@@ -19,6 +19,12 @@ const toBase64Url = (input: Buffer) =>
     .replace(/\//g, "_")
     .replace(/=+$/g, "");
 
+const fromBase64Url = (input: string) => {
+  const padded = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padLength = (4 - (padded.length % 4)) % 4;
+  return Buffer.from(padded + "=".repeat(padLength), "base64");
+};
+
 const sign = (value: string) => {
   const hmac = crypto.createHmac("sha256", getSecret());
   hmac.update(value);
@@ -28,26 +34,34 @@ const sign = (value: string) => {
 export const createAuthCookieValue = (email: string) => {
   const maxAgeDays = Number(process.env.AUTH_SESSION_DAYS ?? DEFAULT_SESSION_DAYS);
   const expiresAt = Date.now() + maxAgeDays * 24 * 60 * 60 * 1000;
-  const payload = `${email}.${expiresAt}`;
+  const payload = toBase64Url(
+    Buffer.from(JSON.stringify({ email, expiresAt }), "utf-8"),
+  );
   const signature = sign(payload);
   return `${payload}.${signature}`;
 };
 
 export const verifyAuthCookieValue = (value: string) => {
-  const [email, expiresAtRaw, signature] = value.split(".");
-  if (!email || !expiresAtRaw || !signature) return null;
-
-  const expiresAt = Number(expiresAtRaw);
-  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) return null;
-
-  const payload = `${email}.${expiresAt}`;
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature) return null;
   if (sign(payload) !== signature) return null;
 
-  return { email };
+  try {
+    const decoded = JSON.parse(fromBase64Url(payload).toString("utf-8")) as {
+      email?: string;
+      expiresAt?: number;
+    };
+    if (!decoded.email || !decoded.expiresAt) return null;
+    if (Date.now() > decoded.expiresAt) return null;
+    return { email: decoded.email };
+  } catch {
+    return null;
+  }
 };
 
-export const getAuthSession = () => {
-  const cookieValue = cookies().get(COOKIE_NAME)?.value;
+export const getAuthSession = async () => {
+  const cookieStore = await cookies();
+  const cookieValue = cookieStore.get(COOKIE_NAME)?.value;
   if (!cookieValue) return null;
   return verifyAuthCookieValue(cookieValue);
 };
