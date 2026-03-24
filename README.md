@@ -1,24 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Gruppera.se
 
-## Getting Started
+Next.js-app för gruppera.se. Produktion deployas manuellt via GitHub Actions till en VPS med container-images i GHCR.
 
-First, run the development server:
+## Development
+
+Installera beroenden och starta utvecklingsservern:
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Verifiera ändringar lokalt:
+
+```bash
+npm run lint
+npm run build
+```
 
 ## Environment Variables
 
-Create a `.env.local` file in the project root with:
+Skapa `.env.local` i projektroten:
 
 ```bash
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token
@@ -34,25 +36,70 @@ SMTP_SECURE=false
 ```
 
 ### Login/OTP notes
+
 - Inloggning sker via e-post + engångskod på `/login` och sätter en signerad, HTTP-only cookie först efter lyckad verifiering.
 - Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
-- OTP-koder lagras i minnet. Vid flera instanser behöver en delad store (t.ex. Redis).
+- OTP-koder lagras i minnet. Vid flera instanser behöver en delad store, till exempel Redis.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Deploystrategin är avsiktligt manuell och godkänd:
 
-## Learn More
+- GitHub Actions triggas endast via `workflow_dispatch`.
+- Produktionscontainern byggs från repoets `Dockerfile` och pushas till `ghcr.io/gruppera/gruppera-online-vibe:<git-sha>`.
+- VPS:en kör `docker compose` från `/etc/docker/gruppera.se`.
+- `docker-compose.yaml` syncas alltid från repot till servern innan deploy.
+- Deploy-jobbet ska köras i GitHub Environment `production` med required reviewers aktiverat.
 
-To learn more about Next.js, take a look at the following resources:
+### Docker Compose
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`docker-compose.yaml` använder image-referenser med `${IMAGE_TAG}`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```yaml
+image: ghcr.io/gruppera/gruppera-online-vibe:${IMAGE_TAG}
+```
 
-## Deploy on Vercel
+På servern ska en separat `.env` ligga i `/etc/docker/gruppera.se/.env` för runtime-hemligheter. Den filen hanteras inte av GitHub Actions.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### GitHub Secrets
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Workflowen förväntar sig följande repository- eller environment-secrets:
+
+- `PRODUCTION_SSH_HOST`
+- `PRODUCTION_SSH_PORT`
+- `PRODUCTION_SSH_USER`
+- `PRODUCTION_SSH_PRIVATE_KEY`
+- `GHCR_USERNAME`
+- `GHCR_TOKEN`
+
+`GHCR_USERNAME` och `GHCR_TOKEN` används på VPS:en för `docker login ghcr.io` innan `docker compose pull`.
+
+### VPS Setup
+
+Servern ska ha en dedikerad deploy-user, exempelvis `gha-deploy`, med:
+
+- SSH-nyckel som matchar `PRODUCTION_SSH_PRIVATE_KEY`
+- rätt att skriva i `/etc/docker/gruppera.se`
+- rätt att köra Docker och Docker Compose
+
+Minimikrav på servern:
+
+```bash
+sudo mkdir -p /etc/docker/gruppera.se
+sudo chown -R gha-deploy:gha-deploy /etc/docker/gruppera.se
+sudo usermod -aG docker gha-deploy
+```
+
+Lägg därefter in produktionsmiljön i `/etc/docker/gruppera.se/.env`.
+
+### Deploy Flow
+
+Deploy-jobbet kör följande på VPS:en:
+
+```bash
+docker login ghcr.io
+IMAGE_TAG=<sha> docker compose pull
+IMAGE_TAG=<sha> docker compose up -d --force-recreate
+```
+
+Git push bör ske via SSH mot GitHub för att undvika PAT-problem kopplade till workflow-scope.

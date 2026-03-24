@@ -1,5 +1,6 @@
 import { IconCookie, IconGauge, IconLock, IconMessage2, IconUser } from '@tabler/icons-react';
 import { Container, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
+import type { IconProps } from '@tabler/icons-react';
 import classes from './FeaturesGrid.module.css';
 
 export const MOCKDATA = [
@@ -36,7 +37,7 @@ export const MOCKDATA = [
 ];
 
 interface FeatureProps {
-  icon: React.FC<any>;
+  icon: React.ComponentType<IconProps>;
   title: React.ReactNode;
   description: React.ReactNode;
 }

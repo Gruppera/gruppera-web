@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Box, Burger, Container, Drawer, Group, Image, Stack, Text } from "@mantine/core";
 import { useDisclosure, useWindowScroll } from "@mantine/hooks";
 
@@ -11,9 +10,9 @@ const COMPACT_HEIGHT = 64;
 
 export const SiteHeader = () => {
   const [{ y }] = useWindowScroll();
-  const [isCompact, setIsCompact] = useState(false);
   const pathname = usePathname();
   const [opened, { close, toggle }] = useDisclosure(false);
+  const isCompact = y > 48;
 
   const links = [
     { label: "Gruppera", href: "/" },
@@ -21,16 +20,6 @@ export const SiteHeader = () => {
     { label: "Blogg", href: "/blogg" },
     { label: "Hitta till oss", href: "/hitta-till-oss" },
   ];
-
-  useEffect(() => {
-    const compactThreshold = 48;
-    const expandThreshold = 16;
-    setIsCompact((prev) => {
-      if (!prev && y > compactThreshold) return true;
-      if (prev && y < expandThreshold) return false;
-      return prev;
-    });
-  }, [y]);
 
   return (
     <Box

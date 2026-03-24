@@ -1,9 +1,7 @@
 services:
   web:
     container_name: gruppera-web
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/gruppera/gruppera-online-vibe:${IMAGE_TAG}
 
     # Traefik ska vara enda ingressen, så vi exponerar bara internt
     expose:

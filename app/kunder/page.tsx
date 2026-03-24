@@ -1,4 +1,4 @@
-import { Container, Stack, Text, Title } from "@mantine/core";
+import { Container, Stack, Title } from "@mantine/core";
 
 export default function KunderPage() {
   return (
