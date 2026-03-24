@@ -40,4 +40,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_NAME }}:latest
