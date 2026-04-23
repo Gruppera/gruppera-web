@@ -34,6 +34,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify Mapbox Secret Presence
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}" ]; then
+            echo "NEXT_PUBLIC_MAPBOX_TOKEN is empty"
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_MAPBOX_TOKEN is set"
+
       - name: Build And Push
         uses: docker/build-push-action@v6
         with:
