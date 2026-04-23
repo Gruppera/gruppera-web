@@ -9,6 +9,7 @@ services:
 
     environment:
       NODE_ENV: production
+      APP_BUILD_ID: ${IMAGE_TAG}
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-gruppera.se}
       AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
       AUTH_SESSION_DAYS: ${AUTH_SESSION_DAYS:-7}

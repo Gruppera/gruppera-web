@@ -8,6 +8,7 @@ import { Providers } from '@/components/Providers';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { ScrollbarCompensation } from '@/components/ScrollbarCompensation';
+import { getAuthSession } from '@/lib/auth';
 import { grupperaTheme } from '@/styles/theme';
 
 const poppins = Poppins({
@@ -20,11 +21,14 @@ export const metadata = {
   description: 'Världens bästa IT-konsulter samlade på ett och samma ställe.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getAuthSession();
+  const buildId = session ? process.env.APP_BUILD_ID ?? null : null;
+
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
@@ -47,7 +51,7 @@ export default function RootLayout({
               {children}
             </Box>
             <Box id="footer-sentinel" aria-hidden="true" style={{ height: 1 }} />
-            <SiteFooter />
+            <SiteFooter buildId={buildId} />
           </Box>
         </Providers>
       </body>

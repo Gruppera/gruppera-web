@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { Box, Container, Divider, SimpleGrid, Stack, Text } from "@mantine/core";
 import { useResizeObserver } from "@mantine/hooks";
 
-export const SiteFooter = () => {
+type SiteFooterProps = {
+  buildId?: string | null;
+};
+
+export const SiteFooter = ({ buildId }: SiteFooterProps) => {
   const [footerRef, { height }] = useResizeObserver();
   const [isAtBottom, setIsAtBottom] = useState(false);
 
@@ -67,6 +71,11 @@ export const SiteFooter = () => {
               {isAtBottom ? (
                 <Text size="sm" c="dimmed">
                   Organisationsnummer: 559058-7043
+                </Text>
+              ) : null}
+              {buildId ? (
+                <Text size="xs" c="dimmed">
+                  Build: {buildId}
                 </Text>
               ) : null}
             </Stack>
