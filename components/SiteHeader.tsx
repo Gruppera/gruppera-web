@@ -17,7 +17,6 @@ export const SiteHeader = () => {
   const links = [
     { label: "Gruppera", href: "/" },
     { label: "Vilka är vi", href: "/vilka-ar-vi" },
-    { label: "Blogg", href: "/blogg" },
     { label: "Hitta till oss", href: "/hitta-till-oss" },
   ];
 

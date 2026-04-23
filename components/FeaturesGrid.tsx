@@ -1,9 +1,9 @@
-import { Container, Text, Title } from '@mantine/core';
+import { Text, Title } from '@mantine/core';
 import classes from './FeaturesGrid.module.css';
 
 export function FeaturesGrid() {
   return (
-    <Container className={classes.wrapper}>
+    <div className={classes.wrapper}>
       <div className={classes.hero}>
         <div className={classes.titleBox}>
           <Title className={classes.title}>
@@ -17,6 +17,6 @@ export function FeaturesGrid() {
           </Text>
         </div>
       </div>
-    </Container>
+    </div>
   );
 }
