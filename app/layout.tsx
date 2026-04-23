@@ -8,7 +8,6 @@ import { Providers } from '@/components/Providers';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { ScrollbarCompensation } from '@/components/ScrollbarCompensation';
-import { getAuthSession } from '@/lib/auth';
 import { grupperaTheme } from '@/styles/theme';
 
 const poppins = Poppins({
@@ -26,9 +25,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getAuthSession();
-  const buildId = session ? process.env.APP_BUILD_ID ?? null : null;
-
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
@@ -51,7 +47,7 @@ export default async function RootLayout({
               {children}
             </Box>
             <Box id="footer-sentinel" aria-hidden="true" style={{ height: 1 }} />
-            <SiteFooter buildId={buildId} />
+            <SiteFooter />
           </Box>
         </Providers>
       </body>
