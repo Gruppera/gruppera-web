@@ -40,6 +40,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
             ${{ env.IMAGE_NAME }}:latest

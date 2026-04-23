@@ -61,10 +61,13 @@ image: ghcr.io/gruppera/gruppera-online-vibe:${IMAGE_TAG}
 
 På servern ska en separat `.env` ligga i `/etc/docker/gruppera.se/.env` för runtime-hemligheter. Den filen hanteras inte av GitHub Actions.
 
+Observera att `NEXT_PUBLIC_MAPBOX_TOKEN` inte räcker att sätta i serverns runtime-`.env` när appen byggs som Docker-image i CI. Eftersom tokenen används i klientkod måste den finnas vid `next build`, alltså i GitHub Actions-bygget.
+
 ### GitHub Secrets
 
 Workflowen förväntar sig följande repository- eller environment-secrets:
 
+- `NEXT_PUBLIC_MAPBOX_TOKEN`
 - `PRODUCTION_SSH_HOST`
 - `PRODUCTION_SSH_PORT`
 - `PRODUCTION_SSH_USER`
