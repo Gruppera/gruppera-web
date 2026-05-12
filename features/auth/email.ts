@@ -1,7 +1,10 @@
 import nodemailer from "nodemailer";
 
-const getEnv = (key: string, fallback?: string) =>
-  process.env[key]?.trim() || fallback;
+function getEnv(key: string): string | undefined;
+function getEnv(key: string, fallback: string): string;
+function getEnv(key: string, fallback?: string) {
+  return process.env[key]?.trim() || fallback;
+}
 
 const getBooleanEnv = (key: string, fallback: boolean) => {
   const value = getEnv(key);
@@ -15,6 +18,7 @@ export const sendOtpEmail = async (to: string, code: string) => {
   const user = getEnv("SMTP_USER");
   const pass = getEnv("SMTP_PASS");
   const from = getEnv("SMTP_FROM", "no-reply@gruppera.se");
+  const fromName = getEnv("SMTP_FROM_NAME", "Gruppera.se Admin");
   const name = getEnv("SMTP_NAME", "gruppera.se");
   const secure = getBooleanEnv("SMTP_SECURE", false);
   const requireTLS = getBooleanEnv("SMTP_REQUIRE_TLS", port === 587 && !secure);
@@ -33,7 +37,7 @@ export const sendOtpEmail = async (to: string, code: string) => {
   });
 
   await transporter.sendMail({
-    from,
+    from: { name: fromName, address: from },
     to,
     subject: "Din engångskod för Gruppera",
     text: `Din engångskod är ${code}. Den gäller i 10 minuter.`,

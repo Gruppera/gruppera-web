@@ -33,6 +33,7 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=no-reply@gruppera.se
+SMTP_FROM_NAME=Gruppera.se Admin
 SMTP_SECURE=false
 SMTP_REQUIRE_TLS=true
 ```
@@ -43,6 +44,7 @@ SMTP_REQUIRE_TLS=true
 - Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
 - Googles SMTP-relay (`smtp-relay.gmail.com`) stöds utan `SMTP_USER`/`SMTP_PASS` när relayen är konfigurerad för serverns IP/domän. Port 587 använder STARTTLS som standard.
 - `SMTP_NAME` används som EHLO-namn mot Google SMTP-relay och bör vara en riktig domän, inte `localhost` eller containerns interna hostname.
+- `SMTP_FROM` ska vara ren e-postadress. Använd `SMTP_FROM_NAME` för visningsnamn i stället för formatet `Namn <adress>`.
 - OTP-koder lagras i minnet. Vid flera instanser behöver en delad store, till exempel Redis.
 
 ## Production Deploy
