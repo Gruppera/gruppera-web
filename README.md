@@ -28,6 +28,7 @@ ALLOWED_EMAIL_DOMAINS=gruppera.se
 AUTH_COOKIE_SECRET=your_random_secret
 AUTH_SESSION_DAYS=7
 SMTP_HOST=smtp-relay.gmail.com
+SMTP_NAME=gruppera.se
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
@@ -41,6 +42,7 @@ SMTP_REQUIRE_TLS=true
 - Inloggning sker via e-post + engångskod på `/login` och sätter en signerad, HTTP-only cookie först efter lyckad verifiering.
 - Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
 - Googles SMTP-relay (`smtp-relay.gmail.com`) stöds utan `SMTP_USER`/`SMTP_PASS` när relayen är konfigurerad för serverns IP/domän. Port 587 använder STARTTLS som standard.
+- `SMTP_NAME` används som EHLO-namn mot Google SMTP-relay och bör vara en riktig domän, inte `localhost` eller containerns interna hostname.
 - OTP-koder lagras i minnet. Vid flera instanser behöver en delad store, till exempel Redis.
 
 ## Production Deploy

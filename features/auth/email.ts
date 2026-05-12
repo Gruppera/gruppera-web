@@ -15,6 +15,7 @@ export const sendOtpEmail = async (to: string, code: string) => {
   const user = getEnv("SMTP_USER");
   const pass = getEnv("SMTP_PASS");
   const from = getEnv("SMTP_FROM", "no-reply@gruppera.se");
+  const name = getEnv("SMTP_NAME", "gruppera.se");
   const secure = getBooleanEnv("SMTP_SECURE", false);
   const requireTLS = getBooleanEnv("SMTP_REQUIRE_TLS", port === 587 && !secure);
 
@@ -24,6 +25,7 @@ export const sendOtpEmail = async (to: string, code: string) => {
 
   const transporter = nodemailer.createTransport({
     host,
+    name,
     port,
     secure,
     requireTLS,
