@@ -33,12 +33,14 @@ SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=no-reply@gruppera.se
 SMTP_SECURE=false
+SMTP_REQUIRE_TLS=true
 ```
 
 ### Login/OTP notes
 
 - Inloggning sker via e-post + engångskod på `/login` och sätter en signerad, HTTP-only cookie först efter lyckad verifiering.
 - Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
+- Googles SMTP-relay (`smtp-relay.gmail.com`) stöds utan `SMTP_USER`/`SMTP_PASS` när relayen är konfigurerad för serverns IP/domän. Port 587 använder STARTTLS som standard.
 - OTP-koder lagras i minnet. Vid flera instanser behöver en delad store, till exempel Redis.
 
 ## Production Deploy

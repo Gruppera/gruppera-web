@@ -1,7 +1,13 @@
 import nodemailer from "nodemailer";
 
 const getEnv = (key: string, fallback?: string) =>
-  process.env[key] ?? fallback;
+  process.env[key]?.trim() || fallback;
+
+const getBooleanEnv = (key: string, fallback: boolean) => {
+  const value = getEnv(key);
+  if (!value) return fallback;
+  return value.toLowerCase() === "true";
+};
 
 export const sendOtpEmail = async (to: string, code: string) => {
   const host = getEnv("SMTP_HOST");
@@ -9,7 +15,8 @@ export const sendOtpEmail = async (to: string, code: string) => {
   const user = getEnv("SMTP_USER");
   const pass = getEnv("SMTP_PASS");
   const from = getEnv("SMTP_FROM", "no-reply@gruppera.se");
-  const secure = getEnv("SMTP_SECURE", "false") === "true";
+  const secure = getBooleanEnv("SMTP_SECURE", false);
+  const requireTLS = getBooleanEnv("SMTP_REQUIRE_TLS", port === 587 && !secure);
 
   if (!host) {
     throw new Error("SMTP_HOST saknas");
@@ -19,6 +26,7 @@ export const sendOtpEmail = async (to: string, code: string) => {
     host,
     port,
     secure,
+    requireTLS,
     auth: user && pass ? { user, pass } : undefined,
   });
 
