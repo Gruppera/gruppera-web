@@ -1,6 +1,8 @@
 ## Gruppera.se
 
-Next.js-app för gruppera.se. Produktion deployas manuellt via GitHub Actions till en VPS med container-images i GHCR.
+Next.js-app för gruppera.se. Sajten byggs som en **statisk export** (`output: "export"`)
+och hostas på Cloudflare Pages, som bygger automatiskt från GitHub. Det finns ingen
+server och inga API-routes i produktion.
 
 ## Development
 
@@ -18,97 +20,73 @@ npm run lint
 npm run build
 ```
 
+`npm run build` skriver den färdiga sajten till `out/`. Förhandsgranska exporten med
+en valfri statisk server, t.ex. `npx serve out`. Observera att `npm start`
+(`next start`) **inte** fungerar tillsammans med statisk export.
+
 ## Environment Variables
 
 Skapa `.env.local` i projektroten:
 
 ```bash
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token
-ALLOWED_EMAIL_DOMAINS=gruppera.se
-AUTH_COOKIE_SECRET=your_random_secret
-AUTH_SESSION_DAYS=7
-SMTP_HOST=smtp-relay.gmail.com
-SMTP_NAME=gruppera.se
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=no-reply@gruppera.se
-SMTP_FROM_NAME=Gruppera.se Admin
-SMTP_SECURE=false
-SMTP_REQUIRE_TLS=true
 ```
 
-### Login/OTP notes
+Eftersom sajten är helt statisk finns bara build-time-variabler, och de måste vara
+`NEXT_PUBLIC_`-prefixade för att bakas in i klientkoden.
 
-- Inloggning sker via e-post + engångskod på `/login` och sätter en signerad, HTTP-only cookie först efter lyckad verifiering.
-- Endast e-postadresser vars domän matchar `ALLOWED_EMAIL_DOMAINS` accepteras (kommaseparerad lista).
-- Googles SMTP-relay (`smtp-relay.gmail.com`) stöds utan `SMTP_USER`/`SMTP_PASS` när relayen är konfigurerad för serverns IP/domän. Port 587 använder STARTTLS som standard.
-- `SMTP_NAME` används som EHLO-namn mot Google SMTP-relay och bör vara en riktig domän, inte `localhost` eller containerns interna hostname.
-- `SMTP_FROM` ska vara ren e-postadress. Använd `SMTP_FROM_NAME` för visningsnamn i stället för formatet `Namn <adress>`.
-- OTP-koder lagras i minnet. Vid flera instanser behöver en delad store, till exempel Redis.
+| Variabel | Krävs | Beskrivning |
+| --- | --- | --- |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Ja | Publik Mapbox-token för kartan på `/hitta-till-oss`. Måste finnas vid `next build`. |
+| `NEXT_PUBLIC_BUILD_ID` | Nej | Visas som `Build: <värde>` i footern. Utelämnas den syns ingen build-rad. |
 
-## Production Deploy
+## Static Export
 
-Deploystrategin är avsiktligt manuell och godkänd:
+`next.config.ts` sätter `output: "export"`. Det innebär:
 
-- GitHub Actions triggas endast via `workflow_dispatch`.
-- Produktionscontainern byggs från repoets `Dockerfile` och pushas till `ghcr.io/gruppera/gruppera-online-vibe:<git-sha>`.
-- VPS:en kör `docker compose` från `/etc/docker/gruppera.se`.
-- `docker-compose.yaml` syncas alltid från repot till servern innan deploy.
-- Deploy-jobbet ska köras i GitHub Environment `production` med required reviewers aktiverat.
+- Alla sidor prerenderas vid build till statisk HTML i `out/`.
+- Inga route handlers, ingen `cookies()`, inga server-only API:er.
+- Ingen filskrivning i runtime — innehåll ändras genom att bygga om.
 
-### Docker Compose
+## Content
 
-`docker-compose.yaml` använder image-referenser med `${IMAGE_TAG}`:
+`app/mockdata.json` är källan till sanning för konsulterna och `app/blogg/mockdata.json`
+för bloggen. Båda läses in vid build. Ändra innehåll genom att redigera JSON-filen,
+öppna en PR och merga — Cloudflare bygger om och publicerar automatiskt.
 
-```yaml
-image: ghcr.io/gruppera/gruppera-online-vibe:${IMAGE_TAG}
-```
+## Production Deploy (Cloudflare Pages)
 
-På servern ska en separat `.env` ligga i `/etc/docker/gruppera.se/.env` för runtime-hemligheter. Den filen hanteras inte av GitHub Actions.
+Cloudflare Pages kopplas mot GitHub-repot och bygger vid varje push till `main`.
 
-Observera att `NEXT_PUBLIC_MAPBOX_TOKEN` inte räcker att sätta i serverns runtime-`.env` när appen byggs som Docker-image i CI. Eftersom tokenen används i klientkod måste den finnas vid `next build`, alltså i GitHub Actions-bygget.
+Projektinställningar:
 
-### GitHub Secrets
+| Inställning | Värde |
+| --- | --- |
+| Framework preset | None (eller Next.js Static HTML Export) |
+| Build command | `npm run build` |
+| Build output directory | `out` |
+| Node version | 20 eller senare |
 
-Workflowen förväntar sig följande repository- eller environment-secrets:
+Lägg in `NEXT_PUBLIC_MAPBOX_TOKEN` som environment variable i Pages-projektet, för både
+Production och Preview.
 
-- `NEXT_PUBLIC_MAPBOX_TOKEN`
-- `PRODUCTION_SSH_HOST`
-- `PRODUCTION_SSH_PORT`
-- `PRODUCTION_SSH_USER`
-- `PRODUCTION_SSH_PRIVATE_KEY`
-- `GHCR_USERNAME`
-- `GHCR_TOKEN`
-
-`GHCR_USERNAME` och `GHCR_TOKEN` används på VPS:en för `docker login ghcr.io` innan `docker compose pull`.
-
-### VPS Setup
-
-Servern ska ha en dedikerad deploy-user, exempelvis `gha-deploy`, med:
-
-- SSH-nyckel som matchar `PRODUCTION_SSH_PRIVATE_KEY`
-- rätt att skriva i `/etc/docker/gruppera.se`
-- rätt att köra Docker och Docker Compose
-
-Minimikrav på servern:
+För att visa git-shan i footern, sätt build command till:
 
 ```bash
-sudo mkdir -p /etc/docker/gruppera.se
-sudo chown -R gha-deploy:gha-deploy /etc/docker/gruppera.se
-sudo usermod -aG docker gha-deploy
+NEXT_PUBLIC_BUILD_ID=$CF_PAGES_COMMIT_SHA npm run build
 ```
 
-Lägg därefter in produktionsmiljön i `/etc/docker/gruppera.se/.env`.
+Cloudflare hanterar TLS och CDN. Ingen VPS, ingen SSH-nyckel, inget container-registry
+och inga deploy-secrets i GitHub behövs.
 
-### Deploy Flow
+### Custom domain
 
-Deploy-jobbet kör följande på VPS:en:
+Peka `gruppera.se`, `www.gruppera.se` och `new2.gruppera.se` mot Pages-projektet under
+**Custom domains**. DNS ligger redan i Cloudflare.
 
-```bash
-docker login ghcr.io
-IMAGE_TAG=<sha> docker compose pull
-IMAGE_TAG=<sha> docker compose up -d --force-recreate
-```
+## Legacy Docker deploy
 
-Git push bör ske via SSH mot GitHub för att undvika PAT-problem kopplade till workflow-scope.
+`Dockerfile`, `docker-compose.yaml` och `.github/workflows/deploy-production.yml` hör till
+den tidigare VPS-baserade deployen och används inte längre. De är kvar orörda men fungerar
+inte mot en statisk export — `next start` startar ingen server när `output: "export"` är satt.
+Ta bort dem i en separat PR när Cloudflare-deployen är verifierad.

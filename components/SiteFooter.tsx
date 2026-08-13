@@ -4,32 +4,13 @@ import { useEffect, useState } from "react";
 import { Box, Container, Divider, SimpleGrid, Stack, Text } from "@mantine/core";
 import { useResizeObserver } from "@mantine/hooks";
 
+// Inlinas vid build. Sätt NEXT_PUBLIC_BUILD_ID i Cloudflare Pages
+// (t.ex. till CF_PAGES_COMMIT_SHA) för att visa build i footern.
+const buildId = process.env.NEXT_PUBLIC_BUILD_ID ?? null;
+
 export const SiteFooter = () => {
   const [footerRef, { height }] = useResizeObserver();
   const [isAtBottom, setIsAtBottom] = useState(false);
-  const [buildId, setBuildId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadAppMeta = async () => {
-      try {
-        const response = await fetch("/api/app-meta", {
-          credentials: "same-origin",
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = (await response.json()) as { buildId?: string | null };
-        setBuildId(data.buildId ?? null);
-      } catch {
-        setBuildId(null);
-      }
-    };
-
-    void loadAppMeta();
-  }, []);
 
   useEffect(() => {
     const sentinel = document.getElementById("footer-sentinel");
