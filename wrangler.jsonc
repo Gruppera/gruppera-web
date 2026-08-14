@@ -1,0 +1,25 @@
+{
+  // Namnet måste matcha den befintliga Workern i Cloudflare.
+  // Stämmer det inte skapar wrangler en NY Worker i stället för att
+  // uppdatera den som redan är kopplad till repot.
+  "name": "gruppera-web",
+
+  "compatibility_date": "2026-08-14",
+
+  // Utan den här filen kör `wrangler deploy` sin auto-konfiguration, tolkar
+  // projektet som en SSR-Next.js-app och försöker migrera det till OpenNext.
+  // Det kan inte fungera med output: "export" (det finns ingen
+  // .next/standalone), så bygget dör på pages-manifest.json.
+  "assets": {
+    // Katalogen som `npm run build` (next build med output: "export")
+    // skriver den färdiga sajten till.
+    "directory": "./out",
+
+    // Next exporterar sidor som vilka-ar-vi.html, inte vilka-ar-vi/index.html.
+    // auto-trailing-slash gör att /vilka-ar-vi serveras från vilka-ar-vi.html.
+    "html_handling": "auto-trailing-slash",
+
+    // Serverar 404.html för okända sökvägar.
+    "not_found_handling": "404-page"
+  }
+}
