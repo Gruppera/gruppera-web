@@ -585,3 +585,20 @@ are the user's.
 
 `npm run lint` + `npm run build` must pass; SSR output unchanged (corporate
 content only). Browser checks are the user's.
+
+---
+
+# Iteration 8 - konami to enter, button to go back
+
+`ModeView.tsx` only. Splits the two directions:
+
+- **Enter Personal mode: konami.** Restore the keydown listener and the 5 s
+  "Kan du konami-koden?" hint + `Tooltip`. The listener now only ever switches
+  `corporate -> personal` (`setMode(c => c === "corporate" ? "personal" : c)`).
+- **Go back: button.** In Personal mode the slot next to the name is a `Button`
+  ("Tillbaka till jobbet", `variant="light"` / `color="sprout"` / `size="xs"`)
+  that sets `mode` back to `corporate`. No konami needed to leave.
+- Heading stays "Fikapaus".
+
+`npm run lint` + `npm run build` must pass; SSR output unchanged. Browser checks
+are the user's.
