@@ -92,7 +92,11 @@ export const SpaceInvaders = ({
       invaderSize = size;
       const gap = colSlot - size;
       const marginX = (width - usableWidth) / 2;
-      const marginY = 20 * scale;
+      // Classic layout: rows start right at the top and march down together
+      // as a block (via invaderDrop below) — only slight per-invader jitter,
+      // so it still doesn't look like a perfectly rigid grid, but rows stay
+      // rows instead of invaders drifting into each other's row.
+      const marginY = 8 * scale;
       for (let row = 0; row < ROWS; row += 1) {
         for (let col = 0; col < COLS; col += 1) {
           const photoIndex = (row * COLS + col) % photos.length;
@@ -103,10 +107,8 @@ export const SpaceInvaders = ({
             y: marginY + row * (size + gap),
             alive: true,
             image,
-            // Randomized per wave so the formation looks less like a rigid
-            // grid and more like a loose cluster.
-            jitterX: (Math.random() - 0.5) * colSlot * 0.5,
-            jitterY: (Math.random() - 0.5) * size * 1.5,
+            jitterX: (Math.random() - 0.5) * colSlot * 0.3,
+            jitterY: (Math.random() - 0.5) * size * 0.25,
           });
         }
       }
