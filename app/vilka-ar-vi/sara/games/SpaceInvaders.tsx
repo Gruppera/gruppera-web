@@ -13,7 +13,9 @@ const BASE_BULLET_SPEED = 7;
 const BASE_ENEMY_BULLET_SPEED = 4;
 const BASE_INVADER_SPEED = 0.4;
 const BASE_INVADER_DROP = 16;
-const ENEMY_FIRE_CHANCE = 0.006;
+const VOLLEY_MIN_INTERVAL = 55; // frames
+const VOLLEY_MAX_INTERVAL = 110;
+const VOLLEY_MAX_SHOOTERS = 3;
 const START_LIVES = 3;
 
 type Invader = {
@@ -77,6 +79,9 @@ export const SpaceInvaders = ({
     let alive = true;
     let started = false;
     let lives = START_LIVES;
+    let volleyCooldown =
+      VOLLEY_MIN_INTERVAL +
+      Math.random() * (VOLLEY_MAX_INTERVAL - VOLLEY_MIN_INTERVAL);
 
     const invaders: Invader[] = [];
     const buildInvaders = () => {
@@ -179,15 +184,26 @@ export const SpaceInvaders = ({
           });
         }
 
-        // Invaders occasionally fire back.
-        living.forEach((invader) => {
-          if (Math.random() < ENEMY_FIRE_CHANCE) {
+        // Invaders fire in occasional volleys of 1-3 shooters, not all at
+        // once — pick a few random living invaders each time the cooldown
+        // elapses, rather than rolling a chance per invader per frame.
+        volleyCooldown -= 1;
+        if (volleyCooldown <= 0 && living.length > 0) {
+          volleyCooldown =
+            VOLLEY_MIN_INTERVAL +
+            Math.random() * (VOLLEY_MAX_INTERVAL - VOLLEY_MIN_INTERVAL);
+          const shooterCount = Math.min(
+            living.length,
+            1 + Math.floor(Math.random() * VOLLEY_MAX_SHOOTERS),
+          );
+          const shuffled = [...living].sort(() => Math.random() - 0.5);
+          shuffled.slice(0, shooterCount).forEach((invader) => {
             enemyBullets.push({
               x: invader.x + invader.jitterX + size / 2,
               y: invader.y + invader.jitterY + size,
             });
-          }
-        });
+          });
+        }
 
         bullets = bullets
           .map((bullet) => ({ ...bullet, y: bullet.y - bulletSpeed }))
