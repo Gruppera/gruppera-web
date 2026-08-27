@@ -1,4 +1,13 @@
-import { Badge, Box, Container, List, Stack, Text, Title } from "@mantine/core";
+import {
+  Badge,
+  Box,
+  Container,
+  List,
+  ListItem,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 
 import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { ConsultantPhoto } from "@/features/consultants/components/ConsultantPhoto";
@@ -45,9 +54,9 @@ export default function OllePage() {
               Roller jag trivs i
             </Title>
             <List spacing="xs" c="dimmed" fz={{ base: 14, sm: 16 }}>
-              <List.Item>Scrum Master</List.Item>
-              <List.Item>Teamcoach</List.Item>
-              <List.Item>Engineering manager / ledare</List.Item>
+              <ListItem>Scrum Master</ListItem>
+              <ListItem>Teamcoach</ListItem>
+              <ListItem>Engineering manager / ledare</ListItem>
             </List>
           </Stack>
           {/* ------------------------------------- */}
