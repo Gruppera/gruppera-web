@@ -88,7 +88,7 @@ export const SpaceInvaders = ({
       invaders.length = 0;
       const usableWidth = width * 0.85;
       const colSlot = usableWidth / COLS;
-      const size = Math.min(colSlot * 0.4, height * 0.07);
+      const size = Math.min(colSlot * 0.85, height * 0.09);
       invaderSize = size;
       const gap = colSlot - size;
       const marginX = (width - usableWidth) / 2;
@@ -107,8 +107,8 @@ export const SpaceInvaders = ({
             y: marginY + row * (size + gap),
             alive: true,
             image,
-            jitterX: (Math.random() - 0.5) * colSlot * 0.3,
-            jitterY: (Math.random() - 0.5) * size * 0.25,
+            jitterX: (Math.random() - 0.5) * gap * 0.6,
+            jitterY: (Math.random() - 0.5) * gap * 0.6,
           });
         }
       }
