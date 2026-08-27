@@ -4,24 +4,39 @@ import { useEffect, useRef } from "react";
 
 const BASE_WIDTH = 400;
 const BASE_HEIGHT = 320;
-const BASE_INVADER_SIZE = 32;
+const BASE_INVADER_SIZE = 20;
 const COLS = 6;
 const ROWS = 3;
 const BASE_PLAYER_WIDTH = 40;
 const BASE_PLAYER_SPEED = 5;
 const BASE_BULLET_SPEED = 7;
+const BASE_ENEMY_BULLET_SPEED = 4;
 const BASE_INVADER_SPEED = 0.4;
 const BASE_INVADER_DROP = 16;
+const ENEMY_FIRE_CHANCE = 0.006;
+const START_LIVES = 3;
 
-type Invader = { x: number; y: number; alive: boolean; image: HTMLImageElement };
+type Invader = {
+  x: number;
+  y: number;
+  alive: boolean;
+  image: HTMLImageElement;
+  jitterX: number;
+  jitterY: number;
+};
 type Bullet = { x: number; y: number };
 
 type SpaceInvadersProps = {
   photos: string[];
+  playerPhoto: string;
   onWin: () => void;
 };
 
-export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
+export const SpaceInvaders = ({
+  photos,
+  playerPhoto,
+  onWin,
+}: SpaceInvadersProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -50,19 +65,24 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
     let invaderSize = BASE_INVADER_SIZE * scale;
     const playerWidth = () => BASE_PLAYER_WIDTH * scale;
 
+    const playerImage = new Image();
+    playerImage.src = playerPhoto;
+
     let playerX = width / 2 - playerWidth() / 2;
     let moveLeft = false;
     let moveRight = false;
     let bullets: Bullet[] = [];
+    let enemyBullets: Bullet[] = [];
     let direction = 1;
     let alive = true;
+    let lives = START_LIVES;
 
     const invaders: Invader[] = [];
     const buildInvaders = () => {
       invaders.length = 0;
       const usableWidth = width * 0.85;
       const colSlot = usableWidth / COLS;
-      const size = Math.min(colSlot * 0.7, height * 0.12);
+      const size = Math.min(colSlot * 0.4, height * 0.07);
       invaderSize = size;
       const gap = colSlot - size;
       const marginX = (width - usableWidth) / 2;
@@ -76,6 +96,10 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
             y: marginY + row * (size + gap),
             alive: true,
             image,
+            // Randomized per wave so the formation looks less like a rigid
+            // grid and more like a loose cluster.
+            jitterX: (Math.random() - 0.5) * colSlot * 0.5,
+            jitterY: (Math.random() - 0.5) * size * 1.5,
           });
         }
       }
@@ -103,6 +127,13 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
     };
     window.addEventListener("resize", onResize);
 
+    const resetWave = () => {
+      buildInvaders();
+      direction = 1;
+      enemyBullets = [];
+      bullets = [];
+    };
+
     let raf = 0;
 
     const loop = () => {
@@ -110,8 +141,11 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
 
       const size = invaderSize;
       const pWidth = playerWidth();
+      const pHeight = 16 * scale;
+      const playerY = height - 20 * scale;
       const playerSpeed = BASE_PLAYER_SPEED * scale;
       const bulletSpeed = BASE_BULLET_SPEED * scale;
+      const enemyBulletSpeed = BASE_ENEMY_BULLET_SPEED * scale;
       const invaderSpeed = BASE_INVADER_SPEED * scale;
       const invaderDrop = BASE_INVADER_DROP * scale;
 
@@ -122,7 +156,8 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
       let hitEdge = false;
       living.forEach((invader) => {
         invader.x += invaderSpeed * direction;
-        if (invader.x <= 0 || invader.x >= width - size) hitEdge = true;
+        const drawX = invader.x + invader.jitterX;
+        if (drawX <= 0 || drawX >= width - size) hitEdge = true;
       });
       if (hitEdge) {
         direction *= -1;
@@ -131,18 +166,34 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
         });
       }
 
+      // Invaders occasionally fire back.
+      living.forEach((invader) => {
+        if (Math.random() < ENEMY_FIRE_CHANCE) {
+          enemyBullets.push({
+            x: invader.x + invader.jitterX + size / 2,
+            y: invader.y + invader.jitterY + size,
+          });
+        }
+      });
+
       bullets = bullets
         .map((bullet) => ({ ...bullet, y: bullet.y - bulletSpeed }))
         .filter((bullet) => bullet.y > 0);
 
+      enemyBullets = enemyBullets
+        .map((bullet) => ({ ...bullet, y: bullet.y + enemyBulletSpeed }))
+        .filter((bullet) => bullet.y < height);
+
       bullets.forEach((bullet) => {
         invaders.forEach((invader) => {
+          const ix = invader.x + invader.jitterX;
+          const iy = invader.y + invader.jitterY;
           if (
             invader.alive &&
-            bullet.x > invader.x &&
-            bullet.x < invader.x + size &&
-            bullet.y > invader.y &&
-            bullet.y < invader.y + size
+            bullet.x > ix &&
+            bullet.x < ix + size &&
+            bullet.y > iy &&
+            bullet.y < iy + size
           ) {
             invader.alive = false;
             bullet.y = -100;
@@ -150,8 +201,21 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
         });
       });
 
+      let playerHit = false;
+      enemyBullets.forEach((bullet) => {
+        if (
+          bullet.x > playerX &&
+          bullet.x < playerX + pWidth &&
+          bullet.y > playerY &&
+          bullet.y < playerY + pHeight
+        ) {
+          playerHit = true;
+          bullet.y = height + 100;
+        }
+      });
+
       const reachedBottom = living.some(
-        (invader) => invader.y + size >= height - 40 * scale,
+        (invader) => invader.y + invader.jitterY + size >= playerY,
       );
 
       ctx.fillStyle = "#0D0D0C";
@@ -159,11 +223,15 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
 
       invaders.forEach((invader) => {
         if (!invader.alive) return;
+        const ix = invader.x + invader.jitterX;
+        const iy = invader.y + invader.jitterY;
         if (invader.image.complete && invader.image.naturalWidth > 0) {
-          ctx.drawImage(invader.image, invader.x, invader.y, size, size);
+          ctx.fillStyle = "#95B354";
+          ctx.fillRect(ix, iy, size, size);
+          ctx.drawImage(invader.image, ix, iy, size, size);
         } else {
           ctx.fillStyle = "#C3CED9";
-          ctx.fillRect(invader.x, invader.y, size, size);
+          ctx.fillRect(ix, iy, size, size);
         }
       });
 
@@ -171,14 +239,24 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
       bullets.forEach((bullet) => {
         ctx.fillRect(bullet.x - 2 * scale, bullet.y, 4 * scale, 10 * scale);
       });
+      ctx.fillStyle = "#CC5B4B";
+      enemyBullets.forEach((bullet) => {
+        ctx.fillRect(bullet.x - 2 * scale, bullet.y, 4 * scale, 10 * scale);
+      });
 
-      ctx.fillStyle = "#EEEDEB";
-      ctx.fillRect(playerX, height - 20 * scale, pWidth, 12 * scale);
+      if (playerImage.complete && playerImage.naturalWidth > 0) {
+        ctx.fillStyle = "#95B354";
+        ctx.fillRect(playerX, playerY, pWidth, pHeight);
+        ctx.drawImage(playerImage, playerX, playerY, pWidth, pHeight);
+      } else {
+        ctx.fillStyle = "#EEEDEB";
+        ctx.fillRect(playerX, playerY, pWidth, pHeight);
+      }
 
       const remaining = invaders.filter((invader) => invader.alive).length;
       ctx.fillStyle = "#EEEDEB";
       ctx.font = `${Math.max(14, Math.round(16 * scale))}px sans-serif`;
-      ctx.fillText(`Kvar: ${remaining}`, 8, 20 * scale);
+      ctx.fillText(`Kvar: ${remaining}   Liv: ${lives}`, 8, 20 * scale);
 
       if (remaining === 0) {
         alive = false;
@@ -186,12 +264,10 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
         return;
       }
 
-      if (reachedBottom) {
-        invaders.forEach((invader, index) => {
-          invader.alive = true;
-          invader.y = Math.floor(index / COLS) * (size + 12 * scale) + 20 * scale;
-        });
-        direction = 1;
+      if (playerHit || reachedBottom) {
+        lives = playerHit ? lives - 1 : lives;
+        if (lives <= 0) lives = START_LIVES;
+        resetWave();
       }
 
       raf = window.requestAnimationFrame(loop);
@@ -206,7 +282,7 @@ export const SpaceInvaders = ({ photos, onWin }: SpaceInvadersProps) => {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, onWin]);
+  }, [photos, playerPhoto, onWin]);
 
   return (
     <div

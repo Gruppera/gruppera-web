@@ -155,6 +155,8 @@ export const Pong = ({ photos, onWin }: PongProps) => {
           Math.PI * 2,
         );
         ctx.clip();
+        ctx.fillStyle = "#95B354";
+        ctx.fillRect(ballX, ballY, ballSize, ballSize);
         ctx.drawImage(ballImage, ballX, ballY, ballSize, ballSize);
         ctx.restore();
       } else {

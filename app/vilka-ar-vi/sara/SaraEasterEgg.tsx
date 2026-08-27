@@ -6,12 +6,13 @@ import { Box, Modal, Stack, Text } from "@mantine/core";
 import { Snake } from "./games/Snake";
 import { SpaceInvaders } from "./games/SpaceInvaders";
 import { Pong } from "./games/Pong";
+import { Bubbles } from "./games/Bubbles";
 
 type Effect = "flip" | "mirror" | "scramble";
-type Game = "snake" | "invaders" | "pong";
+type Game = "snake" | "invaders" | "pong" | "bubbles";
 
 const EFFECTS: Effect[] = ["flip", "mirror", "scramble"];
-const GAMES: Game[] = ["snake", "invaders", "pong"];
+const GAMES: Game[] = ["snake", "invaders", "pong", "bubbles"];
 
 const pickRandom = <T,>(items: T[]): T =>
   items[Math.floor(Math.random() * items.length)];
@@ -29,16 +30,21 @@ const GAME_TITLES: Record<Game, string> = {
   snake: "Snake",
   invaders: "Space Invaders",
   pong: "Pong",
+  bubbles: "Bubblor",
 };
 
 const GAME_HINTS: Record<Game, string> = {
   snake: "Pilarna styr. Ät 5 kollegor för att vinna.",
-  invaders: "Pilarna flyttar, mellanslag skjuter. Skjut ner alla för att vinna.",
+  invaders:
+    "Pilarna flyttar, mellanslag skjuter. Du är den som skjuter — kollegorna skjuter tillbaka. Skjut ner alla för att vinna.",
   pong: "Pil upp/ner styr. Först till 3 poäng vinner.",
+  bubbles:
+    "Pilarna väljer kolumn, mellanslag skjuter uppåt. Gruppera 3 av samma ansikte för att slå bort dem — töm brädet för att vinna.",
 };
 
 type SaraEasterEggProps = {
   colleaguePhotos: string[];
+  saraPhoto: string;
 };
 
 const SARA_HREF = "/vilka-ar-vi/sara";
@@ -58,7 +64,10 @@ const SARA_HREF = "/vilka-ar-vi/sara";
  * and peer links) while scrambled is blocked and opens the game — winning
  * replays the blocked navigation.
  */
-export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
+export const SaraEasterEgg = ({
+  colleaguePhotos,
+  saraPhoto,
+}: SaraEasterEggProps) => {
   const [game, setGame] = useState<Game | null>(null);
   const scrambledRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
@@ -143,9 +152,16 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
             <Snake photos={colleaguePhotos} onWin={handleWin} />
           )}
           {game === "invaders" && (
-            <SpaceInvaders photos={colleaguePhotos} onWin={handleWin} />
+            <SpaceInvaders
+              photos={colleaguePhotos}
+              playerPhoto={saraPhoto}
+              onWin={handleWin}
+            />
           )}
           {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
+          {game === "bubbles" && (
+            <Bubbles photos={colleaguePhotos} onWin={handleWin} />
+          )}
         </Box>
       </Stack>
     </Modal>

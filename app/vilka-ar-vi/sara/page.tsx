@@ -16,6 +16,8 @@ export default function SaraPage() {
   const colleaguePhotos = consultants
     .filter((consultant) => consultant.slug !== "sara")
     .map((consultant) => `/photos/${consultant.photo}`);
+  const sara = consultants.find((consultant) => consultant.slug === "sara");
+  const saraPhoto = `/photos/${sara?.photo ?? ""}`;
   const sortedConsultants = [...consultants].sort((a, b) =>
     a.name.localeCompare(b.name, "sv"),
   );
@@ -76,7 +78,7 @@ export default function SaraPage() {
           }}
         />
 
-        <SaraEasterEgg colleaguePhotos={colleaguePhotos} />
+        <SaraEasterEgg colleaguePhotos={colleaguePhotos} saraPhoto={saraPhoto} />
       </Container>
     </Box>
   );

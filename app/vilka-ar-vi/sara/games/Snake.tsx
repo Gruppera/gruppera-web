@@ -81,6 +81,11 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
       });
 
       if (foodImage.complete && foodImage.naturalWidth > 0) {
+        // Portraits are transparent cutout PNGs designed to sit on a green
+        // backdrop (see ConsultantPhoto) — without it they show the canvas
+        // background through the transparent parts.
+        ctx.fillStyle = "#95B354";
+        ctx.fillRect(food.x * cell, food.y * cell, cell, cell);
         ctx.drawImage(foodImage, food.x * cell, food.y * cell, cell, cell);
       } else {
         ctx.fillStyle = "#EEEDEB";
