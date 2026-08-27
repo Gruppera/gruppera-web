@@ -4,9 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { colorForIndex } from "./palette";
 
-const COLS = 32;
-const INITIAL_ROWS = 13; // ~1/5 fewer bubbles than a full 16 rows
-const MAX_ROWS = 36;
+const TARGET_CELL_PX = 24; // desired bubble size — count follows from this
 const MATCH_SIZE = 3;
 const BASE_BULLET_SPEED = 9;
 const BUBBLE_RADIUS_FACTOR = 0.5; // fills the cell — bubbles touch, no gaps
@@ -52,6 +50,19 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
     let cell = 40;
     let scale = 1;
     let sizeScale = 1;
+
+    // Grid dimensions follow the actual play area, not a fixed constant —
+    // a bigger view gets more (still TARGET_CELL_PX-sized) bubbles, a
+    // smaller one gets fewer, rather than always the same count stretched
+    // or squeezed to fit.
+    width = container.clientWidth;
+    height = container.clientHeight;
+    const COLS = Math.max(8, Math.round(width / TARGET_CELL_PX));
+    const MAX_ROWS = Math.max(
+      10,
+      Math.round((height - TARGET_CELL_PX * 3) / TARGET_CELL_PX),
+    );
+    const INITIAL_ROWS = Math.max(4, Math.round(MAX_ROWS * 0.36));
 
     const applySize = () => {
       width = container.clientWidth;
@@ -195,10 +206,16 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       const row = Math.max(0, Math.min(MAX_ROWS - 1, Math.round((y - cell / 2) / cell)));
       const col = Math.max(0, Math.min(COLS - 1, Math.round((x - cell / 2) / cell)));
       let target: [number, number] | null = grid[row][col] === null ? [row, col] : null;
-      if (!target) {
+
+      // Expand the search ring by ring — a dense/tightly-packed grid can
+      // easily have every cell in a 3x3 already occupied. Without this, the
+      // bubble had nowhere to go and was silently dropped (looked like it
+      // "just disappeared" instead of sticking).
+      for (let ring = 1; !target && ring <= Math.max(MAX_ROWS, COLS); ring += 1) {
         let bestDist = Infinity;
-        for (let dr = -1; dr <= 1; dr += 1) {
-          for (let dc = -1; dc <= 1; dc += 1) {
+        for (let dr = -ring; dr <= ring; dr += 1) {
+          for (let dc = -ring; dc <= ring; dc += 1) {
+            if (Math.max(Math.abs(dr), Math.abs(dc)) !== ring) continue;
             const rr = row + dr;
             const cc = col + dc;
             if (rr < 0 || rr >= MAX_ROWS || cc < 0 || cc >= COLS) continue;
@@ -212,6 +229,9 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
           }
         }
       }
+      // Grid isn't full (the win check would have already fired if it were),
+      // so a target always exists by the time the ring search covers it —
+      // this branch should be unreachable, but never discard a fired bubble.
       if (!target) return;
       const [tr, tc] = target;
       grid[tr][tc] = face;
@@ -296,11 +316,10 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.clip();
+          ctx.fillStyle = colorForIndex(face);
+          ctx.fill();
           if (image?.complete && image.naturalWidth > 0) {
             ctx.drawImage(image, cx - r, cy - r, r * 2, r * 2);
-          } else {
-            ctx.fillStyle = "#C3CED9";
-            ctx.fill();
           }
           ctx.restore();
           ctx.strokeStyle = colorForIndex(face);
@@ -317,11 +336,10 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         ctx.beginPath();
         ctx.arc(flying.x, flying.y, r, 0, Math.PI * 2);
         ctx.clip();
+        ctx.fillStyle = colorForIndex(flying.face);
+        ctx.fill();
         if (image?.complete && image.naturalWidth > 0) {
           ctx.drawImage(image, flying.x - r, flying.y - r, r * 2, r * 2);
-        } else {
-          ctx.fillStyle = "#C3CED9";
-          ctx.fill();
         }
         ctx.restore();
         ctx.strokeStyle = colorForIndex(flying.face);
@@ -341,14 +359,14 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         ctx.beginPath();
         ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.fillStyle = "#95B354";
+        ctx.fillStyle = colorForIndex(nextFace);
         ctx.fill();
         if (image?.complete && image.naturalWidth > 0) {
           ctx.drawImage(image, sx - r, sy - r, r * 2, r * 2);
         }
         ctx.restore();
       }
-      ctx.strokeStyle = "#95B354";
+      ctx.strokeStyle = colorForIndex(nextFace);
       ctx.lineWidth = Math.max(0.75, 1 * scale);
       ctx.beginPath();
       ctx.arc(sx, sy, r, 0, Math.PI * 2);
