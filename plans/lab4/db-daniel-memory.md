@@ -29,12 +29,13 @@ reachable.
 The "Fler konsulter" grid is **gone**. It duplicated what the cards already do,
 and the cards *are* the navigation.
 
-In its place is a single back link to `/vilka-ar-vi`, the index, which links to
-all eleven. The page still has an ungated path out, one hop longer.
+The in-page back link went too, on a later pass. The ungated way out is now the
+site header's "Vilka är vi" link, which is present on every page and is the one
+`/vilka-ar-vi` reference left in the prerendered HTML.
 
-The cost, stated plainly because it is real: the prerendered HTML now contains
-**zero** direct links to colleagues. Match-revealed links exist only after client
-interaction, so a crawler, or anyone who will not play, sees only the back link.
+The cost, stated plainly because it is real: the prerendered HTML contains **zero**
+direct links to colleagues. Match-revealed links exist only after client
+interaction, so a crawler, or anyone who will not play, sees only the header link.
 Colleague pages stay discoverable because `/vilka-ar-vi` links to every one of
 them — discovery never depended on this page.
 
@@ -58,13 +59,16 @@ installed) supplies `useReducedMotion`.
 - Card back is `/gruppera-logo-symbol.svg` on `moss`.
 - Click two cards. Same `slug` + different `kind` → matched, stays up, becomes a link.
   Otherwise they flip back after a beat. Move counter and a `n / 11 par` readout.
-- **The deal is random per page load.** The seed is picked once at module
-  evaluation in the browser — never during render (`Math.random()` there is impure
-  and `react-hooks/purity` rejects it) and never in an effect
-  (`react-hooks/set-state-in-effect` rejects that too). A `useSyncExternalStore`
-  flag makes the first client render use a fixed seed so it matches the
-  prerendered HTML, then the real deal takes over. Face-down cards are identical,
-  so the hand-off is invisible.
+- **The deal is random per mount**, so a client-side navigation back to the page
+  reshuffles too — not just a hard refresh. The seed comes from `useState`'s lazy
+  initialiser, with `randomSeed` passed as a reference so nothing impure runs in
+  the render body: `Math.random()` during render is rejected by
+  `react-hooks/purity`, and moving it into an effect is rejected by
+  `react-hooks/set-state-in-effect`. A module-level seed was the first fix and was
+  wrong — modules are evaluated once per page load, so navigating away and back
+  dealt the same board. A `useSyncExternalStore` flag keeps the first client render
+  on a fixed seed so it matches the prerendered HTML; face-down cards are
+  identical, so the hand-off is invisible.
 - Keyboard: every unmatched card is a real `<button>`; matched cards are real links.
   An `aria-live` region announces matches and completion.
 

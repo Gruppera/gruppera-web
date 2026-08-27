@@ -78,13 +78,9 @@ const serverSnapshot = () => false;
 
 const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31) || 1;
 
-/**
- * One random seed per page load, picked when this module is evaluated in the
- * browser — deliberately not during render, where Math.random() is impure and
- * could reshuffle the board on any incidental re-render. Falls back to the fixed
- * seed on the server so the prerendered HTML stays deterministic.
- */
-const VISIT_SEED = typeof window === "undefined" ? OPENING_SEED : randomSeed();
+// The seed is picked per mount, via useState's lazy initialiser below — not at
+// module scope. A module-level seed only changes on a full page load, so a
+// client-side navigation back to this page would deal the same board again.
 
 const seededRandom = (seed: number): (() => number) => {
   let state = seed >>> 0;
@@ -108,10 +104,15 @@ export const MemoryGame = ({ people, ownSlug }: MemoryGameProps) => {
 
   const hydrated = useSyncExternalStore(subscribeNever, clientSnapshot, serverSnapshot);
 
-  // Before hydration: the fixed seed, matching the prerendered HTML. After:
-  // this visit's random deal. "Blanda om" then overrides it with a fresh one.
+  // Fresh every time this component mounts, so navigating away and back deals a
+  // new board. `randomSeed` is passed as a reference, not called in the render
+  // body — React invokes it once, which keeps the render itself pure.
+  const [mountSeed] = useState(randomSeed);
+
+  // Before hydration the fixed seed, so the first client render matches the
+  // prerendered HTML. After hydration, this mount's deal. "Blanda om" overrides.
   const [reshuffleSeed, setReshuffleSeed] = useState<number | null>(null);
-  const seed = reshuffleSeed ?? (hydrated ? VISIT_SEED : OPENING_SEED);
+  const seed = reshuffleSeed ?? (hydrated ? mountSeed : OPENING_SEED);
 
   const deck = useMemo(
     () => shuffle(buildDeck(people), seededRandom(seed)),
