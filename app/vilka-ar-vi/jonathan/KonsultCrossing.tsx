@@ -19,8 +19,6 @@ import {
   IconArrowRight,
   IconArrowUp,
   IconCoffee,
-  IconHeart,
-  IconHeartFilled,
 } from "@tabler/icons-react";
 
 import mockData from "@/app/mockdata.json";
@@ -32,7 +30,6 @@ const GOAL_ROW = 0;
 const SAFE_ROW = 4;
 const START_ROW = 8;
 const START_COL = 4;
-const LIVES = 3;
 const HIT = 0.85;
 const MAX_DT = 0.05;
 
@@ -125,11 +122,14 @@ export const KonsultCrossing = () => {
 
   const [status, setStatus] = useState<Status>("playing");
   const [level, setLevel] = useState(1);
-  const [lives, setLives] = useState(LIVES);
   const [player, setPlayer] = useState({ col: START_COL, row: START_ROW });
   const [culprit, setCulprit] = useState<{ name: string; slug: string } | null>(
     null,
   );
+  const [arrival, setArrival] = useState<{ name: string; slug: string } | null>(
+    null,
+  );
+  const [arrivalKey, setArrivalKey] = useState(0);
   const [, setTick] = useState(0);
 
   const obstaclesRef = useRef<Obstacle[] | null>(null);
@@ -139,7 +139,6 @@ export const KonsultCrossing = () => {
 
   const playerRef = useRef(player);
   const levelRef = useRef(1);
-  const livesRef = useRef(LIVES);
   const lastNowRef = useRef<number | null>(null);
 
   const resetPlayer = () => {
@@ -149,12 +148,11 @@ export const KonsultCrossing = () => {
 
   const start = () => {
     levelRef.current = 1;
-    livesRef.current = LIVES;
     setLevel(1);
-    setLives(LIVES);
     obstaclesRef.current = buildObstacles(1, consultants);
     lastNowRef.current = null;
     setCulprit(null);
+    setArrival(null);
     resetPlayer();
     setStatus("playing");
   };
@@ -171,6 +169,9 @@ export const KonsultCrossing = () => {
       levelRef.current += 1;
       setLevel(levelRef.current);
       obstaclesRef.current = buildObstacles(levelRef.current, consultants);
+      const met = consultants[Math.floor(Math.random() * consultants.length)];
+      setArrival({ name: met.name, slug: met.slug });
+      setArrivalKey((key) => key + 1);
       resetPlayer();
       return;
     }
@@ -204,14 +205,9 @@ export const KonsultCrossing = () => {
       });
 
       if (struck) {
-        livesRef.current -= 1;
-        setLives(livesRef.current);
-        resetPlayer();
-        if (livesRef.current <= 0) {
-          setCulprit({ name: struck.name, slug: struck.slug });
-          setStatus("over");
-          return;
-        }
+        setCulprit({ name: struck.name, slug: struck.slug });
+        setStatus("over");
+        return;
       }
 
       setTick((value) => value + 1);
@@ -244,6 +240,12 @@ export const KonsultCrossing = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  useEffect(() => {
+    if (arrivalKey === 0) return undefined;
+    const timer = setTimeout(() => setArrival(null), 2200);
+    return () => clearTimeout(timer);
+  }, [arrivalKey]);
+
   const obstacles = obstaclesRef.current ?? [];
   const cellW = 100 / COLS;
   const cellH = 100 / ROWS;
@@ -262,23 +264,17 @@ export const KonsultCrossing = () => {
         <Text size="sm" fw={500}>
           Nivå: {level}
         </Text>
-        <Group gap={4} aria-label={`${lives} liv kvar`}>
-          {Array.from({ length: LIVES }, (_, i) =>
-            i < lives ? (
-              <IconHeartFilled
-                key={i}
-                size={16}
-                style={{ color: "var(--mantine-color-cognac-6)" }}
-              />
-            ) : (
-              <IconHeart
-                key={i}
-                size={16}
-                style={{ color: "var(--mantine-color-dimmed)" }}
-              />
-            ),
-          )}
-        </Group>
+        <Box mih={20}>
+          {arrival && status === "playing" ? (
+            <Text size="sm" c="sprout.4" ta="right">
+              Du mötte{" "}
+              <Anchor component={Link} href={`/vilka-ar-vi/${arrival.slug}`}>
+                {arrival.name}
+              </Anchor>{" "}
+              vid kaffemaskinen.
+            </Text>
+          ) : null}
+        </Box>
       </Group>
 
       <Box maw={480} mx="auto">

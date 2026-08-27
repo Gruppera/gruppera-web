@@ -628,3 +628,21 @@ through the lanes.
   to `/vilka-ar-vi/<slug>`. The two lines sit in a centered `Stack`.
 
 `npm run lint` + `npm run build` must pass. Browser check is the user's.
+
+---
+
+# Iteration 11 - no lives, plus an arrival flash naming a random colleague
+
+`KonsultCrossing.tsx` only.
+
+- **No lives.** Any collision ends the run immediately: the loop's `struck`
+  branch sets `culprit` and `status = "over"` with no decrement. `LIVES` /
+  `lives` / `livesRef` and the heart HUD are removed. The game-over block is
+  unchanged ("Du mötte <name> på väg till kaffemaskinen." + Ski or Die).
+- **Arrival flash.** Reaching the coffee machine picks a random colleague from
+  the (Jonathan-filtered) list and flashes "Du mötte <name> vid kaffemaskinen."
+  for ~2.2 s next to the level counter (`c="sprout.4"`, name links to
+  `/vilka-ar-vi/<slug>`). `arrival` + `arrivalKey` state; an effect clears it on
+  a timeout; cleared in `start()`. Fixed `mih` so nothing jumps.
+
+`npm run lint` + `npm run build` must pass. Browser check is the user's.
