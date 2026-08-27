@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Text } from "@mantine/core";
 
-const CELL = 20;
-const COLS = 20;
-const ROWS = 16;
+const COLS = 24;
+const ROWS = 18;
 const WIN_SCORE = 5;
-const TICK_MS = 130;
+const BASE_CELL = 20;
+const BASE_TICK_MS = 130;
+const MIN_TICK_MS = 45;
 
 type Point = { x: number; y: number };
 
@@ -17,13 +17,30 @@ type SnakeProps = {
 };
 
 export const Snake = ({ photos, onWin }: SnakeProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const container = containerRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!container || !canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    let cell = BASE_CELL;
+    let tickMs = BASE_TICK_MS;
+
+    const resize = () => {
+      const availW = container.clientWidth;
+      const availH = container.clientHeight;
+      cell = Math.max(8, Math.floor(Math.min(availW / COLS, availH / ROWS)));
+      canvas.width = cell * COLS;
+      canvas.height = cell * ROWS;
+      const scale = cell / BASE_CELL;
+      tickMs = Math.max(MIN_TICK_MS, Math.round(BASE_TICK_MS / scale));
+    };
+    resize();
+    window.addEventListener("resize", resize);
 
     let snake: Point[] = [{ x: 8, y: 8 }];
     let dir: Point = { x: 1, y: 0 };
@@ -56,23 +73,23 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
 
     const draw = () => {
       ctx.fillStyle = "#0D0D0C";
-      ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = "#95B354";
       snake.forEach((segment) => {
-        ctx.fillRect(segment.x * CELL, segment.y * CELL, CELL - 2, CELL - 2);
+        ctx.fillRect(segment.x * cell, segment.y * cell, cell - 2, cell - 2);
       });
 
       if (foodImage.complete && foodImage.naturalWidth > 0) {
-        ctx.drawImage(foodImage, food.x * CELL, food.y * CELL, CELL, CELL);
+        ctx.drawImage(foodImage, food.x * cell, food.y * cell, cell, cell);
       } else {
         ctx.fillStyle = "#EEEDEB";
-        ctx.fillRect(food.x * CELL, food.y * CELL, CELL, CELL);
+        ctx.fillRect(food.x * cell, food.y * cell, cell, cell);
       }
 
       ctx.fillStyle = "#EEEDEB";
-      ctx.font = "14px sans-serif";
-      ctx.fillText(`${score} / ${WIN_SCORE}`, 8, ROWS * CELL - 8);
+      ctx.font = `${Math.max(14, Math.round(cell * 0.7))}px sans-serif`;
+      ctx.fillText(`${score} / ${WIN_SCORE}`, 8, canvas.height - 8);
     };
 
     const step = () => {
@@ -114,25 +131,38 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
     };
 
     draw();
-    const interval = window.setInterval(step, TICK_MS);
+    let interval = window.setInterval(step, tickMs);
+    const restartInterval = () => {
+      window.clearInterval(interval);
+      interval = window.setInterval(step, tickMs);
+    };
+    const onResize = () => {
+      resize();
+      restartInterval();
+      draw();
+    };
+    window.addEventListener("resize", onResize);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", onResize);
     };
   }, [photos, onWin]);
 
   return (
-    <div>
-      <canvas
-        ref={canvasRef}
-        width={COLS * CELL}
-        height={ROWS * CELL}
-        style={{ width: "100%", maxWidth: COLS * CELL, display: "block" }}
-      />
-      <Text c="dimmed" size="sm" mt="xs">
-        Pilarna styr. Ät {WIN_SCORE} kollegor för att vinna.
-      </Text>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <canvas ref={canvasRef} />
     </div>
   );
 };

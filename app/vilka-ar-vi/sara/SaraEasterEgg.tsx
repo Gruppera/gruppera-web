@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Center, Modal, Stack, Text } from "@mantine/core";
+import { Box, Modal, Stack, Text } from "@mantine/core";
 
 import { Snake } from "./games/Snake";
 import { SpaceInvaders } from "./games/SpaceInvaders";
@@ -29,6 +29,12 @@ const GAME_TITLES: Record<Game, string> = {
   snake: "Snake",
   invaders: "Space Invaders",
   pong: "Pong",
+};
+
+const GAME_HINTS: Record<Game, string> = {
+  snake: "Pilarna styr. Ät 5 kollegor för att vinna.",
+  invaders: "Pilarna flyttar, mellanslag skjuter. Skjut ner alla för att vinna.",
+  pong: "Pil upp/ner styr. Först till 3 poäng vinner.",
 };
 
 type SaraEasterEggProps = {
@@ -117,8 +123,11 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
       zIndex={1001}
       title={game ? `Klara ${GAME_TITLES[game]} för att komma vidare` : ""}
     >
-      <Center h="calc(100vh - 120px)">
-        <Stack align="center" gap="sm">
+      <Stack h="calc(100vh - 60px)" gap="xs">
+        <Text c="dimmed" size="sm">
+          {game ? GAME_HINTS[game] : ""} Sidan är scramblad tills du vinner.
+        </Text>
+        <Box style={{ flex: 1, minHeight: 0 }}>
           {game === "snake" && (
             <Snake photos={colleaguePhotos} onWin={handleWin} />
           )}
@@ -126,11 +135,8 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
             <SpaceInvaders photos={colleaguePhotos} onWin={handleWin} />
           )}
           {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
-          <Text c="dimmed" size="sm">
-            Sidan är scramblad tills du vinner.
-          </Text>
-        </Stack>
-      </Center>
+        </Box>
+      </Stack>
     </Modal>
   );
 };

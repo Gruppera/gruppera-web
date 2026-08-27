@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Text } from "@mantine/core";
 
-const WIDTH = 400;
-const HEIGHT = 300;
-const PADDLE_WIDTH = 10;
-const PADDLE_HEIGHT = 60;
-const BALL_SIZE = 24;
-const PLAYER_SPEED = 6;
-const CPU_SPEED = 3.5;
+const BASE_WIDTH = 400;
+const BASE_HEIGHT = 300;
+const BASE_PADDLE_WIDTH = 10;
+const BASE_PADDLE_HEIGHT = 60;
+const BASE_BALL_SIZE = 24;
+const BASE_PLAYER_SPEED = 6;
+const BASE_CPU_SPEED = 3.5;
 const WIN_SCORE = 3;
 
 type PongProps = {
@@ -18,20 +17,35 @@ type PongProps = {
 };
 
 export const Pong = ({ photos, onWin }: PongProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const container = containerRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!container || !canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let playerY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
-    let cpuY = HEIGHT / 2 - PADDLE_HEIGHT / 2;
-    let ballX = WIDTH / 2;
-    let ballY = HEIGHT / 2;
-    let ballVX = 4;
-    let ballVY = 3;
+    let width = BASE_WIDTH;
+    let height = BASE_HEIGHT;
+    let scale = 1;
+
+    const applySize = () => {
+      width = container.clientWidth;
+      height = container.clientHeight;
+      canvas.width = width;
+      canvas.height = height;
+      scale = Math.min(width / BASE_WIDTH, height / BASE_HEIGHT);
+    };
+    applySize();
+
+    let playerY = height / 2 - (BASE_PADDLE_HEIGHT * scale) / 2;
+    let cpuY = height / 2 - (BASE_PADDLE_HEIGHT * scale) / 2;
+    let ballX = width / 2;
+    let ballY = height / 2;
+    let ballVX = 4 * scale;
+    let ballVY = 3 * scale;
     let playerScore = 0;
     let cpuScore = 0;
     let moveUp = false;
@@ -55,11 +69,16 @@ export const Pong = ({ photos, onWin }: PongProps) => {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
 
+    const onResize = () => {
+      applySize();
+    };
+    window.addEventListener("resize", onResize);
+
     const resetBall = () => {
-      ballX = WIDTH / 2;
-      ballY = HEIGHT / 2;
-      ballVX = ballVX > 0 ? -4 : 4;
-      ballVY = 3;
+      ballX = width / 2;
+      ballY = height / 2;
+      ballVX = ballVX > 0 ? -4 * scale : 4 * scale;
+      ballVY = 3 * scale;
       setRandomBallImage();
     };
 
@@ -68,32 +87,39 @@ export const Pong = ({ photos, onWin }: PongProps) => {
     const loop = () => {
       if (!alive) return;
 
-      if (moveUp) playerY = Math.max(0, playerY - PLAYER_SPEED);
-      if (moveDown)
-        playerY = Math.min(HEIGHT - PADDLE_HEIGHT, playerY + PLAYER_SPEED);
+      const paddleWidth = BASE_PADDLE_WIDTH * scale;
+      const paddleHeight = BASE_PADDLE_HEIGHT * scale;
+      const ballSize = BASE_BALL_SIZE * scale;
+      const playerSpeed = BASE_PLAYER_SPEED * scale;
+      const cpuSpeed = BASE_CPU_SPEED * scale;
+      const margin = 10 * scale;
 
-      const cpuCenter = cpuY + PADDLE_HEIGHT / 2;
-      if (cpuCenter < ballY - 8) cpuY += CPU_SPEED;
-      if (cpuCenter > ballY + 8) cpuY -= CPU_SPEED;
-      cpuY = Math.max(0, Math.min(HEIGHT - PADDLE_HEIGHT, cpuY));
+      if (moveUp) playerY = Math.max(0, playerY - playerSpeed);
+      if (moveDown)
+        playerY = Math.min(height - paddleHeight, playerY + playerSpeed);
+
+      const cpuCenter = cpuY + paddleHeight / 2;
+      if (cpuCenter < ballY - 8 * scale) cpuY += cpuSpeed;
+      if (cpuCenter > ballY + 8 * scale) cpuY -= cpuSpeed;
+      cpuY = Math.max(0, Math.min(height - paddleHeight, cpuY));
 
       ballX += ballVX;
       ballY += ballVY;
 
-      if (ballY <= 0 || ballY >= HEIGHT - BALL_SIZE) ballVY *= -1;
+      if (ballY <= 0 || ballY >= height - ballSize) ballVY *= -1;
 
       if (
-        ballX <= PADDLE_WIDTH + 10 &&
-        ballY + BALL_SIZE >= playerY &&
-        ballY <= playerY + PADDLE_HEIGHT
+        ballX <= paddleWidth + margin &&
+        ballY + ballSize >= playerY &&
+        ballY <= playerY + paddleHeight
       ) {
         ballVX = Math.abs(ballVX);
       }
 
       if (
-        ballX >= WIDTH - PADDLE_WIDTH - 10 - BALL_SIZE &&
-        ballY + BALL_SIZE >= cpuY &&
-        ballY <= cpuY + PADDLE_HEIGHT
+        ballX >= width - paddleWidth - margin - ballSize &&
+        ballY + ballSize >= cpuY &&
+        ballY <= cpuY + paddleHeight
       ) {
         ballVX = -Math.abs(ballVX);
       }
@@ -102,7 +128,7 @@ export const Pong = ({ photos, onWin }: PongProps) => {
         cpuScore += 1;
         resetBall();
       }
-      if (ballX > WIDTH) {
+      if (ballX > width) {
         playerScore += 1;
         if (playerScore >= WIN_SCORE) {
           alive = false;
@@ -112,33 +138,33 @@ export const Pong = ({ photos, onWin }: PongProps) => {
       }
 
       ctx.fillStyle = "#0D0D0C";
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      ctx.fillRect(0, 0, width, height);
 
       ctx.fillStyle = "#EEEDEB";
-      ctx.fillRect(10, playerY, PADDLE_WIDTH, PADDLE_HEIGHT);
-      ctx.fillRect(WIDTH - 10 - PADDLE_WIDTH, cpuY, PADDLE_WIDTH, PADDLE_HEIGHT);
+      ctx.fillRect(margin, playerY, paddleWidth, paddleHeight);
+      ctx.fillRect(width - margin - paddleWidth, cpuY, paddleWidth, paddleHeight);
 
       if (ballImage.complete && ballImage.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(
-          ballX + BALL_SIZE / 2,
-          ballY + BALL_SIZE / 2,
-          BALL_SIZE / 2,
+          ballX + ballSize / 2,
+          ballY + ballSize / 2,
+          ballSize / 2,
           0,
           Math.PI * 2,
         );
         ctx.clip();
-        ctx.drawImage(ballImage, ballX, ballY, BALL_SIZE, BALL_SIZE);
+        ctx.drawImage(ballImage, ballX, ballY, ballSize, ballSize);
         ctx.restore();
       } else {
         ctx.fillStyle = "#95B354";
-        ctx.fillRect(ballX, ballY, BALL_SIZE, BALL_SIZE);
+        ctx.fillRect(ballX, ballY, ballSize, ballSize);
       }
 
       ctx.fillStyle = "#EEEDEB";
-      ctx.font = "16px sans-serif";
-      ctx.fillText(`${playerScore} - ${cpuScore}`, WIDTH / 2 - 16, 20);
+      ctx.font = `${Math.max(16, Math.round(16 * scale))}px sans-serif`;
+      ctx.fillText(`${playerScore} - ${cpuScore}`, width / 2 - 16 * scale, 24 * scale);
 
       if (!alive) {
         onWin();
@@ -155,20 +181,22 @@ export const Pong = ({ photos, onWin }: PongProps) => {
       window.cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("resize", onResize);
     };
   }, [photos, onWin]);
 
   return (
-    <div>
-      <canvas
-        ref={canvasRef}
-        width={WIDTH}
-        height={HEIGHT}
-        style={{ width: "100%", maxWidth: WIDTH, display: "block" }}
-      />
-      <Text c="dimmed" size="sm" mt="xs">
-        Pil upp/ner styr. Först till {WIN_SCORE} poäng vinner.
-      </Text>
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 };
