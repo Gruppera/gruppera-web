@@ -72,6 +72,7 @@ export const Pong = ({ photos, onWin }: PongProps) => {
         started = true;
         return;
       }
+      if (event.key.startsWith("Arrow")) event.preventDefault();
       if (event.key === "ArrowUp") moveUp = true;
       if (event.key === "ArrowDown") moveDown = true;
     };
@@ -184,7 +185,7 @@ export const Pong = ({ photos, onWin }: PongProps) => {
         ctx.drawImage(ballImage, ballX, ballY, ballSize, ballSize);
         ctx.restore();
         ctx.strokeStyle = ballBorderColor;
-        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(
           ballX + ballSize / 2,

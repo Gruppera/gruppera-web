@@ -10,11 +10,14 @@ const MAX_ROWS = 9;
 const MATCH_SIZE = 3;
 const BASE_SHOOTER_SPEED = 6;
 const BASE_BULLET_SPEED = 9;
+const BUBBLE_RADIUS_FACTOR = 0.45 * 0.25; // 1/4 the previous bubble size
+const SARA_RADIUS_FACTOR = 0.55; // the "holder" — bigger than the bubbles
 
 type Cell = number | null; // index into `images`, or null (empty)
 
 type BubblesProps = {
   photos: string[];
+  saraPhoto: string;
   onWin: () => void;
 };
 
@@ -24,7 +27,7 @@ type BubblesProps = {
  * picks a column and always fires straight up; matching 3+ of the same face
  * pops them.
  */
-export const Bubbles = ({ photos, onWin }: BubblesProps) => {
+export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -40,6 +43,8 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
       image.src = src;
       return image;
     });
+    const saraImage = new Image();
+    saraImage.src = saraPhoto;
 
     let width = 400;
     let height = 400;
@@ -82,10 +87,12 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         started = true;
         return;
       }
+      if (event.key.startsWith("Arrow") || event.key === " ") {
+        event.preventDefault();
+      }
       if (event.key === "ArrowLeft") moveLeft = true;
       if (event.key === "ArrowRight") moveRight = true;
       if (event.key === " ") {
-        event.preventDefault();
         if (!flying && grid[0][shooterCol] === null) {
           flying = {
             col: shooterCol,
@@ -186,7 +193,7 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
           if (face === null) continue;
           const cx = col * cell + cell / 2;
           const cy = row * cell + cell / 2;
-          const r = cell * 0.45;
+          const r = cell * BUBBLE_RADIUS_FACTOR;
           const image = images[face];
           ctx.save();
           ctx.beginPath();
@@ -200,7 +207,7 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
           }
           ctx.restore();
           ctx.strokeStyle = colorForIndex(face);
-          ctx.lineWidth = Math.max(1, 2 * scale);
+          ctx.lineWidth = Math.max(0.75, 1 * scale);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.stroke();
@@ -214,7 +221,7 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
       if (flying) {
         const fx = flying.col * cell + cell / 2;
         const fy = flying.y + cell / 2;
-        const r = cell * 0.45;
+        const r = cell * BUBBLE_RADIUS_FACTOR;
         const image = images[flying.face];
         ctx.save();
         ctx.beginPath();
@@ -228,12 +235,38 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         }
         ctx.restore();
         ctx.strokeStyle = colorForIndex(flying.face);
-        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(fx, fy, r, 0, Math.PI * 2);
         ctx.stroke();
       } else {
-        const r = cell * 0.45;
+        // Sara is the holder: her circle sits at the shooter spot, with the
+        // next bubble to be fired held inside it.
+        const sr = cell * SARA_RADIUS_FACTOR;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(shooterX, shooterY, sr, 0, Math.PI * 2);
+        ctx.clip();
+        if (saraImage.complete && saraImage.naturalWidth > 0) {
+          ctx.drawImage(
+            saraImage,
+            shooterX - sr,
+            shooterY - sr,
+            sr * 2,
+            sr * 2,
+          );
+        } else {
+          ctx.fillStyle = "#C3CED9";
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.strokeStyle = "#E0CCBE";
+        ctx.lineWidth = Math.max(0.75, 1 * scale);
+        ctx.beginPath();
+        ctx.arc(shooterX, shooterY, sr, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const r = cell * BUBBLE_RADIUS_FACTOR;
         const image = images[nextFace];
         ctx.save();
         ctx.beginPath();
@@ -247,9 +280,9 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         }
         ctx.restore();
         ctx.strokeStyle = colorForIndex(nextFace);
-        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.lineWidth = Math.max(0.75, 0.9 * scale);
         ctx.beginPath();
-        ctx.arc(shooterX, shooterY, r + 3 * scale, 0, Math.PI * 2);
+        ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
         ctx.stroke();
       }
 
@@ -270,7 +303,7 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, onWin]);
+  }, [photos, saraPhoto, onWin]);
 
   return (
     <div

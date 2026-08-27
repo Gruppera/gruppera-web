@@ -118,10 +118,12 @@ export const SpaceInvaders = ({
         started = true;
         return;
       }
+      if (event.key.startsWith("Arrow") || event.key === " ") {
+        event.preventDefault();
+      }
       if (event.key === "ArrowLeft") moveLeft = true;
       if (event.key === "ArrowRight") moveRight = true;
       if (event.key === " ") {
-        event.preventDefault();
         bullets.push({ x: playerX + playerWidth() / 2, y: height - 30 * scale });
       }
     };
@@ -257,7 +259,7 @@ export const SpaceInvaders = ({
           ctx.fill();
         }
         ctx.strokeStyle = invader.borderColor;
-        ctx.lineWidth = Math.max(1, 1.5 * scale);
+        ctx.lineWidth = Math.max(0.75, 0.9 * scale);
         ctx.beginPath();
         ctx.arc(icx, icy, ir, 0, Math.PI * 2);
         ctx.stroke();
@@ -283,7 +285,7 @@ export const SpaceInvaders = ({
         ctx.drawImage(playerImage, playerX, pcy - pr, pWidth, pWidth);
         ctx.restore();
         ctx.strokeStyle = "#E0CCBE";
-        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
         ctx.stroke();

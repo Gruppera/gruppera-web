@@ -6,7 +6,6 @@ import { colorForIndex } from "./palette";
 
 const COLS = 24;
 const ROWS = 18;
-const WIN_SCORE = 5;
 const BASE_CELL = 20;
 const BASE_TICK_MS = 190;
 const MIN_TICK_MS = 70;
@@ -15,10 +14,15 @@ type Point = { x: number; y: number };
 
 type SnakeProps = {
   photos: string[];
+  saraPhoto: string;
   onWin: () => void;
 };
 
-export const Snake = ({ photos, onWin }: SnakeProps) => {
+/**
+ * Sara is always the head. Body segments are the consultants she's eaten so
+ * far, in order (most recent right behind the head). Goal: eat everyone.
+ */
+export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -28,6 +32,15 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
     if (!container || !canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const WIN_SCORE = photos.length;
+    const saraImage = new Image();
+    saraImage.src = saraPhoto;
+    const foodImages = photos.map((src) => {
+      const image = new Image();
+      image.src = src;
+      return image;
+    });
 
     let cell = BASE_CELL;
     let tickMs = BASE_TICK_MS;
@@ -45,14 +58,17 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
     window.addEventListener("resize", resize);
 
     let snake: Point[] = [{ x: 8, y: 8 }];
+    // segmentFaces[i] is the eaten-face index for snake[i + 1] (the head,
+    // snake[0], has no entry — it's always drawn as Sara).
+    let segmentFaces: number[] = [];
+    let eaten = new Set<number>();
     let dir: Point = { x: 1, y: 0 };
     let nextDir = dir;
     let score = 0;
     let alive = true;
     let started = false;
     let food: Point = { x: 12, y: 8 };
-    let foodImage = new Image();
-    let foodColor = colorForIndex(0);
+    let foodIndex = 0;
 
     const randomCell = (): Point => ({
       x: Math.floor(Math.random() * COLS),
@@ -61,10 +77,10 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
 
     const placeFood = () => {
       food = randomCell();
-      const index = Math.floor(Math.random() * photos.length);
-      foodImage = new Image();
-      foodImage.src = photos[index];
-      foodColor = colorForIndex(index);
+      const remaining = photos
+        .map((_, index) => index)
+        .filter((index) => !eaten.has(index));
+      foodIndex = remaining[Math.floor(Math.random() * remaining.length)];
     };
     placeFood();
 
@@ -74,6 +90,7 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
         started = true;
         return;
       }
+      if (event.key.startsWith("Arrow")) event.preventDefault();
       if (event.key === "ArrowUp" && dir.y === 0) nextDir = { x: 0, y: -1 };
       if (event.key === "ArrowDown" && dir.y === 0) nextDir = { x: 0, y: 1 };
       if (event.key === "ArrowLeft" && dir.x === 0) nextDir = { x: -1, y: 0 };
@@ -81,34 +98,50 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
     };
     window.addEventListener("keydown", onKeyDown);
 
+    const drawPortrait = (
+      cx: number,
+      cy: number,
+      r: number,
+      image: HTMLImageElement,
+      borderColor: string,
+    ) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+      if (image.complete && image.naturalWidth > 0) {
+        ctx.drawImage(image, cx - r, cy - r, r * 2, r * 2);
+      } else {
+        ctx.fillStyle = "#C3CED9";
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = Math.max(0.75, 1 * (cell / BASE_CELL));
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    };
+
     const draw = () => {
       ctx.fillStyle = "#0D0D0C";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#95B354";
-      snake.forEach((segment) => {
-        ctx.fillRect(segment.x * cell, segment.y * cell, cell - 2, cell - 2);
+      const r = cell / 2 - 1;
+      snake.forEach((segment, index) => {
+        const cx = segment.x * cell + cell / 2;
+        const cy = segment.y * cell + cell / 2;
+        if (index === 0) {
+          drawPortrait(cx, cy, r, saraImage, "#E0CCBE");
+        } else {
+          const faceIndex = segmentFaces[index - 1];
+          drawPortrait(cx, cy, r, foodImages[faceIndex], colorForIndex(faceIndex));
+        }
       });
 
-      if (foodImage.complete && foodImage.naturalWidth > 0) {
-        const fcx = food.x * cell + cell / 2;
-        const fcy = food.y * cell + cell / 2;
-        const fr = cell / 2 - 1;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(fcx, fcy, fr, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(foodImage, food.x * cell, food.y * cell, cell, cell);
-        ctx.restore();
-        ctx.strokeStyle = foodColor;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(fcx, fcy, fr, 0, Math.PI * 2);
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = "#EEEDEB";
-        ctx.fillRect(food.x * cell, food.y * cell, cell, cell);
-      }
+      const fcx = food.x * cell + cell / 2;
+      const fcy = food.y * cell + cell / 2;
+      drawPortrait(fcx, fcy, r, foodImages[foodIndex], colorForIndex(foodIndex));
 
       ctx.fillStyle = "#EEEDEB";
       ctx.font = `${Math.max(14, Math.round(cell * 0.7))}px sans-serif`;
@@ -133,10 +166,13 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
         snake.some((segment) => segment.x === head.x && segment.y === head.y)
       ) {
         snake = [{ x: 8, y: 8 }];
+        segmentFaces = [];
+        eaten = new Set<number>();
         dir = { x: 1, y: 0 };
         nextDir = dir;
         score = 0;
         started = false;
+        placeFood();
         draw();
         return;
       }
@@ -144,6 +180,8 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
       snake.unshift(head);
 
       if (head.x === food.x && head.y === food.y) {
+        segmentFaces.unshift(foodIndex);
+        eaten.add(foodIndex);
         score += 1;
         if (score >= WIN_SCORE) {
           alive = false;
@@ -178,7 +216,7 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, onWin]);
+  }, [photos, saraPhoto, onWin]);
 
   return (
     <div

@@ -37,7 +37,7 @@ const GAME_TITLES: Record<Game, string> = {
 };
 
 const GAME_HINTS: Record<Game, string> = {
-  snake: "Pilarna styr. Ät 5 kollegor för att vinna.",
+  snake: "Pilarna styr. Sara är ormen — ät alla kollegor för att vinna.",
   invaders:
     "Pilarna flyttar, mellanslag skjuter. Du är den som skjuter — kollegorna skjuter tillbaka. Skjut ner alla för att vinna.",
   pong: "Pil upp/ner styr. Först till 3 poäng vinner.",
@@ -192,21 +192,42 @@ export const SaraEasterEgg = ({
 
       <Modal
         opened={game !== null}
-      onClose={() => {}}
-      withCloseButton={false}
-      closeOnClickOutside={false}
-      closeOnEscape={false}
-      fullScreen
-      zIndex={1001}
-      title={game ? `Klara ${GAME_TITLES[game]} för att komma vidare` : ""}
-    >
-      <Stack h="calc(100vh - 60px)" gap="xs">
+        onClose={() => {}}
+        withCloseButton={false}
+        closeOnClickOutside={false}
+        closeOnEscape={false}
+        fullScreen
+        zIndex={1001}
+        title={game ? `Klara ${GAME_TITLES[game]} för att komma vidare` : ""}
+        styles={{
+          inner: { overflow: "hidden" },
+          content: {
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+            overflow: "hidden",
+          },
+          body: {
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflow: "hidden",
+            padding: "var(--mantine-spacing-md)",
+          },
+        }}
+      >
+      <Stack h="100%" gap="xs" style={{ minHeight: 0 }}>
         <Text c="dimmed" size="sm">
           {game ? GAME_HINTS[game] : ""} Sidan är scramblad tills du vinner.
         </Text>
         <Box style={{ flex: 1, minHeight: 0 }}>
           {game === "snake" && (
-            <Snake photos={colleaguePhotos} onWin={handleWin} />
+            <Snake
+              photos={colleaguePhotos}
+              saraPhoto={saraPhoto}
+              onWin={handleWin}
+            />
           )}
           {game === "invaders" && (
             <SpaceInvaders
@@ -217,7 +238,11 @@ export const SaraEasterEgg = ({
           )}
           {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
           {game === "bubbles" && (
-            <Bubbles photos={colleaguePhotos} onWin={handleWin} />
+            <Bubbles
+              photos={colleaguePhotos}
+              saraPhoto={saraPhoto}
+              onWin={handleWin}
+            />
           )}
         </Box>
       </Stack>
