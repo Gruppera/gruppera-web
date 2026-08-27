@@ -41,22 +41,16 @@ type SaraEasterEggProps = {
   saraPhoto: string;
 };
 
-const SARA_HREF = "/vilka-ar-vi/sara";
-
 /**
  * Content root (`#sara-page-content`) is server-rendered by page.tsx; this
  * component only reaches it via the DOM, so server elements never cross the
  * client/server serialization boundary as React children.
  *
- * The page is a copy of /vilka-ar-vi (the grid), so there's no separate
- * "Sara" photo/title to hang a trigger on — the trigger is Sara's own card
- * in the grid (its link points back to this same page, so intercepting it
- * costs no real navigation).
- *
- * Two-step lock: clicking Sara's card only scrambles the page. Trying to
- * navigate away (any other link inside the content, including grid cards
- * and peer links) while scrambled is blocked and opens the game — winning
- * replays the blocked navigation.
+ * The scramble fires the instant the page loads — no click needed. A tiny
+ * inline <script> in page.tsx already applies it before hydration; this
+ * effect just adopts that (or applies it itself as a fallback) and then
+ * watches for clicks. Trying to navigate away (any link inside the content)
+ * while scrambled is blocked and opens the game — winning lifts the block.
  */
 export const SaraEasterEgg = ({
   colleaguePhotos,
@@ -68,42 +62,31 @@ export const SaraEasterEgg = ({
   const pendingHrefRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
-    // Attaches synchronously, before paint — a plain useEffect fires after
-    // paint, which left a real window where a click landed on the anchor's
-    // native href before our handler existed (first click "just navigated").
-    // A tiny inline <script> in page.tsx covers the remaining gap before
-    // hydration; if it already scrambled the page, adopt that state here
-    // instead of re-triggering it.
+    // Fires synchronously before paint — a plain useEffect runs after paint,
+    // which left a window where a click could land before this ran.
     const content = document.getElementById("sara-page-content");
     if (!content) return;
+
     if (content.dataset.scrambled === "true") {
       scrambledRef.current = true;
+    } else {
+      scrambledRef.current = true;
+      content.dataset.scrambled = "true";
+      const effect = pickRandom(EFFECTS);
+      Object.assign(content.style, EFFECT_STYLE[effect]);
     }
 
     const onClick = (event: MouseEvent) => {
+      if (!scrambledRef.current) return;
       const target = event.target as HTMLElement;
       const link = target.closest("a");
       const href = link?.getAttribute("href");
       if (!link || !href) return;
 
-      if (href === SARA_HREF) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!scrambledRef.current) {
-          scrambledRef.current = true;
-          content.dataset.scrambled = "true";
-          const effect = pickRandom(EFFECTS);
-          Object.assign(content.style, EFFECT_STYLE[effect]);
-        }
-        return;
-      }
-
-      if (scrambledRef.current) {
-        event.preventDefault();
-        event.stopPropagation();
-        pendingHrefRef.current = href;
-        setGame(pickRandom(GAMES));
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      pendingHrefRef.current = href;
+      setGame(pickRandom(GAMES));
     };
 
     content.addEventListener("click", onClick, true);
