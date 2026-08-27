@@ -1,66 +1,77 @@
 [
   {
     "name": "Daniel",
+    "slug": "daniel",
     "about": "Daniel är senior arkitekt och utvecklare med lång erfarenhet av att designa och bygga affärskritiska system på Microsoftplattformen. Han kombinerar djup teknisk kompetens med fokus på affärsnytta, kvalitet och hållbar arkitektur. Daniel tar ofta roller som arkitekt, lead developer eller mentor och trivs i komplexa miljöer där teknik och verksamhet möts.",
     "focus": "Arkitektur & senior utveckling",
     "photo": "daniel.png"
   },
   {
     "name": "Gunnar",
+    "slug": "gunnar",
     "about": "Gunnar är senior fullstackutvecklare med särskilt fokus på moderna webbapplikationer och API-lösningar. Han har arbetat som både utvecklare, arkitekt och team lead och är van att ta ansvar för tekniska vägval och helhetslösningar. Med lång erfarenhet av agila arbetssätt bidrar han till stabila leveranser och starka team.",
     "focus": "Senior fullstack",
     "photo": "gunnar.png"
   },
   {
     "name": "Jonathan",
+    "slug": "jonathan",
     "about": "Jonathan är senior utvecklare med bred erfarenhet av backend-tunga system och molnbaserade lösningar. Han har arbetat med mikrotjänster, integrationer och CI/CD i komplexa organisationer med höga krav på säkerhet och kvalitet. Jonathan kombinerar tekniskt djup med ett strukturerat arbetssätt och har även erfarenhet som Scrum Master.",
     "focus": "Senior backend",
     "photo": "jonathan.png"
   },
   {
     "name": "Mattias",
+    "slug": "mattias",
     "about": "Mattias är systemutvecklare med lång erfarenhet av både app- och webbutveckling i större organisationer. Han har arbetat med mikrotjänster, eventdriven arkitektur och moderna frontendramverk med höga krav på prestanda och användarupplevelse. Mattias är noggrann, pragmatisk och van att ta ansvar i komplexa miljöer.",
     "focus": "Senior Fullstack",
     "photo": "mattias.png"
   },
   {
     "name": "Olle",
+    "slug": "olle",
     "about": "Olle är agil coach och engineering manager med lång erfarenhet av att leda utvecklingsteam och stärka samarbeten. Han har arbetat som Scrum Master, teamcoach och ledare i både produkt- och konsultorganisationer. Olle kombinerar struktur och tydlighet med ett coachande förhållningssätt som får team att växa och leverera.",
     "focus": "Agil coachning & engineering manager",
     "photo": "olle.png"
   },
   {
     "name": "Shane",
+    "slug": "shane",
     "about": "Shane är senior systemutvecklare och arkitekt med gedigen erfarenhet av .NET, mikrotjänster och molnbaserade lösningar. Han har arbetat med allt från legacy-modernisering till skalbara e-handelsplattformar i Kubernetes och AWS. Med stark kompetens inom arkitektur, CI/CD och DevOps driver han tekniska förbättringar som minskar teknisk skuld och stärker leveransförmågan.",
     "focus": "Systemarkitektur & utveckling",
     "photo": "shane.png"
   },
   {
     "name": "Anton",
+    "slug": "anton",
     "about": "Anton är fullstackutvecklare med erfarenhet av moderna webbapplikationer byggda i .NET och JavaScript-ramverk. Han har arbetat i både mindre team och större organisationer med ansvar för hela utvecklingskedjan – från arkitektur och implementation till CI/CD och molndrift. Anton är en lagspelare som värdesätter kvalitet och tydlig struktur i kodbasen.",
     "focus": "fullstack",
     "photo": "anton.png"
   },
   {
     "name": "Christopher",
+    "slug": "christopher",
     "about": "Christopher är senior utvecklare och arkitekt med djup erfarenhet av .NET, mikrotjänster och molnplattformar. Han har arbetat i både mindre team och större organisationer med ansvar för systemdesign, integrationer och CI/CD-lösningar. Med ett agilt arbetssätt och stark helhetssyn skapar han hållbara och skalbara lösningar.",
     "focus": "arkitektur & senior fullstack",
     "photo": "christopher.png"
   },
   {
     "name": "Sara",
+    "slug": "sara",
     "about": "Sara är VD på Gruppera med ansvar för bolagets strategi, tillväxt och kultur. Hon har bakgrund som agil coach och certifierad Scrum Master, där hon arbetat med att stärka team, ledarskap och leveransförmåga i både svenska och internationella miljöer. Idag kombinerar hon sitt coachande ledarskap med affärsutveckling och långsiktiga kundrelationer för att driva bolaget framåt.",
     "focus": "VD",
     "photo": "sara.png"
   },
   {
     "name": "Henrik",
+    "slug": "henrik",
     "about": "Henrik är teknisk projektledare med lång erfarenhet från bank och finans, där säkerhet, regelverk och komplexa IT-miljöer står i centrum. Han leder uppdrag med tydlig struktur och fokus på kvalitet, riskhantering och samordning mellan verksamhet och IT. Henrik är van att arbeta i agila miljöer och i initiativ med höga regulatoriska krav.",
     "focus": "IT-projektledning",
     "photo": "henrik.png"
   },
   {
     "name": "James",
+    "slug": "james",
     "about": "James är utvecklare med erfarenhet av både fullstack- och backendutveckling i moderna systemmiljöer. Han har arbetat med .NET-baserade lösningar, API:er, databaser och molntjänster, ofta med ett brett systemansvar och nära samarbete med både team och verksamhet. James är noggrann, lär sig snabbt och bidrar med ett strukturerat arbetssätt samt en stark laganda i utvecklingsteam.",
     "focus": "Backendutveckling",
     "photo": "james.png"

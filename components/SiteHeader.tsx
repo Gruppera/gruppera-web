@@ -68,7 +68,9 @@ export const SiteHeader = () => {
             </Box>
             <Group gap="md" wrap="wrap" visibleFrom="sm">
               {links.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive =
+                  pathname === link.href ||
+                  pathname.startsWith(`${link.href}/`);
                 return (
                   <Group key={link.href} gap={6} align="center">
                     <Box
@@ -135,7 +137,8 @@ export const SiteHeader = () => {
       >
         <Stack gap="md" pt="sm">
           {links.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive =
+              pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Group key={link.href} gap={8} align="center">
                 <Box
