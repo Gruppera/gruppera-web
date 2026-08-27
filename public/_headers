@@ -1,0 +1,20 @@
+# Cache-policy för gruppera.net (Cloudflare Workers static assets).
+#
+# Next kopierar public/ rakt in i out/, och out/ är den assets-katalog som
+# wrangler.jsonc pekar på — så den här filen hamnar i out/_headers, vilket är
+# där Workers letar efter den. Filen serveras inte själv som en asset.
+#
+# OBS: regler som matchar samma sökväg ÄRVER varandras headers, de skriver inte
+# över. Två Cache-Control-rader på samma fil slås ihop med komma. Därför måste
+# /_next/static/* först ta bort den ärvda raden med "! " innan den sätter sin egen.
+
+# Sidor cachas aldrig. Varje navigering frågar Cloudflare, så en push till main
+# syns vid nästa omladdning.
+/*
+  Cache-Control: no-store, must-revalidate
+
+# Bundlarna har innehållshash i filnamnet och byter namn när innehållet ändras,
+# så de kan cachas hårt utan att någon riskerar att se en gammal version.
+/_next/static/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
