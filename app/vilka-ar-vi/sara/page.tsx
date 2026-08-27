@@ -2,7 +2,6 @@ import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
 import mockData from "@/app/mockdata.json";
 import { ConsultantGrid } from "@/features/consultants/components/ConsultantGrid";
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { consultantListSchema } from "@/features/consultants/schemas";
 
 import { SaraEasterEgg } from "./SaraEasterEgg";
@@ -37,8 +36,6 @@ export default function SaraPage() {
             </Stack>
 
             <ConsultantGrid consultants={sortedConsultants} />
-
-            <ConsultantPeers currentSlug="sara" />
           </Stack>
         </div>
 
