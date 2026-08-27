@@ -1,7 +1,7 @@
+import Link from "next/link";
 import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
 import mockData from "@/app/mockdata.json";
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { consultantListSchema } from "@/features/consultants/schemas";
 
 import { MemoryGame, type MemoryPerson } from "./MemoryGame";
@@ -50,7 +50,17 @@ export default function DanielPage() {
 
           <MemoryGame people={people} ownSlug={OWN_SLUG} />
 
-          <ConsultantPeers currentSlug={OWN_SLUG} />
+          {/* No "Fler konsulter" grid — the cards are the navigation. This back  */}
+          {/* link is the one path that does not require playing, and it leads to */}
+          {/* the index, which links to everyone.                                 */}
+          {/* Link is the element rather than Mantine's `component` prop: passing */}
+          {/* a component through a prop from a server component tries to         */}
+          {/* serialise a function across the client boundary and fails the build. */}
+          <Link href="/vilka-ar-vi" style={{ textDecoration: "none", width: "fit-content" }}>
+            <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
+              ← Tillbaka till alla konsulter
+            </Text>
+          </Link>
         </Stack>
       </Container>
     </Box>

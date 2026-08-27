@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import {
   AspectRatio,
@@ -54,13 +61,30 @@ const shuffle = (cards: MemoryCard[], random: () => number): MemoryCard[] => {
 };
 
 /**
- * The opening deal is deterministic on purpose. This page is prerendered by the
- * static export, so a Math.random() deal during render would differ between the
- * server HTML and the first client render and break hydration. A fixed seed gives
- * the same well-scrambled board in both. "Blanda om" then reshuffles for real,
- * which is safe because it only ever runs from a click.
+ * Seed used for the prerendered HTML and the first client render only. The board
+ * reshuffles to a per-visit random deal the moment hydration finishes.
+ *
+ * It has to be deterministic: this page is prerendered by the static export, so a
+ * Math.random() deal during the first render would differ between the server HTML
+ * and the client and break hydration. Face-down cards are identical, so the
+ * hand-off is invisible.
  */
 const OPENING_SEED = 20260827;
+
+/** `true` only after hydration, without a setState inside an effect. */
+const subscribeNever = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
+const randomSeed = (): number => Math.floor(Math.random() * 2 ** 31) || 1;
+
+/**
+ * One random seed per page load, picked when this module is evaluated in the
+ * browser — deliberately not during render, where Math.random() is impure and
+ * could reshuffle the board on any incidental re-render. Falls back to the fixed
+ * seed on the server so the prerendered HTML stays deterministic.
+ */
+const VISIT_SEED = typeof window === "undefined" ? OPENING_SEED : randomSeed();
 
 const seededRandom = (seed: number): (() => number) => {
   let state = seed >>> 0;
@@ -82,8 +106,16 @@ export const MemoryGame = ({ people, ownSlug }: MemoryGameProps) => {
     return new Map(deck.map((card) => [card.id, card]));
   }, [people]);
 
-  const [deck, setDeck] = useState<MemoryCard[]>(() =>
-    shuffle(buildDeck(people), seededRandom(OPENING_SEED)),
+  const hydrated = useSyncExternalStore(subscribeNever, clientSnapshot, serverSnapshot);
+
+  // Before hydration: the fixed seed, matching the prerendered HTML. After:
+  // this visit's random deal. "Blanda om" then overrides it with a fresh one.
+  const [reshuffleSeed, setReshuffleSeed] = useState<number | null>(null);
+  const seed = reshuffleSeed ?? (hydrated ? VISIT_SEED : OPENING_SEED);
+
+  const deck = useMemo(
+    () => shuffle(buildDeck(people), seededRandom(seed)),
+    [people, seed],
   );
   const [faceUp, setFaceUp] = useState<string[]>([]);
   const [matched, setMatched] = useState<string[]>([ownSlug]);
@@ -100,7 +132,7 @@ export const MemoryGame = ({ people, ownSlug }: MemoryGameProps) => {
 
   const reset = useCallback(() => {
     if (timer.current !== null) window.clearTimeout(timer.current);
-    setDeck((current) => shuffle(current, Math.random));
+    setReshuffleSeed(randomSeed());
     setFaceUp([]);
     setMatched([ownSlug]);
     setMoves(0);
