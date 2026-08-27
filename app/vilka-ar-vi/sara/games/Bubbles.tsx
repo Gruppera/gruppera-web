@@ -4,14 +4,13 @@ import { useEffect, useRef } from "react";
 
 import { colorForIndex } from "./palette";
 
-const COLS = 8;
-const INITIAL_ROWS = 4;
-const MAX_ROWS = 9;
+const COLS = 32;
+const INITIAL_ROWS = 16;
+const MAX_ROWS = 36;
 const MATCH_SIZE = 3;
 const BASE_SHOOTER_SPEED = 6;
 const BASE_BULLET_SPEED = 9;
-const BUBBLE_RADIUS_FACTOR = 0.45 * 0.25; // 1/4 the previous bubble size
-const SARA_RADIUS_FACTOR = 0.55; // the "holder" — bigger than the bubbles
+const BUBBLE_RADIUS_FACTOR = 0.5; // fills the cell — bubbles touch, no gaps
 
 type Cell = number | null; // index into `images`, or null (empty)
 
@@ -50,6 +49,10 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
     let height = 400;
     let cell = 40;
     let scale = 1;
+    // Movement/shot speed track the canvas' real size, not the grid density
+    // — COLS only controls how many (tightly-packed) bubbles fit, and
+    // shouldn't make the shooter or bullets feel slower.
+    let sizeScale = 1;
 
     const applySize = () => {
       width = container.clientWidth;
@@ -58,6 +61,7 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       canvas.height = height;
       cell = width / COLS;
       scale = cell / 40;
+      sizeScale = width / 400;
     };
     applySize();
 
@@ -152,8 +156,8 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
     const loop = () => {
       if (!alive) return;
 
-      const shooterSpeed = BASE_SHOOTER_SPEED * scale;
-      const bulletSpeed = BASE_BULLET_SPEED * scale;
+      const shooterSpeed = BASE_SHOOTER_SPEED * sizeScale * (COLS / 8);
+      const bulletSpeed = BASE_BULLET_SPEED * sizeScale;
 
       if (started && !flying) {
         if (moveLeft) shooterCol = Math.max(0, shooterCol - 0.15 * shooterSpeed);
@@ -247,47 +251,22 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         ctx.arc(fx, fy, r, 0, Math.PI * 2);
         ctx.stroke();
       } else {
-        // Sara is the holder: her circle sits at the shooter spot, with the
-        // next bubble to be fired held inside it.
-        const sr = cell * SARA_RADIUS_FACTOR;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(shooterX, shooterY, sr, 0, Math.PI * 2);
-        ctx.clip();
-        if (saraImage.complete && saraImage.naturalWidth > 0) {
-          ctx.drawImage(
-            saraImage,
-            shooterX - sr,
-            shooterY - sr,
-            sr * 2,
-            sr * 2,
-          );
-        } else {
-          ctx.fillStyle = "#C3CED9";
-          ctx.fill();
-        }
-        ctx.restore();
-        ctx.strokeStyle = "#E0CCBE";
-        ctx.lineWidth = Math.max(0.75, 1 * scale);
-        ctx.beginPath();
-        ctx.arc(shooterX, shooterY, sr, 0, Math.PI * 2);
-        ctx.stroke();
-
+        // Sara is the shooter — same size as a regular bubble, but (unlike
+        // the others) drawn with a green backdrop so she stands out at a
+        // glance while she's "holding" the next bubble to fire.
         const r = cell * BUBBLE_RADIUS_FACTOR;
-        const image = images[nextFace];
         ctx.save();
         ctx.beginPath();
         ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
         ctx.clip();
-        if (image?.complete && image.naturalWidth > 0) {
-          ctx.drawImage(image, shooterX - r, shooterY - r, r * 2, r * 2);
-        } else {
-          ctx.fillStyle = "#C3CED9";
-          ctx.fill();
+        ctx.fillStyle = "#95B354";
+        ctx.fill();
+        if (saraImage.complete && saraImage.naturalWidth > 0) {
+          ctx.drawImage(saraImage, shooterX - r, shooterY - r, r * 2, r * 2);
         }
         ctx.restore();
-        ctx.strokeStyle = colorForIndex(nextFace);
-        ctx.lineWidth = Math.max(0.75, 0.9 * scale);
+        ctx.strokeStyle = "#95B354";
+        ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
         ctx.stroke();
