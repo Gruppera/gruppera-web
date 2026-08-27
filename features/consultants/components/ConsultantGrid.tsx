@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   AspectRatio,
   Badge,
@@ -20,6 +21,8 @@ type ConsultantGridProps = {
 
 const ConsultantCard = ({ consultant }: { consultant: Consultant }) => (
   <Card
+    component={Link}
+    href={`/vilka-ar-vi/${consultant.slug}`}
     radius="md"
     p={{ base: "lg", md: "xl" }}
     style={{ backgroundColor: "var(--mantine-color-body)" }}
@@ -56,7 +59,7 @@ const ConsultantCard = ({ consultant }: { consultant: Consultant }) => (
 export const ConsultantGrid = ({ consultants }: ConsultantGridProps) => (
   <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl" verticalSpacing="xl">
     {consultants.map((consultant) => (
-      <ConsultantCard key={consultant.photo} consultant={consultant} />
+      <ConsultantCard key={consultant.slug} consultant={consultant} />
     ))}
   </SimpleGrid>
 );
