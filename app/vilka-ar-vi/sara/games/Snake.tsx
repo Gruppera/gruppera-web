@@ -8,8 +8,8 @@ const COLS = 24;
 const ROWS = 18;
 const WIN_SCORE = 5;
 const BASE_CELL = 20;
-const BASE_TICK_MS = 130;
-const MIN_TICK_MS = 45;
+const BASE_TICK_MS = 190;
+const MIN_TICK_MS = 70;
 
 type Point = { x: number; y: number };
 

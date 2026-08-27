@@ -24,8 +24,8 @@ const EFFECT_STYLE: Record<Effect, Partial<CSSStyleDeclaration>> = {
   flip: { transform: "scaleY(-1)" },
   mirror: { transform: "scaleX(-1)" },
   scramble: {
-    transform: "rotate(8deg) skew(6deg, 3deg)",
-    filter: "hue-rotate(140deg) saturate(1.6)",
+    transform: "rotate(18deg) skew(14deg, 10deg) scale(0.9)",
+    filter: "hue-rotate(160deg) saturate(2.2) contrast(1.2)",
   },
 };
 

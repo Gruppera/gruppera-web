@@ -66,12 +66,12 @@ export default function SaraPage() {
                 var effects = [
                   "scaleY(-1)",
                   "scaleX(-1)",
-                  "rotate(8deg) skew(6deg, 3deg)"
+                  "rotate(18deg) skew(14deg, 10deg) scale(0.9)"
                 ];
                 var effect = effects[Math.floor(Math.random() * effects.length)];
                 content.style.transform = effect;
                 if (effect.indexOf("rotate") === 0) {
-                  content.style.filter = "hue-rotate(140deg) saturate(1.6)";
+                  content.style.filter = "hue-rotate(160deg) saturate(2.2) contrast(1.2)";
                 }
               }, true);
             })();`,

@@ -9,8 +9,10 @@ const BASE_HEIGHT = 300;
 const BASE_PADDLE_WIDTH = 10;
 const BASE_PADDLE_HEIGHT = 60;
 const BASE_BALL_SIZE = 24;
-const BASE_PLAYER_SPEED = 6;
-const BASE_CPU_SPEED = 3.5;
+const BASE_PLAYER_SPEED = 4.2;
+const BASE_CPU_SPEED = 2.4;
+const BASE_BALL_VX = 2.8;
+const BASE_BALL_VY = 2.1;
 const WIN_SCORE = 3;
 
 type PongProps = {
@@ -46,8 +48,8 @@ export const Pong = ({ photos, onWin }: PongProps) => {
     let cpuY = height / 2 - (BASE_PADDLE_HEIGHT * scale) / 2;
     let ballX = width / 2;
     let ballY = height / 2;
-    let ballVX = 4 * scale;
-    let ballVY = 3 * scale;
+    let ballVX = BASE_BALL_VX * scale;
+    let ballVY = BASE_BALL_VY * scale;
     let playerScore = 0;
     let cpuScore = 0;
     let moveUp = false;
@@ -92,13 +94,13 @@ export const Pong = ({ photos, onWin }: PongProps) => {
       if (loser === "player") {
         // Loser serves: ball starts on their side, heading toward the winner.
         ballX = margin + paddleWidth + ballSize * 1.5;
-        ballVX = 4 * scale;
+        ballVX = BASE_BALL_VX * scale;
       } else {
         ballX = width - margin - paddleWidth - ballSize * 2.5;
-        ballVX = -4 * scale;
+        ballVX = -BASE_BALL_VX * scale;
       }
       ballY = height / 2;
-      ballVY = Math.random() > 0.5 ? 3 * scale : -3 * scale;
+      ballVY = Math.random() > 0.5 ? BASE_BALL_VY * scale : -BASE_BALL_VY * scale;
       setRandomBallImage();
     };
 
