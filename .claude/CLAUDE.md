@@ -66,6 +66,21 @@ These are static routes, not one shared `[slug]` template. That is deliberate:
 you get real design freedom inside your own page, and eleven people can work in
 parallel without ever touching the same file.
 
+## What the page is for
+
+**Your answer to "vilka är vi" — not your CV.**
+
+The grid card at `/vilka-ar-vi` already carries your name, your focus and your
+`about` text. A page that repeats them is a wasted click. This page is *your view
+of who Gruppera is*: what this group is like to work with, what we are actually
+good at, what you would say to someone who asked. Eleven people, eleven answers
+to the same question.
+
+**Make it fun.** A page someone enjoys is a page they finish. Games, toys,
+animations, easter eggs are all in scope — as long as they are yours and they say
+something. The one thing to avoid is decoration that would look identical on any
+other company's site.
+
 ## Who owns what
 
 | Path | Who edits it |
@@ -77,85 +92,79 @@ parallel without ever touching the same file.
 
 If your change touches a shared file, say so in the PR and explain why.
 
-## The skeleton — start from this
+## What is actually fixed
 
-Copy it, replace the name, focus and slug, then build inside the marked section.
+Four things. Everything else is yours, including the layout.
+
+1. **The file** — `app/vilka-ar-vi/<your-slug>/page.tsx`. That is what makes the route.
+2. **`metadata`** with the title `"<Name> — Gruppera"`, so tabs and shared links read
+   properly.
+3. **`<ConsultantPeers currentSlug="<your-slug>" />` somewhere on the page.** This is
+   what keeps all eleven pages reachable from one another. Do not reimplement it and
+   do not leave it out. *Where* it goes is up to you.
+4. **Somewhere, it is clear whose view this is.** Your name, in any form you like — a
+   heading, a signature, a sticker, a voice, a scoreboard. Someone arriving from a
+   search result should not have to guess whose page they are on. It does not have to
+   be at the top, and it does not have to be a `Title`.
+
+The minimum that satisfies all four:
 
 ```tsx
-import { Badge, Box, Container, Stack, Title } from "@mantine/core";
-
 import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
-import { ConsultantPhoto } from "@/features/consultants/components/ConsultantPhoto";
 
 export const metadata = {
   title: "Daniel — Gruppera",
-  description: "Arkitektur & senior utveckling",
+  description: "Daniels bild av Gruppera",
 };
 
 export default function DanielPage() {
   return (
-    <Box>
-      <Container size="lg" py={{ base: "lg", sm: "xl" }}>
-        <Stack gap="lg">
-          {/* FIXED — identity block, same on every page */}
-          <Stack gap="sm">
-            <Title order={1} fz={{ base: 36, md: 52 }}>
-              Daniel
-            </Title>
-            <Badge color="sprout" variant="light" size="sm">
-              Arkitektur &amp; senior utveckling
-            </Badge>
-          </Stack>
-
-          <ConsultantPhoto slug="daniel" />
-
-          {/* ---------- YOURS TO DESIGN ---------- */}
-          {/* Your story, your sections, your rhythm.                */}
-          {/* Mantine components and brand tokens only.              */}
-          {/* ------------------------------------- */}
-
-          {/* FIXED — every page ends the same way. Renders the link */}
-          {/* grid to all other consultants plus the back link.      */}
-          <ConsultantPeers currentSlug="daniel" />
-        </Stack>
-      </Container>
-    </Box>
+    <>
+      {/* everything here is yours */}
+      <ConsultantPeers currentSlug="daniel" />
+    </>
   );
 }
 ```
 
-### The three fixed parts
+### No longer required
 
-1. **Page shell** — `Box > Container size="lg" py={{ base: "lg", sm: "xl" }} > Stack gap="lg"`.
-   Identical to `/vilka-ar-vi` and `/blogg`, so pages line up when you navigate between them.
-2. **Identity block** — name as `Title order={1} fz={{ base: 36, md: 52 }}`,
-   focus as `Badge color="sprout" variant="light"`. Nothing above the name.
-3. **`<ConsultantPeers currentSlug="…" />` last** — this is what makes every page
-   reachable from every other page. Do not replace it with your own version and
-   do not leave it out.
+The earlier version of this file mandated a `Title order={1}` name plus a `sprout`
+focus `Badge` above a portrait, inside a `Box > Container > Stack` shell.
+**None of that is required any more.** Use those pieces if they suit your page; drop
+them if they get in the way. `<ConsultantPhoto slug="…" />` is available and optional.
 
-Also set `metadata` with the title `"<Name> — Gruppera"`, so shared links read properly.
-
-### What is yours
-
-Everything between the photo and the peer list. Sections, ordering, quotes,
-project highlights, a timeline, a list of what you like working on — your call.
-Same tokens, same components, your composition.
+If you *do* want a conventional shell, `Container size="lg" py={{ base: "lg", sm: "xl" }}`
+matches `/vilka-ar-vi` and `/blogg`, so the pages line up when navigating between them.
+`app/vilka-ar-vi/olle/page.tsx` is an example of the conventional treatment;
+`app/vilka-ar-vi/mattias/page.tsx` is an example of breaking out of it.
 
 ## Rules that keep eleven pages looking like one site
 
 - **Mantine only.** No new UI library, no Tailwind, no hand-rolled CSS frameworks.
 - **Brand tokens only** — `sprout`, `grafite`, `chamonix`, `moss`, `cloud`,
   `cognac`, `patch`. No hex codes in your page. `SPROUT` is the signal colour;
-  used everywhere it stops signalling anything.
+  used everywhere it stops signalling anything. Note that `ConsultantPeers` already
+  renders every colleague's name in `sprout`, so your page starts with a lot of
+  green before you add anything — reach for `moss`, `cloud`, `cognac` and `patch`.
+  In JS you can read the tokens off the root as
+  `--mantine-color-sprout-4`, `--mantine-color-grafite-7`, and so on.
 - **The type scale in `AGENTS.md`** — 52 / 36 / 28 / 22 / 18 / 16 for headings,
   16 / 15 / 14 / 12 for body. Do not invent sizes.
 - **Mantine `Image`, never `next/image`.** The site is a static export with image
   optimisation off; `next/image` will not do what you expect.
 - **Photos live in `public/photos/`** and are referenced as `/photos/<file>`.
-- **Server component by default.** Add `"use client"` only when you genuinely need
-  state, effects or event handlers — and say why in the PR.
-- **No new dependencies** without asking first. Everything you need is installed.
+  Some files in there are several megabytes and image optimisation is off, so
+  resize before you use one or you will ship it at full size.
+- **`"use client"` is fine for anything interactive** — a game, a canvas, a toy all
+  need it. Keep it in a child component so `page.tsx` itself stays a server
+  component, the way `app/vilka-ar-vi/mattias/StarField.tsx` does. Say in the PR
+  what needed it.
+- **If it moves, it respects `prefers-reduced-motion`** and cancels its animation
+  frame and listeners on unmount. `StarField.tsx` is the reference for both.
+- **No new dependencies** without asking first. Everything you need is installed —
+  including `@mantine/hooks` and `@mantine/carousel`, which cover most of what a
+  toy needs.
 
 ## Before you open your PR
 
@@ -164,7 +173,16 @@ npm run lint
 npm run build
 ```
 
-Both must pass, and `out/vilka-ar-vi/<your-slug>/` must exist afterwards.
+Both must pass, and the export must contain your page:
+
+```bash
+ls out/vilka-ar-vi/<your-slug>.html
+```
+
+Mind the shape — Next's static export writes `<your-slug>.html`, not
+`<your-slug>/index.html`. A `out/vilka-ar-vi/<your-slug>/` directory does also
+appear, but it holds only `__next.*` payload files, so checking for the directory
+passes without proving your page built. `wrangler.jsonc` documents the same thing.
 
 `npm test` **does not exist in this repo yet.** If you are asked whether tests
 pass, the honest answer is that there is no test runner — not that they passed.
@@ -172,26 +190,27 @@ pass, the honest answer is that there is no test runner — not that they passed
 Then look at it in a browser:
 
 - [ ] Your page renders at `/vilka-ar-vi/<your-slug>`
-- [ ] The peer list at the bottom reaches every other consultant
-- [ ] The back link returns to `/vilka-ar-vi`
+- [ ] The peer list reaches every other consultant, and the back link works
+- [ ] Someone landing cold can tell whose page this is
 - [ ] It holds up at mobile width, not just on your monitor
+- [ ] Anything that moves stops when you turn on reduce-motion
 - [ ] No console errors
 
 Paste the real output of `lint` and `build` into the PR body. A summary of a
 result is not a result.
 
-## Shared scaffolding — build once, before anyone starts their page
+## The shared scaffolding — already built
 
-None of the individual pages work until this exists. One person does it, on one
-branch, and it lands before the eleven page branches start:
+Landed in #3 and #5, so you do not need to build any of it. What you get:
 
-1. `slug` added to every entry in `app/mockdata.json`, plus `slug` in
-   `consultantSchema` with a uniqueness check on `consultantListSchema`.
-2. `features/consultants/components/ConsultantPhoto.tsx` — takes `slug`, renders
-   the portrait with the same `AspectRatio` + `Image fit="cover"` treatment the
-   grid cards use.
-3. `features/consultants/components/ConsultantPeers.tsx` — takes `currentSlug`,
-   reads `mockdata.json`, renders a divider, a "Fler konsulter" heading, a link
-   grid of everyone else sorted with `localeCompare(…, "sv")`, and the back link.
+1. **`slug` on every entry in `app/mockdata.json`**, validated in `consultantSchema`
+   with a uniqueness check on `consultantListSchema`. Import the JSON and
+   `consultantListSchema.parse(...)` if your page wants the team data — a quiz, a
+   roster, a scoreboard, whatever.
+2. **`ConsultantPhoto.tsx`** — takes `slug`, renders the portrait with the same
+   `AspectRatio` + `Image fit="cover"` treatment as the grid cards. Optional.
+3. **`ConsultantPeers.tsx`** — takes `currentSlug`, renders a divider, a
+   "Fler konsulter" heading, a link grid of everyone else sorted with
+   `localeCompare(…, "sv")`, and the back link. **Required.**
 4. `ConsultantGrid` cards link to `/vilka-ar-vi/<slug>`.
 5. `SiteHeader` keeps "Vilka är vi" marked active on `/vilka-ar-vi/*`.

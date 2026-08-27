@@ -1,6 +1,4 @@
-"use client";
-
-import { AspectRatio, Card, Image } from "@mantine/core";
+import { AspectRatio, Card, CardSection, Image } from "@mantine/core";
 
 import mockData from "@/app/mockdata.json";
 import { consultantListSchema } from "../schemas";
@@ -24,7 +22,7 @@ export const ConsultantPhoto = ({ slug }: ConsultantPhotoProps) => {
       style={{ backgroundColor: "var(--mantine-color-body)" }}
       maw={480}
     >
-      <Card.Section
+      <CardSection
         bg="sprout.6"
         style={{
           borderRadius: "var(--mantine-radius-md)",
@@ -38,7 +36,7 @@ export const ConsultantPhoto = ({ slug }: ConsultantPhotoProps) => {
             fit="cover"
           />
         </AspectRatio>
-      </Card.Section>
+      </CardSection>
     </Card>
   );
 };

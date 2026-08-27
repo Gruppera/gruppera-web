@@ -25,22 +25,23 @@ export const ConsultantPeers = ({ currentSlug }: ConsultantPeersProps) => {
         </Title>
         <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="md">
           {peers.map((peer) => (
-            <Text
+            <Link
               key={peer.slug}
-              component={Link}
               href={`/vilka-ar-vi/${peer.slug}`}
-              c="sprout.6"
-              fw={500}
-              size="sm"
+              style={{ textDecoration: "none" }}
             >
-              {peer.name}
-            </Text>
+              <Text c="sprout.6" fw={500} size="sm">
+                {peer.name}
+              </Text>
+            </Link>
           ))}
         </SimpleGrid>
       </Stack>
-      <Text component={Link} href="/vilka-ar-vi" c="dimmed" size="sm">
-        ← Tillbaka till Vilka är vi
-      </Text>
+      <Link href="/vilka-ar-vi" style={{ textDecoration: "none" }}>
+        <Text c="dimmed" size="sm">
+          ← Tillbaka till Vilka är vi
+        </Text>
+      </Link>
     </Stack>
   );
 };
