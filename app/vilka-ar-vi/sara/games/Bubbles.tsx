@@ -8,9 +8,10 @@ const COLS = 32;
 const INITIAL_ROWS = 16;
 const MAX_ROWS = 36;
 const MATCH_SIZE = 3;
-const BASE_SHOOTER_SPEED = 6;
 const BASE_BULLET_SPEED = 9;
 const BUBBLE_RADIUS_FACTOR = 0.5; // fills the cell — bubbles touch, no gaps
+const AIM_STEP = 0.035; // radians per frame while held
+const AIM_MAX = 1.2; // ~69 degrees off straight up, either side
 
 type Cell = number | null; // index into `images`, or null (empty)
 
@@ -21,10 +22,13 @@ type BubblesProps = {
 };
 
 /**
- * Simplified bubble-shooter: a square grid (not hex) so column-based
- * collision and 4-directional flood-fill matching stay simple. The shooter
- * picks a column and always fires straight up; matching 3+ of the same face
- * pops them.
+ * Bubble shooter on a square grid (not hex) so collision/adjacency stay
+ * simple. Sara is mixed into the same face pool as everyone else — the
+ * bubble about to be fired (which may be her) sits static at the bottom
+ * with a green backdrop, aimed with a rotating arrow rather than moving
+ * sideways. Landing snaps to the nearest empty cell touching an existing
+ * bubble (or the ceiling). Matching 3+ of the same face pops them, and any
+ * bubbles left disconnected from the ceiling afterward fall away too.
  */
 export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,21 +41,16 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const images = photos.map((src) => {
+    const images = [...photos, saraPhoto].map((src) => {
       const image = new Image();
       image.src = src;
       return image;
     });
-    const saraImage = new Image();
-    saraImage.src = saraPhoto;
 
     let width = 400;
     let height = 400;
     let cell = 40;
     let scale = 1;
-    // Movement/shot speed track the canvas' real size, not the grid density
-    // — COLS only controls how many (tightly-packed) bubbles fit, and
-    // shouldn't make the shooter or bullets feel slower.
     let sizeScale = 1;
 
     const applySize = () => {
@@ -75,15 +74,23 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       }
     }
 
-    let shooterCol = Math.floor(COLS / 2);
-    let moveLeft = false;
-    let moveRight = false;
+    const cellCenter = (row: number, col: number) => ({
+      x: col * cell + cell / 2,
+      y: row * cell + cell / 2,
+    });
+
+    let aim = 0;
+    let aimLeft = false;
+    let aimRight = false;
     let alive = true;
     let started = false;
 
-    // Flying bubble state: null when idle at the shooter.
-    let flying: { col: number; y: number; face: number } | null = null;
+    let flying: { x: number; y: number; vx: number; vy: number; face: number } | null =
+      null;
     let nextFace = randomFace();
+
+    const shooterX = () => width / 2;
+    const shooterY = () => height - cell / 2 - 4 * scale;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!started) {
@@ -94,23 +101,23 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       if (event.key.startsWith("Arrow") || event.key === " ") {
         event.preventDefault();
       }
-      if (event.key === "ArrowLeft") moveLeft = true;
-      if (event.key === "ArrowRight") moveRight = true;
-      if (event.key === " ") {
-        const col = Math.round(shooterCol);
-        if (!flying && grid[0][col] === null) {
-          flying = {
-            col,
-            y: height - cell,
-            face: nextFace,
-          };
-          nextFace = randomFace();
-        }
+      if (event.key === "ArrowLeft") aimLeft = true;
+      if (event.key === "ArrowRight") aimRight = true;
+      if (event.key === " " && !flying) {
+        const speed = BASE_BULLET_SPEED * sizeScale;
+        flying = {
+          x: shooterX(),
+          y: shooterY(),
+          vx: Math.sin(aim) * speed,
+          vy: -Math.cos(aim) * speed,
+          face: nextFace,
+        };
+        nextFace = randomFace();
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") moveLeft = false;
-      if (event.key === "ArrowRight") moveRight = false;
+      if (event.key === "ArrowLeft") aimLeft = false;
+      if (event.key === "ArrowRight") aimRight = false;
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -118,7 +125,7 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
     const onResize = () => applySize();
     window.addEventListener("resize", onResize);
 
-    const neighbors = (row: number, col: number) =>
+    const neighbors4 = (row: number, col: number) =>
       [
         [row - 1, col],
         [row + 1, col],
@@ -141,7 +148,7 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         seen.add(key);
         if (grid[r][c] !== face) continue;
         group.push([r, c]);
-        neighbors(r, c).forEach(([nr, nc]) => {
+        neighbors4(r, c).forEach(([nr, nc]) => {
           if (!seen.has(`${nr},${nc}`)) stack.push([nr, nc]);
         });
       }
@@ -152,33 +159,112 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       }
     };
 
+    // Bubbles no longer connected to the ceiling (row 0) fall away.
+    const dropFloating = () => {
+      const reachable: boolean[][] = Array.from({ length: MAX_ROWS }, () =>
+        Array(COLS).fill(false),
+      );
+      const stack: [number, number][] = [];
+      for (let col = 0; col < COLS; col += 1) {
+        if (grid[0][col] !== null) {
+          reachable[0][col] = true;
+          stack.push([0, col]);
+        }
+      }
+      while (stack.length > 0) {
+        const [r, c] = stack.pop() as [number, number];
+        neighbors4(r, c).forEach(([nr, nc]) => {
+          if (!reachable[nr][nc] && grid[nr][nc] !== null) {
+            reachable[nr][nc] = true;
+            stack.push([nr, nc]);
+          }
+        });
+      }
+      for (let r = 0; r < MAX_ROWS; r += 1) {
+        for (let c = 0; c < COLS; c += 1) {
+          if (grid[r][c] !== null && !reachable[r][c]) {
+            grid[r][c] = null;
+          }
+        }
+      }
+    };
+
+    const radius = () => cell * BUBBLE_RADIUS_FACTOR;
+
+    const settleBullet = (x: number, y: number, face: number) => {
+      const row = Math.max(0, Math.min(MAX_ROWS - 1, Math.round((y - cell / 2) / cell)));
+      const col = Math.max(0, Math.min(COLS - 1, Math.round((x - cell / 2) / cell)));
+      let target: [number, number] | null = grid[row][col] === null ? [row, col] : null;
+      if (!target) {
+        let bestDist = Infinity;
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            const rr = row + dr;
+            const cc = col + dc;
+            if (rr < 0 || rr >= MAX_ROWS || cc < 0 || cc >= COLS) continue;
+            if (grid[rr][cc] !== null) continue;
+            const center = cellCenter(rr, cc);
+            const dist = (center.x - x) ** 2 + (center.y - y) ** 2;
+            if (dist < bestDist) {
+              bestDist = dist;
+              target = [rr, cc];
+            }
+          }
+        }
+      }
+      if (!target) return;
+      const [tr, tc] = target;
+      grid[tr][tc] = face;
+      popMatches(tr, tc);
+      dropFloating();
+    };
+
     let raf = 0;
 
     const loop = () => {
       if (!alive) return;
 
-      const shooterSpeed = BASE_SHOOTER_SPEED * sizeScale * (COLS / 8);
-      const bulletSpeed = BASE_BULLET_SPEED * sizeScale;
+      if (started) {
+        if (aimLeft) aim = Math.max(-AIM_MAX, aim - AIM_STEP);
+        if (aimRight) aim = Math.min(AIM_MAX, aim + AIM_STEP);
 
-      if (started && !flying) {
-        if (moveLeft) shooterCol = Math.max(0, shooterCol - 0.15 * shooterSpeed);
-        if (moveRight)
-          shooterCol = Math.min(COLS - 1, shooterCol + 0.15 * shooterSpeed);
-      }
+        if (flying) {
+          const steps = 3;
+          for (let i = 0; i < steps && flying; i += 1) {
+            flying.x += flying.vx / steps;
+            flying.y += flying.vy / steps;
 
-      if (started && flying) {
-        flying.y -= bulletSpeed;
-        const row = Math.max(0, Math.round(flying.y / cell));
-        const landed =
-          flying.y <= 0 ||
-          (row + 1 < MAX_ROWS && grid[row + 1][flying.col] !== null);
-        if (landed) {
-          const landingRow = Math.min(MAX_ROWS - 1, Math.max(0, row));
-          if (grid[landingRow][flying.col] === null) {
-            grid[landingRow][flying.col] = flying.face;
-            popMatches(landingRow, flying.col);
+            const r = radius();
+            if (flying.x - r <= 0) {
+              flying.x = r;
+              flying.vx = Math.abs(flying.vx);
+            } else if (flying.x + r >= width) {
+              flying.x = width - r;
+              flying.vx = -Math.abs(flying.vx);
+            }
+
+            let landed = flying.y - r <= 0;
+            if (!landed) {
+              const row = Math.round((flying.y - cell / 2) / cell);
+              const col = Math.round((flying.x - cell / 2) / cell);
+              for (let dr = -1; dr <= 1 && !landed; dr += 1) {
+                for (let dc = -1; dc <= 1 && !landed; dc += 1) {
+                  const rr = row + dr;
+                  const cc = col + dc;
+                  if (rr < 0 || rr >= MAX_ROWS || cc < 0 || cc >= COLS) continue;
+                  if (grid[rr][cc] === null) continue;
+                  const center = cellCenter(rr, cc);
+                  const dist = Math.hypot(center.x - flying.x, center.y - flying.y);
+                  if (dist <= r * 1.9) landed = true;
+                }
+              }
+            }
+
+            if (landed) {
+              settleBullet(flying.x, flying.y, flying.face);
+              flying = null;
+            }
           }
-          flying = null;
         }
       }
 
@@ -199,13 +285,12 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       ctx.font = `${Math.max(14, Math.round(16 * scale))}px sans-serif`;
       ctx.fillText(`Kvar: ${remainingCount}`, 8, 20 * scale);
 
+      const r = radius();
       for (let row = 0; row < MAX_ROWS; row += 1) {
         for (let col = 0; col < COLS; col += 1) {
           const face = grid[row][col];
           if (face === null) continue;
-          const cx = col * cell + cell / 2;
-          const cy = row * cell + cell / 2;
-          const r = cell * BUBBLE_RADIUS_FACTOR;
+          const { x: cx, y: cy } = cellCenter(row, col);
           const image = images[face];
           ctx.save();
           ctx.beginPath();
@@ -226,21 +311,14 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         }
       }
 
-      const shooterCol0 = Math.round(shooterCol);
-      const shooterX = shooterCol0 * cell + cell / 2;
-      const shooterY = height - cell / 2;
-
       if (flying) {
-        const fx = flying.col * cell + cell / 2;
-        const fy = flying.y + cell / 2;
-        const r = cell * BUBBLE_RADIUS_FACTOR;
         const image = images[flying.face];
         ctx.save();
         ctx.beginPath();
-        ctx.arc(fx, fy, r, 0, Math.PI * 2);
+        ctx.arc(flying.x, flying.y, r, 0, Math.PI * 2);
         ctx.clip();
         if (image?.complete && image.naturalWidth > 0) {
-          ctx.drawImage(image, fx - r, fy - r, r * 2, r * 2);
+          ctx.drawImage(image, flying.x - r, flying.y - r, r * 2, r * 2);
         } else {
           ctx.fillStyle = "#C3CED9";
           ctx.fill();
@@ -249,29 +327,56 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         ctx.strokeStyle = colorForIndex(flying.face);
         ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
-        ctx.arc(fx, fy, r, 0, Math.PI * 2);
+        ctx.arc(flying.x, flying.y, r, 0, Math.PI * 2);
         ctx.stroke();
-      } else {
-        // Sara is the shooter — same size as a regular bubble, but (unlike
-        // the others) drawn with a green backdrop so she stands out at a
-        // glance while she's "holding" the next bubble to fire.
-        const r = cell * BUBBLE_RADIUS_FACTOR;
+      }
+
+      // Static shooter: the loaded bubble, always on a green backdrop, plus
+      // an arrow showing where it'll go.
+      const sx = shooterX();
+      const sy = shooterY();
+      if (!flying) {
+        const image = images[nextFace];
         ctx.save();
         ctx.beginPath();
-        ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.clip();
         ctx.fillStyle = "#95B354";
         ctx.fill();
-        if (saraImage.complete && saraImage.naturalWidth > 0) {
-          ctx.drawImage(saraImage, shooterX - r, shooterY - r, r * 2, r * 2);
+        if (image?.complete && image.naturalWidth > 0) {
+          ctx.drawImage(image, sx - r, sy - r, r * 2, r * 2);
         }
         ctx.restore();
-        ctx.strokeStyle = "#95B354";
-        ctx.lineWidth = Math.max(0.75, 1 * scale);
-        ctx.beginPath();
-        ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
-        ctx.stroke();
       }
+      ctx.strokeStyle = "#95B354";
+      ctx.lineWidth = Math.max(0.75, 1 * scale);
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const arrowLen = r * 2.2;
+      const tipX = sx + Math.sin(aim) * arrowLen;
+      const tipY = sy - Math.cos(aim) * arrowLen;
+      ctx.strokeStyle = "#EEEDEB";
+      ctx.lineWidth = Math.max(1, 1.5 * scale);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - r * 1.15);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+      const headAngle = Math.PI / 7;
+      const dirAngle = Math.atan2(tipY - sy, tipX - sx);
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(
+        tipX - Math.cos(dirAngle - headAngle) * r * 0.5,
+        tipY - Math.sin(dirAngle - headAngle) * r * 0.5,
+      );
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(
+        tipX - Math.cos(dirAngle + headAngle) * r * 0.5,
+        tipY - Math.sin(dirAngle + headAngle) * r * 0.5,
+      );
+      ctx.stroke();
 
       if (!started) {
         ctx.fillStyle = "rgba(13, 13, 12, 0.55)";
