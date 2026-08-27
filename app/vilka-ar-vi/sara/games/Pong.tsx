@@ -10,7 +10,8 @@ const BASE_PADDLE_WIDTH = 10;
 const BASE_PADDLE_HEIGHT = 60;
 const BASE_BALL_SIZE = 24;
 const BASE_PLAYER_SPEED = 4.2;
-const BASE_CPU_SPEED = 2.4;
+const BASE_CPU_SPEED = 1.4;
+const CPU_ERROR = 40;
 const BASE_BALL_VX = 2.8;
 const BASE_BALL_VY = 2.1;
 const WIN_SCORE = 3;
@@ -50,6 +51,8 @@ export const Pong = ({ photos, onWin }: PongProps) => {
     let ballY = height / 2;
     let ballVX = BASE_BALL_VX * scale;
     let ballVY = BASE_BALL_VY * scale;
+    let cpuWasApproaching = false;
+    let cpuError = 0;
     let playerScore = 0;
     let cpuScore = 0;
     let moveUp = false;
@@ -122,9 +125,19 @@ export const Pong = ({ photos, onWin }: PongProps) => {
         if (moveDown)
           playerY = Math.min(height - paddleHeight, playerY + playerSpeed);
 
+        // Imperfect tracking: the CPU only "notices" the ball direction
+        // change when it starts heading its way, and aims at a slightly
+        // wrong spot from then on — a real (beatable) opponent, not a wall.
+        const approaching = ballVX > 0;
+        if (approaching && !cpuWasApproaching) {
+          cpuError = (Math.random() - 0.5) * CPU_ERROR * scale;
+        }
+        cpuWasApproaching = approaching;
+
+        const cpuTarget = ballY + cpuError;
         const cpuCenter = cpuY + paddleHeight / 2;
-        if (cpuCenter < ballY - 8 * scale) cpuY += cpuSpeed;
-        if (cpuCenter > ballY + 8 * scale) cpuY -= cpuSpeed;
+        if (cpuCenter < cpuTarget - 14 * scale) cpuY += cpuSpeed;
+        if (cpuCenter > cpuTarget + 14 * scale) cpuY -= cpuSpeed;
         cpuY = Math.max(0, Math.min(height - paddleHeight, cpuY));
 
         ballX += ballVX;
