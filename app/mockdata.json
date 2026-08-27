@@ -75,5 +75,12 @@
     "about": "James är utvecklare med erfarenhet av både fullstack- och backendutveckling i moderna systemmiljöer. Han har arbetat med .NET-baserade lösningar, API:er, databaser och molntjänster, ofta med ett brett systemansvar och nära samarbete med både team och verksamhet. James är noggrann, lär sig snabbt och bidrar med ett strukturerat arbetssätt samt en stark laganda i utvecklingsteam.",
     "focus": "Backendutveckling",
     "photo": "james.png"
+  },
+  {
+    "name": "Sandra",
+    "slug": "sandra",
+    "about": "Sandra är UX Specialist som förenar kreativitet med strategiskt tänkande och skapar digitala upplevelser som är intuitiva, tillgängliga och genererar mätbar affärsnytta. Hon har ett helhetsperspektiv på kundresan och arbetar med allt från research och interaktionsdesign till prototyping, tillgänglighet och designsystem, och har även lett designarbete som Head of Design. Utöver det operativa arbetet är hon en engagerad mentor och utbildare, med erfarenhet som huvudlärare inom YH-utbildningar i UX och interaktionsdesign.",
+    "focus": "UX & tillgänglighet",
+    "photo": "sandra.png"
   }
 ]
