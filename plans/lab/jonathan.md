@@ -116,3 +116,118 @@ Manual, in `npm run dev`:
 
 `gh pr create` once verified. Body links this plan and pastes real `lint` +
 `build` output. Stop at the PR - no merge.
+
+---
+
+# Iteration 2 - layout tweak + mode toggle
+
+Same branch `lab/jonathan`. Iteration 1 is merged-ready at `43318f4`. Still one
+owned file plus (new) one client component beside it - no shared files touched.
+
+## Changes requested
+
+1. Smaller photo.
+2. "Teknisk ryggrad" moves to the right of the photo, as a vertical stack
+   (top -> bottom), instead of its own full-width section below.
+3. A toggle that appears next to the name **10 seconds** after load, switching
+   between **Corporate mode** (the current page) and **Personal mode**
+   (stub now, built in a later iteration).
+
+## 1 + 2 - photo and ryggrad side by side
+
+- Wrap `<ConsultantPhoto slug="jonathan" />` in `<Box maw={260}>`. The shared
+  component keeps its own `maw={480}`; the outer `Box` shrinks it further.
+  `ConsultantPhoto` is **not** edited.
+- Replace "standalone photo" + "separate Teknisk ryggrad section" with one row:
+  `<Flex direction={{ base: "column", sm: "row" }} gap="xl"
+   align={{ base: "stretch", sm: "flex-start" }}>`
+  - Left: the constrained photo `Box`.
+  - Right: `<Stack gap="sm" style={{ flex: 1 }}>` = `Title order={3}
+    fz={{ base: 22, md: 28 }}` "Teknisk ryggrad" then the three `BackboneNode`
+    papers top-to-bottom with `IconArrowDown` between them.
+- Delete the desktop horizontal variant (`Group wrap="nowrap"` +
+  `IconArrowRight`) and the `visibleFrom`/`hiddenFrom` split. One vertical
+  layout now, both breakpoints. `IconArrowRight` import removed.
+- `BackboneNode` component and the `backbone` array are unchanged and still
+  mapped once.
+- Free-zone order becomes: intro lede -> [photo | ryggrad] row -> Sammanhang
+  -> Blockquote. (The skeleton's photo-right-after-identity placement is inside
+  the yours-to-design zone, so moving it is allowed; noted here and in the PR.)
+
+## 3 - Corporate / Personal toggle
+
+The mode switch has to sit above the free-zone content, so a thin client island
+wraps it. Server content stays server-rendered - it is passed through as
+`children`.
+
+- **New file** `app/vilka-ar-vi/jonathan/ModeView.tsx`, `"use client"`:
+  - State `mode: "corporate" | "personal"`, default `"corporate"`.
+  - State `showToggle`, flipped true by
+    `useEffect(() => { const t = setTimeout(() => setShowToggle(true), 10000);
+     return () => clearTimeout(t); }, [])`.
+  - Renders the identity block itself (so the toggle can be adjacent):
+    `<Group gap="sm" align="center">` with
+    `Title order={1} fz={{ base: 36, md: 52 }}` "Jonathan" +
+    `<Transition mounted={showToggle} transition="pop" duration={200}>`
+    wrapping `<SegmentedControl size="xs" data={[
+      { label: "Corporate", value: "corporate" },
+      { label: "Personal", value: "personal" }]} value={mode}
+      onChange={(v) => setMode(v as ...)} />`.
+    Then the focus `Badge color="sprout" variant="light" size="sm"` below,
+    as today.
+  - Body: `mode === "corporate" ? children : <personal stub>`.
+  - Personal stub: `<Text c="dimmed" fz={{ base: 14, sm: 16 }}>Personligt läge -
+    kommer snart.</Text>`. Placeholder copy, not an invented bio fact.
+  - `SegmentedControl` gets **no `color` prop** (neutral) - sprout stays the
+    signal colour, reserved for the arrows and the badge.
+- **`page.tsx`** (stays a server component, keeps `export const metadata`):
+  - Shell unchanged: `Box > Container size="lg" py={{ base: "lg", sm: "xl" }} >
+    Stack gap="lg"`.
+  - Identity block markup moves out of `page.tsx` into `ModeView`.
+  - Renders `<ModeView>{/* corporate free zone JSX */}</ModeView>` then
+    `<ConsultantPeers currentSlug="jonathan" />` last, unchanged.
+  - `BackboneNode`, `backbone`, `contexts` stay in `page.tsx` and are rendered
+    inside the `children` passed to `ModeView`.
+
+### Deviations from the shared skeleton (call out in PR)
+
+- The "FIXED - identity block" now renders inside a client component and has a
+  control next to the name. Still name-on-top, still `Title order={1}` + sprout
+  `Badge`; nothing added above the name. Scoped to this one page.
+- `page.tsx` gains a sibling client file in the same owned directory. No shared
+  file changes.
+
+## Constraints check (unchanged from iteration 1 plus)
+
+- Mantine only: `Flex`, `SegmentedControl`, `Transition`, `Group` are all
+  `@mantine/core`. No new dependency.
+- `"use client"` is justified: 10s timer + toggle state + event handler. Stated
+  in the PR.
+- Brand tokens only; no hex. Type scale unchanged (52/36 h1, 28/22 h3, 16 node
+  titles, 16/14 body).
+- `ConsultantPeers` stays last and untouched.
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+Both must pass; `out/vilka-ar-vi/jonathan/` must still exist. `npm test` still
+does not exist - not run, not claimed.
+
+Manual, `npm run dev`:
+
+- [ ] photo is visibly smaller; "Teknisk ryggrad" sits to its right on >= sm,
+      stacks under it on mobile
+- [ ] ryggrad nodes read top -> bottom with down arrows at every width
+- [ ] no toggle for the first 10s; it then pops in next to "Jonathan"
+- [ ] Corporate shows the current page; Personal shows the stub line
+- [ ] switching back and forth works; peer list + back link unchanged
+- [ ] holds at 360px; no console errors
+
+## PR
+
+Update the existing PR for `lab/jonathan` (or open one if none), body links this
+plan and pastes real `lint` + `build` output. Stop at the PR - no merge.

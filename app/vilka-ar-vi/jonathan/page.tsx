@@ -4,16 +4,18 @@ import {
   Blockquote,
   Box,
   Container,
+  Flex,
   Group,
   Paper,
   Stack,
   Text,
   Title,
 } from "@mantine/core";
-import { IconArrowDown, IconArrowRight, IconQuote } from "@tabler/icons-react";
+import { IconArrowDown, IconQuote } from "@tabler/icons-react";
 
 import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { ConsultantPhoto } from "@/features/consultants/components/ConsultantPhoto";
+import { ModeView } from "./ModeView";
 
 export const metadata = {
   title: "Jonathan — Gruppera",
@@ -44,7 +46,7 @@ const contexts = [
 ];
 
 const BackboneNode = ({ name, detail }: { name: string; detail: string }) => (
-  <Paper withBorder radius="md" p="md" style={{ flex: 1 }}>
+  <Paper withBorder radius="md" p="md">
     <Text fw={600} fz={16}>
       {name}
     </Text>
@@ -59,78 +61,60 @@ export default function JonathanPage() {
     <Box>
       <Container size="lg" py={{ base: "lg", sm: "xl" }}>
         <Stack gap="lg">
-          {/* FIXED — identity block, same on every page */}
-          <Stack gap="sm">
-            <Title order={1} fz={{ base: 36, md: 52 }}>
-              Jonathan
-            </Title>
-            <Badge color="sprout" variant="light" size="sm">
-              Senior backend
-            </Badge>
-          </Stack>
+          <ModeView>
+            {/* ---------- YOURS TO DESIGN ---------- */}
+            <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
+              Jonathan är senior utvecklare med bred erfarenhet av backend-tunga
+              system och molnbaserade lösningar. Han har arbetat i komplexa
+              organisationer med höga krav på säkerhet och kvalitet.
+            </Text>
 
-          <ConsultantPhoto slug="jonathan" />
+            <Flex
+              direction={{ base: "column", sm: "row" }}
+              gap="xl"
+              align={{ base: "stretch", sm: "flex-start" }}
+            >
+              <Box maw={260}>
+                <ConsultantPhoto slug="jonathan" />
+              </Box>
 
-          {/* ---------- YOURS TO DESIGN ---------- */}
-          <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
-            Jonathan är senior utvecklare med bred erfarenhet av backend-tunga
-            system och molnbaserade lösningar. Han har arbetat i komplexa
-            organisationer med höga krav på säkerhet och kvalitet.
-          </Text>
+              <Stack gap="sm" style={{ flex: 1 }}>
+                <Title order={3} fz={{ base: 22, md: 28 }}>
+                  Teknisk ryggrad
+                </Title>
+                {backbone.map((node, index) => (
+                  <Fragment key={node.name}>
+                    <BackboneNode name={node.name} detail={node.detail} />
+                    {index < backbone.length - 1 ? (
+                      <IconArrowDown
+                        size={20}
+                        color="var(--mantine-color-sprout-4)"
+                        style={{ alignSelf: "center" }}
+                      />
+                    ) : null}
+                  </Fragment>
+                ))}
+              </Stack>
+            </Flex>
 
-          <Stack gap="md">
-            <Title order={3} fz={{ base: 22, md: 28 }}>
-              Teknisk ryggrad
-            </Title>
-
-            <Group wrap="nowrap" align="stretch" gap="sm" visibleFrom="sm">
-              {backbone.map((node, index) => (
-                <Fragment key={node.name}>
-                  <BackboneNode name={node.name} detail={node.detail} />
-                  {index < backbone.length - 1 ? (
-                    <IconArrowRight
-                      size={20}
-                      color="var(--mantine-color-sprout-4)"
-                      style={{ alignSelf: "center", flexShrink: 0 }}
-                    />
-                  ) : null}
-                </Fragment>
-              ))}
-            </Group>
-
-            <Stack gap="sm" hiddenFrom="sm">
-              {backbone.map((node, index) => (
-                <Fragment key={node.name}>
-                  <BackboneNode name={node.name} detail={node.detail} />
-                  {index < backbone.length - 1 ? (
-                    <IconArrowDown
-                      size={20}
-                      color="var(--mantine-color-sprout-4)"
-                      style={{ alignSelf: "center" }}
-                    />
-                  ) : null}
-                </Fragment>
-              ))}
+            <Stack gap="md">
+              <Title order={3} fz={{ base: 22, md: 28 }}>
+                Sammanhang
+              </Title>
+              <Group gap="xs">
+                {contexts.map((context) => (
+                  <Badge key={context} variant="default" size="sm">
+                    {context}
+                  </Badge>
+                ))}
+              </Group>
             </Stack>
-          </Stack>
 
-          <Stack gap="md">
-            <Title order={3} fz={{ base: 22, md: 28 }}>
-              Sammanhang
-            </Title>
-            <Group gap="xs">
-              {contexts.map((context) => (
-                <Badge key={context} variant="default" size="sm">
-                  {context}
-                </Badge>
-              ))}
-            </Group>
-          </Stack>
-
-          <Blockquote color="sprout" icon={<IconQuote size={20} />} mt="sm">
-            Tekniskt djup kombinerat med ett strukturerat arbetssätt.
-          </Blockquote>
-          {/* ------------------------------------- */}
+            <Blockquote color="sprout" icon={<IconQuote size={20} />} mt="sm">
+              Tekniskt djup kombinerat med ett strukturerat arbetssätt.
+            </Blockquote>
+            {/* ------------------------------------- */}
+          </ModeView>
 
           {/* FIXED — every page ends the same way. Renders the link */}
           {/* grid to all other consultants plus the back link.      */}
