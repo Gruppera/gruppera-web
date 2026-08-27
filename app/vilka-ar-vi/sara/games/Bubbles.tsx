@@ -97,9 +97,10 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       if (event.key === "ArrowLeft") moveLeft = true;
       if (event.key === "ArrowRight") moveRight = true;
       if (event.key === " ") {
-        if (!flying && grid[0][shooterCol] === null) {
+        const col = Math.round(shooterCol);
+        if (!flying && grid[0][col] === null) {
           flying = {
-            col: shooterCol,
+            col,
             y: height - cell,
             face: nextFace,
           };
