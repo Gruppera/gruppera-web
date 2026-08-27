@@ -86,29 +86,26 @@ export const SpaceInvaders = ({
     const invaders: Invader[] = [];
     const buildInvaders = () => {
       invaders.length = 0;
-      const usableWidth = width * 0.85;
+      const usableWidth = width * 0.9;
       const colSlot = usableWidth / COLS;
-      const size = Math.min(colSlot * 0.85, height * 0.09);
+      const size = Math.min(colSlot, height * 0.1);
       invaderSize = size;
-      const gap = colSlot - size;
       const marginX = (width - usableWidth) / 2;
-      // Classic layout: rows start right at the top and march down together
-      // as a block (via invaderDrop below) — only slight per-invader jitter,
-      // so it still doesn't look like a perfectly rigid grid, but rows stay
-      // rows instead of invaders drifting into each other's row.
-      const marginY = 8 * scale;
+      // Four tight rows right at the top, touching — no gap, no jitter, so
+      // they read as a solid block like the classic formation.
+      const marginY = 4 * scale;
       for (let row = 0; row < ROWS; row += 1) {
         for (let col = 0; col < COLS; col += 1) {
           const photoIndex = (row * COLS + col) % photos.length;
           const image = new Image();
           image.src = photos[photoIndex];
           invaders.push({
-            x: marginX + col * colSlot + gap / 2,
-            y: marginY + row * (size + gap),
+            x: marginX + col * colSlot,
+            y: marginY + row * size,
             alive: true,
             image,
-            jitterX: (Math.random() - 0.5) * gap * 0.6,
-            jitterY: (Math.random() - 0.5) * gap * 0.6,
+            jitterX: 0,
+            jitterY: 0,
           });
         }
       }
