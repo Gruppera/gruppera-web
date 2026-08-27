@@ -39,7 +39,7 @@ const LEVEL_STEP = 0.16;
 const MAX_FACTOR = 2.4;
 const MAX_COUNT = 4;
 
-type Status = "idle" | "playing" | "over";
+type Status = "playing" | "over";
 
 type Lane = {
   row: number;
@@ -116,7 +116,7 @@ export const KonsultCrossing = () => {
     [],
   );
 
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status>("playing");
   const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(LIVES);
   const [player, setPlayer] = useState({ col: START_COL, row: START_ROW });
@@ -238,6 +238,14 @@ export const KonsultCrossing = () => {
 
   return (
     <Box>
+      {status === "over" ? (
+        <Group justify="center" mb="sm">
+          <Button size="xs" color="sprout" onClick={start}>
+            Spela igen
+          </Button>
+        </Group>
+      ) : null}
+
       <Group justify="space-between" align="center" mb="sm">
         <Text size="sm" fw={500}>
           Nivå: {level}
@@ -259,11 +267,6 @@ export const KonsultCrossing = () => {
             ),
           )}
         </Group>
-        {status !== "playing" ? (
-          <Button size="xs" color="sprout" onClick={start}>
-            {status === "over" ? "Spela igen" : "Starta"}
-          </Button>
-        ) : null}
       </Group>
 
       <Box maw={480} mx="auto">

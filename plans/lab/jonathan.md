@@ -551,3 +551,19 @@ still absent. Gameplay checks are the user's - PR lists them:
 
 Update PR #10 - Iteration 5 section with real `lint` + `build` output.
 Stop at the PR - no merge.
+
+---
+
+# Iteration 6 - autostart + restart button placement
+
+Minor. `KonsultCrossing.tsx` only.
+
+- **Autostart.** Drop the `"idle"` status; `status` initialises to `"playing"`,
+  so the RAF loop runs on mount and the game is live immediately. No "Starta"
+  button. (`start()` stays, used only for restart.)
+- **Restart button.** On game over, the "Spela igen" button moves out of the HUD
+  row to its own `Group justify="center"` above the board (above the HUD). The
+  HUD row is now just "Nivå" + lives.
+
+`npm run lint` + `npm run build` must pass; SSR output unchanged. Browser checks
+are the user's.
