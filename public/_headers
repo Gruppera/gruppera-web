@@ -1,4 +1,4 @@
-# Cache-policy för gruppera.net (Cloudflare Workers static assets).
+# Cache-policy för gruppera.se (Cloudflare Workers static assets).
 #
 # Next kopierar public/ rakt in i out/, och out/ är den assets-katalog som
 # wrangler.jsonc pekar på — så den här filen hamnar i out/_headers, vilket är
@@ -18,3 +18,14 @@
 /_next/static/*
   ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
+
+# Porträtten måste undantas från /* ovan. De väger ihop ~9 MB över elva PNG:er,
+# bildoptimering är avstängd (output: "export"), och både /vilka-ar-vi och
+# konsultsidorna visar alla elva samtidigt — med no-store hämtas alltihop igen
+# vid varje sidvisning och varje bakåtnavigering.
+#
+# Inte "immutable": filnamnen saknar innehållshash, så ett utbytt porträtt måste
+# kunna bli gammalt. Ett dygn, och sedan en villkorad förfrågan.
+/photos/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, must-revalidate
