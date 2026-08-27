@@ -567,3 +567,21 @@ Minor. `KonsultCrossing.tsx` only.
 
 `npm run lint` + `npm run build` must pass; SSR output unchanged. Browser checks
 are the user's.
+
+---
+
+# Iteration 7 - drop the konami unlock, use a plain button
+
+`ModeView.tsx` only. Reverts the Iteration 3 mechanism.
+
+- Remove the konami keydown listener, the 5 s `showHint` timer, the `Tooltip`
+  and `Transition`, the `KONAMI` array, and the `useEffect` / `useRef` imports.
+- A plain `Button` (`variant="light"`, `color="sprout"`, `size="xs"`) sits next
+  to the name from first render and toggles `mode`. Label: "Personligt läge" in
+  corporate, "Tillbaka till jobbet" in personal.
+- Personal-mode heading "Konami-läge" -> "Fikapaus" (the konami reference is
+  gone; the coffee-machine goal makes "Fikapaus" the fit).
+- `mode` state and the corporate `children` path are unchanged.
+
+`npm run lint` + `npm run build` must pass; SSR output unchanged (corporate
+content only). Browser checks are the user's.
