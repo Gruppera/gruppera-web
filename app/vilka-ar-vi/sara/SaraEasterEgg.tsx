@@ -8,7 +8,6 @@ import { SpaceInvaders } from "./games/SpaceInvaders";
 import { Pong } from "./games/Pong";
 import { Bubbles } from "./games/Bubbles";
 import { Confetti } from "./Confetti";
-import { SadRain } from "./SadRain";
 
 const SARA_EMAIL = "sara.eriksson@gruppera.se";
 
@@ -112,10 +111,13 @@ export const SaraEasterEgg = ({
   };
 
   const handleLose = () => {
-    // Purely a beat, not a reset — each game has already reset its own
-    // round state (new snake, new invader wave, etc.) by the time its loss
-    // threshold fires this. Auto-dismisses; the game keeps running under it.
+    // Losing bounces you to a different random game rather than letting you
+    // keep grinding the same one.
     setLosing(true);
+    setGame((current) => {
+      const others = GAMES.filter((candidate) => candidate !== current);
+      return pickRandom(others.length > 0 ? others : GAMES);
+    });
     window.setTimeout(() => setLosing(false), 2200);
   };
 
@@ -180,21 +182,22 @@ export const SaraEasterEgg = ({
             position: "fixed",
             inset: 0,
             zIndex: 1003,
+            background: "rgba(13, 13, 12, 0.85)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             pointerEvents: "none",
           }}
         >
-          <SadRain />
-          <Text
+          <Title
+            order={1}
             c="chamonix.0"
-            fz={{ base: 22, md: 32 }}
-            fw={600}
-            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
+            fz={{ base: 40, md: 72 }}
+            fw={800}
+            style={{ letterSpacing: "0.08em" }}
           >
-            Inte riktigt — försök igen
-          </Text>
+            YOU LOST
+          </Title>
         </Box>
       )}
 
