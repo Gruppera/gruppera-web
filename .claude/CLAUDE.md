@@ -99,9 +99,20 @@ Four things. Everything else is yours, including the layout.
 1. **The file** — `app/vilka-ar-vi/<your-slug>/page.tsx`. That is what makes the route.
 2. **`metadata`** with the title `"<Name> — Gruppera"`, so tabs and shared links read
    properly.
-3. **`<ConsultantPeers currentSlug="<your-slug>" />` somewhere on the page.** This is
-   what keeps all eleven pages reachable from one another. Do not reimplement it and
-   do not leave it out. *Where* it goes is up to you.
+3. **Every other consultant's page is reachable from yours.** That is the actual
+   requirement. `<ConsultantPeers currentSlug="<your-slug>" />` gives it to you for
+   free — the "Fler konsulter" grid plus the back link — but it is a **convenience,
+   not a mandate**. Restyle it, wrap it, replace it, or build something completely
+   different. Two conditions on whatever you build:
+
+   - **Real links in the HTML** — `<a href="/vilka-ar-vi/<slug>">` or `next/link`.
+     This is a static export and it gets crawled; a router push behind a click
+     handler is not a link.
+   - **Not gated behind your game.** If your page is a puzzle, a quiz or a memory
+     game, the game cannot be the only way out. Reveal links as people play if you
+     like, but someone who will not or cannot play still needs a way to every
+     colleague. Keeping `ConsultantPeers` somewhere on the page is the cheapest way
+     to guarantee that.
 4. **Somewhere, it is clear whose view this is.** Your name, in any form you like — a
    heading, a signature, a sticker, a voice, a scoreboard. Someone arriving from a
    search result should not have to guess whose page they are on. It does not have to
@@ -190,7 +201,8 @@ pass, the honest answer is that there is no test runner — not that they passed
 Then look at it in a browser:
 
 - [ ] Your page renders at `/vilka-ar-vi/<your-slug>`
-- [ ] The peer list reaches every other consultant, and the back link works
+- [ ] Every other consultant is reachable from your page, and the back link works
+- [ ] Those links work for someone who never interacts with whatever you built
 - [ ] Someone landing cold can tell whose page this is
 - [ ] It holds up at mobile width, not just on your monitor
 - [ ] Anything that moves stops when you turn on reduce-motion
@@ -211,6 +223,7 @@ Landed in #3 and #5, so you do not need to build any of it. What you get:
    `AspectRatio` + `Image fit="cover"` treatment as the grid cards. Optional.
 3. **`ConsultantPeers.tsx`** — takes `currentSlug`, renders a divider, a
    "Fler konsulter" heading, a link grid of everyone else sorted with
-   `localeCompare(…, "sv")`, and the back link. **Required.**
+   `localeCompare(…, "sv")`, and the back link. Optional, but it is the cheapest
+   way to satisfy fixed point 3 — replace it only if you are replacing what it does.
 4. `ConsultantGrid` cards link to `/vilka-ar-vi/<slug>`.
 5. `SiteHeader` keeps "Vilka är vi" marked active on `/vilka-ar-vi/*`.
