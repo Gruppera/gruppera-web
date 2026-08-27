@@ -1,12 +1,15 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { Box, Modal, Stack, Text } from "@mantine/core";
+import { Box, Button, Modal, Stack, Text, Title } from "@mantine/core";
 
 import { Snake } from "./games/Snake";
 import { SpaceInvaders } from "./games/SpaceInvaders";
 import { Pong } from "./games/Pong";
 import { Bubbles } from "./games/Bubbles";
+import { Confetti } from "./Confetti";
+
+const SARA_EMAIL = "sara.eriksson@gruppera.se";
 
 type Effect = "flip" | "mirror" | "scramble";
 type Game = "snake" | "invaders" | "pong" | "bubbles";
@@ -69,6 +72,7 @@ export const SaraEasterEgg = ({
   saraPhoto,
 }: SaraEasterEggProps) => {
   const [game, setGame] = useState<Game | null>(null);
+  const [celebrating, setCelebrating] = useState(false);
   const scrambledRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
 
@@ -124,17 +128,70 @@ export const SaraEasterEgg = ({
       delete content.dataset.scrambled;
     }
     setGame(null);
-
-    const href = pendingHrefRef.current;
+    // Winning drops the block entirely rather than replaying the one link
+    // that was originally clicked — the celebration overlay below lets
+    // people pick any profile once they dismiss it.
     pendingHrefRef.current = null;
-    if (href) {
-      window.location.assign(href);
-    }
+    setCelebrating(true);
   };
 
   return (
-    <Modal
-      opened={game !== null}
+    <>
+      {celebrating && (
+        <Box
+          onClick={() => setCelebrating(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1002,
+            background: "rgba(13, 13, 12, 0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <Confetti />
+          <Stack
+            align="center"
+            gap="md"
+            onClick={(event) => event.stopPropagation()}
+            style={{ cursor: "default", textAlign: "center" }}
+          >
+            <Title order={2} c="chamonix.0" fz={{ base: 28, md: 40 }}>
+              🎉 Du klarade det!
+            </Title>
+            <Text c="chamonix.2" size="lg" maw={420}>
+              Vill du höra av dig till Sara?
+            </Text>
+            <Button
+              component="a"
+              href={`mailto:${SARA_EMAIL}`}
+              color="sprout"
+              size="lg"
+              radius="md"
+            >
+              Maila Sara
+            </Button>
+            <Button
+              disabled
+              variant="outline"
+              color="cloud"
+              size="lg"
+              radius="md"
+              title="LinkedIn-länk kommer snart"
+            >
+              LinkedIn
+            </Button>
+            <Text c="chamonix.4" size="sm">
+              Klicka var som helst för att fortsätta
+            </Text>
+          </Stack>
+        </Box>
+      )}
+
+      <Modal
+        opened={game !== null}
       onClose={() => {}}
       withCloseButton={false}
       closeOnClickOutside={false}
@@ -164,6 +221,7 @@ export const SaraEasterEgg = ({
           )}
         </Box>
       </Stack>
-    </Modal>
+      </Modal>
+    </>
   );
 };

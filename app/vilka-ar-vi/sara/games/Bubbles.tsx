@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { colorForIndex } from "./palette";
+
 const COLS = 8;
 const INITIAL_ROWS = 4;
 const MAX_ROWS = 9;
@@ -68,12 +70,18 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
     let moveLeft = false;
     let moveRight = false;
     let alive = true;
+    let started = false;
 
     // Flying bubble state: null when idle at the shooter.
     let flying: { col: number; y: number; face: number } | null = null;
     let nextFace = randomFace();
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!started) {
+        event.preventDefault();
+        started = true;
+        return;
+      }
       if (event.key === "ArrowLeft") moveLeft = true;
       if (event.key === "ArrowRight") moveRight = true;
       if (event.key === " ") {
@@ -140,13 +148,13 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
       const shooterSpeed = BASE_SHOOTER_SPEED * scale;
       const bulletSpeed = BASE_BULLET_SPEED * scale;
 
-      if (!flying) {
+      if (started && !flying) {
         if (moveLeft) shooterCol = Math.max(0, shooterCol - 0.15 * shooterSpeed);
         if (moveRight)
           shooterCol = Math.min(COLS - 1, shooterCol + 0.15 * shooterSpeed);
       }
 
-      if (flying) {
+      if (started && flying) {
         flying.y -= bulletSpeed;
         const row = Math.max(0, Math.round(flying.y / cell));
         const landed =
@@ -185,14 +193,17 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.clip();
           if (image?.complete && image.naturalWidth > 0) {
-            ctx.fillStyle = "#95B354";
-            ctx.fill();
             ctx.drawImage(image, cx - r, cy - r, r * 2, r * 2);
           } else {
             ctx.fillStyle = "#C3CED9";
             ctx.fill();
           }
           ctx.restore();
+          ctx.strokeStyle = colorForIndex(face);
+          ctx.lineWidth = Math.max(1, 2 * scale);
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
         }
       }
 
@@ -209,12 +220,18 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         ctx.beginPath();
         ctx.arc(fx, fy, r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.fillStyle = "#95B354";
-        ctx.fill();
         if (image?.complete && image.naturalWidth > 0) {
           ctx.drawImage(image, fx - r, fy - r, r * 2, r * 2);
+        } else {
+          ctx.fillStyle = "#C3CED9";
+          ctx.fill();
         }
         ctx.restore();
+        ctx.strokeStyle = colorForIndex(flying.face);
+        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.beginPath();
+        ctx.arc(fx, fy, r, 0, Math.PI * 2);
+        ctx.stroke();
       } else {
         const r = cell * 0.45;
         const image = images[nextFace];
@@ -222,17 +239,23 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         ctx.beginPath();
         ctx.arc(shooterX, shooterY, r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.fillStyle = "#95B354";
-        ctx.fill();
         if (image?.complete && image.naturalWidth > 0) {
           ctx.drawImage(image, shooterX - r, shooterY - r, r * 2, r * 2);
+        } else {
+          ctx.fillStyle = "#C3CED9";
+          ctx.fill();
         }
         ctx.restore();
-        ctx.strokeStyle = "#95B354";
+        ctx.strokeStyle = colorForIndex(nextFace);
         ctx.lineWidth = Math.max(1, 2 * scale);
         ctx.beginPath();
         ctx.arc(shooterX, shooterY, r + 3 * scale, 0, Math.PI * 2);
         ctx.stroke();
+      }
+
+      if (!started) {
+        ctx.fillStyle = "rgba(13, 13, 12, 0.55)";
+        ctx.fillRect(0, 0, width, height);
       }
 
       raf = window.requestAnimationFrame(loop);
@@ -260,7 +283,15 @@ export const Bubbles = ({ photos, onWin }: BubblesProps) => {
         justifyContent: "center",
       }}
     >
-      <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "2px solid #95B354",
+          boxSizing: "border-box",
+        }}
+      />
     </div>
   );
 };

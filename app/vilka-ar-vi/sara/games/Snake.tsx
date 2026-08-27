@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { colorForIndex } from "./palette";
+
 const COLS = 24;
 const ROWS = 18;
 const WIN_SCORE = 5;
@@ -47,8 +49,10 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
     let nextDir = dir;
     let score = 0;
     let alive = true;
+    let started = false;
     let food: Point = { x: 12, y: 8 };
     let foodImage = new Image();
+    let foodColor = colorForIndex(0);
 
     const randomCell = (): Point => ({
       x: Math.floor(Math.random() * COLS),
@@ -57,13 +61,19 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
 
     const placeFood = () => {
       food = randomCell();
-      const src = photos[Math.floor(Math.random() * photos.length)];
+      const index = Math.floor(Math.random() * photos.length);
       foodImage = new Image();
-      foodImage.src = src;
+      foodImage.src = photos[index];
+      foodColor = colorForIndex(index);
     };
     placeFood();
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!started) {
+        event.preventDefault();
+        started = true;
+        return;
+      }
       if (event.key === "ArrowUp" && dir.y === 0) nextDir = { x: 0, y: -1 };
       if (event.key === "ArrowDown" && dir.y === 0) nextDir = { x: 0, y: 1 };
       if (event.key === "ArrowLeft" && dir.x === 0) nextDir = { x: -1, y: 0 };
@@ -81,12 +91,20 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
       });
 
       if (foodImage.complete && foodImage.naturalWidth > 0) {
-        // Portraits are transparent cutout PNGs designed to sit on a green
-        // backdrop (see ConsultantPhoto) — without it they show the canvas
-        // background through the transparent parts.
-        ctx.fillStyle = "#95B354";
-        ctx.fillRect(food.x * cell, food.y * cell, cell, cell);
+        const fcx = food.x * cell + cell / 2;
+        const fcy = food.y * cell + cell / 2;
+        const fr = cell / 2 - 1;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(fcx, fcy, fr, 0, Math.PI * 2);
+        ctx.clip();
         ctx.drawImage(foodImage, food.x * cell, food.y * cell, cell, cell);
+        ctx.restore();
+        ctx.strokeStyle = foodColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(fcx, fcy, fr, 0, Math.PI * 2);
+        ctx.stroke();
       } else {
         ctx.fillStyle = "#EEEDEB";
         ctx.fillRect(food.x * cell, food.y * cell, cell, cell);
@@ -95,10 +113,15 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
       ctx.fillStyle = "#EEEDEB";
       ctx.font = `${Math.max(14, Math.round(cell * 0.7))}px sans-serif`;
       ctx.fillText(`${score} / ${WIN_SCORE}`, 8, canvas.height - 8);
+
+      if (!started) {
+        ctx.fillStyle = "rgba(13, 13, 12, 0.55)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
     };
 
     const step = () => {
-      if (!alive) return;
+      if (!alive || !started) return;
       dir = nextDir;
       const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
@@ -113,6 +136,7 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
         dir = { x: 1, y: 0 };
         nextDir = dir;
         score = 0;
+        started = false;
         draw();
         return;
       }
@@ -167,7 +191,10 @@ export const Snake = ({ photos, onWin }: SnakeProps) => {
         justifyContent: "center",
       }}
     >
-      <canvas ref={canvasRef} />
+      <canvas
+        ref={canvasRef}
+        style={{ border: "2px solid #95B354", boxSizing: "content-box" }}
+      />
     </div>
   );
 };

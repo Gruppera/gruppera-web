@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { colorForIndex } from "./palette";
+
 const BASE_WIDTH = 400;
 const BASE_HEIGHT = 320;
 const BASE_INVADER_SIZE = 20;
@@ -21,6 +23,7 @@ type Invader = {
   y: number;
   alive: boolean;
   image: HTMLImageElement;
+  borderColor: string;
   jitterX: number;
   jitterY: number;
 };
@@ -75,6 +78,7 @@ export const SpaceInvaders = ({
     let enemyBullets: Bullet[] = [];
     let direction = 1;
     let alive = true;
+    let started = false;
     let lives = START_LIVES;
 
     const invaders: Invader[] = [];
@@ -89,13 +93,15 @@ export const SpaceInvaders = ({
       const marginY = 20 * scale;
       for (let row = 0; row < ROWS; row += 1) {
         for (let col = 0; col < COLS; col += 1) {
+          const photoIndex = (row * COLS + col) % photos.length;
           const image = new Image();
-          image.src = photos[(row * COLS + col) % photos.length];
+          image.src = photos[photoIndex];
           invaders.push({
             x: marginX + col * colSlot + gap / 2,
             y: marginY + row * (size + gap),
             alive: true,
             image,
+            borderColor: colorForIndex(photoIndex),
             // Randomized per wave so the formation looks less like a rigid
             // grid and more like a loose cluster.
             jitterX: (Math.random() - 0.5) * colSlot * 0.5,
@@ -107,6 +113,11 @@ export const SpaceInvaders = ({
     buildInvaders();
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!started) {
+        event.preventDefault();
+        started = true;
+        return;
+      }
       if (event.key === "ArrowLeft") moveLeft = true;
       if (event.key === "ArrowRight") moveRight = true;
       if (event.key === " ") {
@@ -149,74 +160,78 @@ export const SpaceInvaders = ({
       const invaderSpeed = BASE_INVADER_SPEED * scale;
       const invaderDrop = BASE_INVADER_DROP * scale;
 
-      if (moveLeft) playerX = Math.max(0, playerX - playerSpeed);
-      if (moveRight) playerX = Math.min(width - pWidth, playerX + playerSpeed);
+      let playerHit = false;
+      let reachedBottom = false;
 
-      const living = invaders.filter((invader) => invader.alive);
-      let hitEdge = false;
-      living.forEach((invader) => {
-        invader.x += invaderSpeed * direction;
-        const drawX = invader.x + invader.jitterX;
-        if (drawX <= 0 || drawX >= width - size) hitEdge = true;
-      });
-      if (hitEdge) {
-        direction *= -1;
+      if (started) {
+        if (moveLeft) playerX = Math.max(0, playerX - playerSpeed);
+        if (moveRight) playerX = Math.min(width - pWidth, playerX + playerSpeed);
+
+        const living = invaders.filter((invader) => invader.alive);
+        let hitEdge = false;
         living.forEach((invader) => {
-          invader.y += invaderDrop;
+          invader.x += invaderSpeed * direction;
+          const drawX = invader.x + invader.jitterX;
+          if (drawX <= 0 || drawX >= width - size) hitEdge = true;
         });
-      }
-
-      // Invaders occasionally fire back.
-      living.forEach((invader) => {
-        if (Math.random() < ENEMY_FIRE_CHANCE) {
-          enemyBullets.push({
-            x: invader.x + invader.jitterX + size / 2,
-            y: invader.y + invader.jitterY + size,
+        if (hitEdge) {
+          direction *= -1;
+          living.forEach((invader) => {
+            invader.y += invaderDrop;
           });
         }
-      });
 
-      bullets = bullets
-        .map((bullet) => ({ ...bullet, y: bullet.y - bulletSpeed }))
-        .filter((bullet) => bullet.y > 0);
-
-      enemyBullets = enemyBullets
-        .map((bullet) => ({ ...bullet, y: bullet.y + enemyBulletSpeed }))
-        .filter((bullet) => bullet.y < height);
-
-      bullets.forEach((bullet) => {
-        invaders.forEach((invader) => {
-          const ix = invader.x + invader.jitterX;
-          const iy = invader.y + invader.jitterY;
-          if (
-            invader.alive &&
-            bullet.x > ix &&
-            bullet.x < ix + size &&
-            bullet.y > iy &&
-            bullet.y < iy + size
-          ) {
-            invader.alive = false;
-            bullet.y = -100;
+        // Invaders occasionally fire back.
+        living.forEach((invader) => {
+          if (Math.random() < ENEMY_FIRE_CHANCE) {
+            enemyBullets.push({
+              x: invader.x + invader.jitterX + size / 2,
+              y: invader.y + invader.jitterY + size,
+            });
           }
         });
-      });
 
-      let playerHit = false;
-      enemyBullets.forEach((bullet) => {
-        if (
-          bullet.x > playerX &&
-          bullet.x < playerX + pWidth &&
-          bullet.y > playerY &&
-          bullet.y < playerY + pHeight
-        ) {
-          playerHit = true;
-          bullet.y = height + 100;
-        }
-      });
+        bullets = bullets
+          .map((bullet) => ({ ...bullet, y: bullet.y - bulletSpeed }))
+          .filter((bullet) => bullet.y > 0);
 
-      const reachedBottom = living.some(
-        (invader) => invader.y + invader.jitterY + size >= playerY,
-      );
+        enemyBullets = enemyBullets
+          .map((bullet) => ({ ...bullet, y: bullet.y + enemyBulletSpeed }))
+          .filter((bullet) => bullet.y < height);
+
+        bullets.forEach((bullet) => {
+          invaders.forEach((invader) => {
+            const ix = invader.x + invader.jitterX;
+            const iy = invader.y + invader.jitterY;
+            if (
+              invader.alive &&
+              bullet.x > ix &&
+              bullet.x < ix + size &&
+              bullet.y > iy &&
+              bullet.y < iy + size
+            ) {
+              invader.alive = false;
+              bullet.y = -100;
+            }
+          });
+        });
+
+        enemyBullets.forEach((bullet) => {
+          if (
+            bullet.x > playerX &&
+            bullet.x < playerX + pWidth &&
+            bullet.y > playerY &&
+            bullet.y < playerY + pHeight
+          ) {
+            playerHit = true;
+            bullet.y = height + 100;
+          }
+        });
+
+        reachedBottom = living.some(
+          (invader) => invader.y + invader.jitterY + size >= playerY,
+        );
+      }
 
       ctx.fillStyle = "#0D0D0C";
       ctx.fillRect(0, 0, width, height);
@@ -225,14 +240,27 @@ export const SpaceInvaders = ({
         if (!invader.alive) return;
         const ix = invader.x + invader.jitterX;
         const iy = invader.y + invader.jitterY;
+        const icx = ix + size / 2;
+        const icy = iy + size / 2;
+        const ir = size / 2;
         if (invader.image.complete && invader.image.naturalWidth > 0) {
-          ctx.fillStyle = "#95B354";
-          ctx.fillRect(ix, iy, size, size);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(icx, icy, ir, 0, Math.PI * 2);
+          ctx.clip();
           ctx.drawImage(invader.image, ix, iy, size, size);
+          ctx.restore();
         } else {
           ctx.fillStyle = "#C3CED9";
-          ctx.fillRect(ix, iy, size, size);
+          ctx.beginPath();
+          ctx.arc(icx, icy, ir, 0, Math.PI * 2);
+          ctx.fill();
         }
+        ctx.strokeStyle = invader.borderColor;
+        ctx.lineWidth = Math.max(1, 1.5 * scale);
+        ctx.beginPath();
+        ctx.arc(icx, icy, ir, 0, Math.PI * 2);
+        ctx.stroke();
       });
 
       ctx.fillStyle = "#95B354";
@@ -245,9 +273,20 @@ export const SpaceInvaders = ({
       });
 
       if (playerImage.complete && playerImage.naturalWidth > 0) {
-        ctx.fillStyle = "#95B354";
-        ctx.fillRect(playerX, playerY, pWidth, pHeight);
-        ctx.drawImage(playerImage, playerX, playerY, pWidth, pHeight);
+        const pcx = playerX + pWidth / 2;
+        const pcy = playerY + pHeight / 2;
+        const pr = pWidth / 2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(playerImage, playerX, pcy - pr, pWidth, pWidth);
+        ctx.restore();
+        ctx.strokeStyle = "#E0CCBE";
+        ctx.lineWidth = Math.max(1, 2 * scale);
+        ctx.beginPath();
+        ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
+        ctx.stroke();
       } else {
         ctx.fillStyle = "#EEEDEB";
         ctx.fillRect(playerX, playerY, pWidth, pHeight);
@@ -268,6 +307,12 @@ export const SpaceInvaders = ({
         lives = playerHit ? lives - 1 : lives;
         if (lives <= 0) lives = START_LIVES;
         resetWave();
+        started = false;
+      }
+
+      if (!started) {
+        ctx.fillStyle = "rgba(13, 13, 12, 0.55)";
+        ctx.fillRect(0, 0, width, height);
       }
 
       raf = window.requestAnimationFrame(loop);
@@ -295,7 +340,15 @@ export const SpaceInvaders = ({
         justifyContent: "center",
       }}
     >
-      <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }} />
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "2px solid #95B354",
+          boxSizing: "border-box",
+        }}
+      />
     </div>
   );
 };
