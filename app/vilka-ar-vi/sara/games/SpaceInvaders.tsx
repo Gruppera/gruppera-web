@@ -32,12 +32,14 @@ type SpaceInvadersProps = {
   photos: string[];
   playerPhoto: string;
   onWin: () => void;
+  onLose: () => void;
 };
 
 export const SpaceInvaders = ({
   photos,
   playerPhoto,
   onWin,
+  onLose,
 }: SpaceInvadersProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -318,7 +320,10 @@ export const SpaceInvaders = ({
 
       if (playerHit || reachedBottom) {
         lives = playerHit ? lives - 1 : lives;
-        if (lives <= 0) lives = START_LIVES;
+        if (lives <= 0) {
+          lives = START_LIVES;
+          onLose();
+        }
         resetWave();
         started = false;
       }
@@ -340,7 +345,7 @@ export const SpaceInvaders = ({
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, playerPhoto, onWin]);
+  }, [photos, playerPhoto, onWin, onLose]);
 
   return (
     <div

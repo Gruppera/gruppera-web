@@ -17,6 +17,7 @@ type BubblesProps = {
   photos: string[];
   saraPhoto: string;
   onWin: () => void;
+  onLose: () => void;
 };
 
 /**
@@ -28,7 +29,7 @@ type BubblesProps = {
  * bubble (or the ceiling). Matching 3+ of the same face pops them, and any
  * bubbles left disconnected from the ceiling afterward fall away too.
  */
-export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
+export const Bubbles = ({ photos, saraPhoto, onWin, onLose }: BubblesProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const countRef = useRef<HTMLDivElement>(null);
@@ -80,11 +81,18 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       Array.from({ length: COLS }, () => null),
     );
     const randomFace = () => Math.floor(Math.random() * images.length);
-    for (let row = 0; row < INITIAL_ROWS; row += 1) {
-      for (let col = 0; col < COLS; col += 1) {
-        grid[row][col] = randomFace();
+    const fillInitial = () => {
+      for (let row = 0; row < MAX_ROWS; row += 1) {
+        for (let col = 0; col < COLS; col += 1) {
+          grid[row][col] = row < INITIAL_ROWS ? randomFace() : null;
+        }
       }
-    }
+    };
+    fillInitial();
+
+    // How close to the shooter the stack is allowed to get before it counts
+    // as "reached the bottom" — a loss, not just a full board.
+    const LOSE_ROW = MAX_ROWS - 3;
 
     const cellCenter = (row: number, col: number) => ({
       x: col * cell + cell / 2,
@@ -238,6 +246,14 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       grid[tr][tc] = face;
       popMatches(tr, tc);
       dropFloating();
+
+      const reachedBottom = grid
+        .slice(LOSE_ROW)
+        .some((r) => r.some((c) => c !== null));
+      if (reachedBottom) {
+        fillInitial();
+        onLose();
+      }
     };
 
     let raf = 0;
@@ -423,7 +439,7 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, saraPhoto, onWin]);
+  }, [photos, saraPhoto, onWin, onLose]);
 
   return (
     <div

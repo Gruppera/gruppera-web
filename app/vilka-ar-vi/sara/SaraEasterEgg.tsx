@@ -8,6 +8,7 @@ import { SpaceInvaders } from "./games/SpaceInvaders";
 import { Pong } from "./games/Pong";
 import { Bubbles } from "./games/Bubbles";
 import { Confetti } from "./Confetti";
+import { SadRain } from "./SadRain";
 
 const SARA_EMAIL = "sara.eriksson@gruppera.se";
 
@@ -58,6 +59,7 @@ export const SaraEasterEgg = ({
 }: SaraEasterEggProps) => {
   const [game, setGame] = useState<Game | null>(null);
   const [celebrating, setCelebrating] = useState(false);
+  const [losing, setLosing] = useState(false);
   const scrambledRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
 
@@ -107,6 +109,14 @@ export const SaraEasterEgg = ({
     // people pick any profile once they dismiss it.
     pendingHrefRef.current = null;
     setCelebrating(true);
+  };
+
+  const handleLose = () => {
+    // Purely a beat, not a reset — each game has already reset its own
+    // round state (new snake, new invader wave, etc.) by the time its loss
+    // threshold fires this. Auto-dismisses; the game keeps running under it.
+    setLosing(true);
+    window.setTimeout(() => setLosing(false), 2200);
   };
 
   return (
@@ -164,6 +174,30 @@ export const SaraEasterEgg = ({
         </Box>
       )}
 
+      {losing && (
+        <Box
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1003,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <SadRain />
+          <Text
+            c="chamonix.0"
+            fz={{ base: 22, md: 32 }}
+            fw={600}
+            style={{ textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
+          >
+            Inte riktigt — försök igen
+          </Text>
+        </Box>
+      )}
+
       <Modal
         opened={game !== null}
         onClose={() => {}}
@@ -198,6 +232,7 @@ export const SaraEasterEgg = ({
               photos={colleaguePhotos}
               saraPhoto={saraPhoto}
               onWin={handleWin}
+              onLose={handleLose}
             />
           )}
           {game === "invaders" && (
@@ -205,14 +240,18 @@ export const SaraEasterEgg = ({
               photos={colleaguePhotos}
               playerPhoto={saraPhoto}
               onWin={handleWin}
+              onLose={handleLose}
             />
           )}
-          {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
+          {game === "pong" && (
+            <Pong photos={colleaguePhotos} onWin={handleWin} onLose={handleLose} />
+          )}
           {game === "bubbles" && (
             <Bubbles
               photos={colleaguePhotos}
               saraPhoto={saraPhoto}
               onWin={handleWin}
+              onLose={handleLose}
             />
           )}
         </Box>

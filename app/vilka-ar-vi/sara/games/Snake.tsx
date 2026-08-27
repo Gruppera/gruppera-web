@@ -7,6 +7,7 @@ const ROWS = 18;
 const BASE_CELL = 20;
 const BASE_TICK_MS = 190;
 const MIN_TICK_MS = 70;
+const LOSE_DEATHS = 5;
 
 type Point = { x: number; y: number };
 
@@ -14,13 +15,14 @@ type SnakeProps = {
   photos: string[];
   saraPhoto: string;
   onWin: () => void;
+  onLose: () => void;
 };
 
 /**
  * Sara is always the head. Body segments are the consultants she's eaten so
  * far, in order (most recent right behind the head). Goal: eat everyone.
  */
-export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
+export const Snake = ({ photos, saraPhoto, onWin, onLose }: SnakeProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -67,6 +69,7 @@ export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
     let started = false;
     let food: Point = { x: 12, y: 8 };
     let foodIndex = 0;
+    let deaths = 0;
 
     const randomCell = (): Point => ({
       x: Math.floor(Math.random() * COLS),
@@ -171,6 +174,11 @@ export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
         score = 0;
         started = false;
         placeFood();
+        deaths += 1;
+        if (deaths >= LOSE_DEATHS) {
+          deaths = 0;
+          onLose();
+        }
         draw();
         return;
       }
@@ -214,7 +222,7 @@ export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, saraPhoto, onWin]);
+  }, [photos, saraPhoto, onWin, onLose]);
 
   return (
     <div

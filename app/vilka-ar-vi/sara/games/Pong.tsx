@@ -17,9 +17,10 @@ const WIN_SCORE = 3;
 type PongProps = {
   photos: string[];
   onWin: () => void;
+  onLose: () => void;
 };
 
-export const Pong = ({ photos, onWin }: PongProps) => {
+export const Pong = ({ photos, onWin, onLose }: PongProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -159,6 +160,11 @@ export const Pong = ({ photos, onWin }: PongProps) => {
 
         if (ballX < 0) {
           cpuScore += 1;
+          if (cpuScore >= WIN_SCORE) {
+            cpuScore = 0;
+            playerScore = 0;
+            onLose();
+          }
           resetBall("player");
           started = false;
         }
@@ -235,7 +241,7 @@ export const Pong = ({ photos, onWin }: PongProps) => {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", onResize);
     };
-  }, [photos, onWin]);
+  }, [photos, onWin, onLose]);
 
   return (
     <div
