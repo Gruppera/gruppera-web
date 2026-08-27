@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Modal, Text } from "@mantine/core";
+import { Center, Modal, Stack, Text } from "@mantine/core";
 
 import { Snake } from "./games/Snake";
 import { SpaceInvaders } from "./games/SpaceInvaders";
@@ -35,15 +35,22 @@ type SaraEasterEggProps = {
   colleaguePhotos: string[];
 };
 
+const SARA_HREF = "/vilka-ar-vi/sara";
+
 /**
  * Content root (`#sara-page-content`) is server-rendered by page.tsx; this
  * component only reaches it via the DOM, so server elements never cross the
  * client/server serialization boundary as React children.
  *
- * Two-step lock: clicking the name/photo only scrambles the page. Trying to
- * navigate away (any link inside the content, including peer/grid cards)
- * while scrambled is blocked and opens the game — winning replays the
- * blocked navigation.
+ * The page is a copy of /vilka-ar-vi (the grid), so there's no separate
+ * "Sara" photo/title to hang a trigger on — the trigger is Sara's own card
+ * in the grid (its link points back to this same page, so intercepting it
+ * costs no real navigation).
+ *
+ * Two-step lock: clicking Sara's card only scrambles the page. Trying to
+ * navigate away (any other link inside the content, including grid cards
+ * and peer links) while scrambled is blocked and opens the game — winning
+ * replays the blocked navigation.
  */
 export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
   const [game, setGame] = useState<Game | null>(null);
@@ -56,20 +63,26 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
 
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-
       const link = target.closest("a");
-      if (scrambledRef.current && link && link.getAttribute("href")) {
+      const href = link?.getAttribute("href");
+      if (!link || !href) return;
+
+      if (href === SARA_HREF) {
         event.preventDefault();
         event.stopPropagation();
-        pendingHrefRef.current = link.getAttribute("href");
-        setGame(pickRandom(GAMES));
+        if (!scrambledRef.current) {
+          scrambledRef.current = true;
+          const effect = pickRandom(EFFECTS);
+          Object.assign(content.style, EFFECT_STYLE[effect]);
+        }
         return;
       }
 
-      if (!scrambledRef.current && target.closest('[data-easter-trigger="sara"]')) {
-        scrambledRef.current = true;
-        const effect = pickRandom(EFFECTS);
-        Object.assign(content.style, EFFECT_STYLE[effect]);
+      if (scrambledRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        pendingHrefRef.current = href;
+        setGame(pickRandom(GAMES));
       }
     };
 
@@ -100,18 +113,24 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
       withCloseButton={false}
       closeOnClickOutside={false}
       closeOnEscape={false}
-      centered
-      size="lg"
+      fullScreen
+      zIndex={1001}
       title={game ? `Klara ${GAME_TITLES[game]} för att komma vidare` : ""}
     >
-      {game === "snake" && <Snake photos={colleaguePhotos} onWin={handleWin} />}
-      {game === "invaders" && (
-        <SpaceInvaders photos={colleaguePhotos} onWin={handleWin} />
-      )}
-      {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
-      <Text c="dimmed" size="sm" mt="sm">
-        Sidan är scramblad tills du vinner.
-      </Text>
+      <Center h="calc(100vh - 120px)">
+        <Stack align="center" gap="sm">
+          {game === "snake" && (
+            <Snake photos={colleaguePhotos} onWin={handleWin} />
+          )}
+          {game === "invaders" && (
+            <SpaceInvaders photos={colleaguePhotos} onWin={handleWin} />
+          )}
+          {game === "pong" && <Pong photos={colleaguePhotos} onWin={handleWin} />}
+          <Text c="dimmed" size="sm">
+            Sidan är scramblad tills du vinner.
+          </Text>
+        </Stack>
+      </Center>
     </Modal>
   );
 };
