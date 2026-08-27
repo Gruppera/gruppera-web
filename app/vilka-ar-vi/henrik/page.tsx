@@ -1,7 +1,7 @@
 import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { CorridorGame } from "./CorridorGame";
+import { TinderPeers } from "./TinderPeers";
 
 export const metadata = {
   title: "Henrik — Gruppera",
@@ -26,9 +26,11 @@ export default function HenrikPage() {
           <CorridorGame />
           {/* ------------------------------------- */}
 
-          {/* FIXED — every page ends the same way. Renders the link */}
-          {/* grid to all other consultants plus the back link.      */}
-          <ConsultantPeers currentSlug="henrik" />
+          {/* FIXED requirement, met differently here: a swipeable card  */}
+          {/* deck instead of ConsultantPeers. Every peer's real <Link>  */}
+          {/* stays in the DOM regardless of deck position — see the    */}
+          {/* Tinder-cards addendum in plans/lab3/hs-henrik.md.         */}
+          <TinderPeers currentSlug="henrik" />
         </Stack>
       </Container>
     </Box>
