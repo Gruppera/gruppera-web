@@ -15,6 +15,14 @@ type Ship = {
 type Meteor = { pos: Vec2; vel: Vec2; radius: number; rotation: number; rotationSpeed: number };
 type Bullet = { pos: Vec2; vel: Vec2; expiresAt: number };
 type Phase = "start" | "playing" | "gameover";
+type SaucerKind = "large" | "small";
+type Saucer = {
+  kind: SaucerKind;
+  pos: Vec2;
+  vel: Vec2;
+  radius: number;
+  lastShotAt: number;
+};
 
 const ROTATION_SPEED = 3.2;
 const THRUST_ACCEL = 260;
@@ -25,6 +33,9 @@ const SHIP_RADIUS = 12;
 const BULLET_SPEED = 480;
 const BULLET_RADIUS = 2;
 const FIRE_COOLDOWN = 250;
+// Classic Asteroids caps the player at 5 shots on screen at once — firing
+// again only becomes possible once one of the existing bullets is gone.
+const MAX_PLAYER_BULLETS = 5;
 
 const SIZES = { large: 46, medium: 26, small: 14 } as const;
 const SCORE_BY_RADIUS: Record<number, number> = {
@@ -35,11 +46,57 @@ const SCORE_BY_RADIUS: Record<number, number> = {
 
 const PHOTO_SRC = "/photos/olle.png";
 
+// --- Level / difficulty progression ---------------------------------------
+// Asteroid speed ramps up gradually with a per-level multiplier, capped so
+// later levels stay hard but playable.
+const LEVEL_SPEED_MULTIPLIER_PER_LEVEL = 0.25;
+const LEVEL_SPEED_MULTIPLIER_MAX = 2.5;
+const getLevelSpeedMultiplier = (level: number) =>
+  Math.min(1 + (level - 1) * LEVEL_SPEED_MULTIPLIER_PER_LEVEL, LEVEL_SPEED_MULTIPLIER_MAX);
+
+// Large-meteor count per level follows the original's 4/6/8/10(+) curve.
+const LEVEL_METEOR_COUNTS = [4, 6, 8] as const;
+const LEVEL_METEOR_COUNT_MAX = 10;
+const getMeteorCountForLevel = (level: number) => LEVEL_METEOR_COUNTS[level - 1] ?? LEVEL_METEOR_COUNT_MAX;
+
+// --- UFO / saucer progression ----------------------------------------------
+// Large saucers start showing up first; small (more accurate, higher-value)
+// saucers only enter the rotation from a later level. Spawn frequency and the
+// small/large mix both shift as the level climbs.
+const UFO_LARGE_MIN_LEVEL = 3;
+const UFO_SMALL_MIN_LEVEL = 6;
+
+const UFO_SPAWN_INTERVAL_BASE_MS = 20000;
+const UFO_SPAWN_INTERVAL_MIN_MS = 8000;
+const UFO_SPAWN_INTERVAL_STEP_MS = 1500;
+const getUfoSpawnIntervalMs = (level: number) => {
+  if (level < UFO_LARGE_MIN_LEVEL) return Infinity;
+  const stepsAboveMin = level - UFO_LARGE_MIN_LEVEL;
+  return Math.max(UFO_SPAWN_INTERVAL_BASE_MS - stepsAboveMin * UFO_SPAWN_INTERVAL_STEP_MS, UFO_SPAWN_INTERVAL_MIN_MS);
+};
+
+const UFO_SMALL_CHANCE_START = 0.15;
+const UFO_SMALL_CHANCE_MAX = 0.75;
+const UFO_SMALL_CHANCE_STEP = 0.1;
+const getSmallSaucerChance = (level: number) => {
+  if (level < UFO_SMALL_MIN_LEVEL) return 0;
+  const stepsAboveMin = level - UFO_SMALL_MIN_LEVEL;
+  return Math.min(UFO_SMALL_CHANCE_START + stepsAboveMin * UFO_SMALL_CHANCE_STEP, UFO_SMALL_CHANCE_MAX);
+};
+
+const SAUCER_SPEED = 90;
+const SAUCER_SHOT_COOLDOWN_MS = 1600;
+const SAUCER_BULLET_SPEED = 360;
+const SAUCER_STATS = {
+  large: { radius: 22, score: 200, aimSpread: 0.6 },
+  small: { radius: 12, score: 1000, aimSpread: 0.12 },
+} as const;
+
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
 const wrap = (value: number, max: number) => ((value % max) + max) % max;
 
-const spawnMeteor = (width: number, height: number, radius: number): Meteor => {
+const spawnMeteor = (width: number, height: number, radius: number, speedMultiplier = 1): Meteor => {
   const edge = Math.floor(rand(0, 4));
   const pos =
     edge === 0
@@ -49,7 +106,8 @@ const spawnMeteor = (width: number, height: number, radius: number): Meteor => {
         : edge === 2
           ? { x: rand(0, width), y: height }
           : { x: 0, y: rand(0, height) };
-  const speed = radius === SIZES.large ? rand(40, 70) : radius === SIZES.medium ? rand(70, 110) : rand(110, 160);
+  const baseSpeed = radius === SIZES.large ? rand(40, 70) : radius === SIZES.medium ? rand(70, 110) : rand(110, 160);
+  const speed = baseSpeed * speedMultiplier;
   const dir = rand(0, Math.PI * 2);
   return {
     pos,
@@ -57,6 +115,18 @@ const spawnMeteor = (width: number, height: number, radius: number): Meteor => {
     radius,
     rotation: rand(0, Math.PI * 2),
     rotationSpeed: rand(-1, 1),
+  };
+};
+
+const spawnSaucer = (width: number, height: number, kind: SaucerKind, now: number): Saucer => {
+  const fromLeft = Math.random() < 0.5;
+  const radius = SAUCER_STATS[kind].radius;
+  return {
+    kind,
+    pos: { x: fromLeft ? -radius : width + radius, y: rand(radius, height - radius) },
+    vel: { x: fromLeft ? SAUCER_SPEED : -SAUCER_SPEED, y: rand(-20, 20) },
+    radius,
+    lastShotAt: now,
   };
 };
 
@@ -68,7 +138,9 @@ export const AsteroidsGame = () => {
   const [phase, setPhaseState] = useState<Phase>("start");
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
+  const [level, setLevel] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const resetGameRef = useRef<(() => void) | null>(null);
 
   const toggleFullscreen = () => {
     const el = containerRef.current;
@@ -86,13 +158,12 @@ export const AsteroidsGame = () => {
   };
 
   const startGame = () => {
-    started.current = false;
+    resetGameRef.current?.();
     setScore(0);
     setLives(3);
+    setLevel(1);
     setPhase("playing");
   };
-
-  const started = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -118,18 +189,45 @@ export const AsteroidsGame = () => {
     };
     let meteors: Meteor[] = Array.from({ length: 5 }, () => spawnMeteor(width, height, SIZES.large));
     let bullets: Bullet[] = [];
+    let enemyBullets: Bullet[] = [];
+    let saucer: Saucer | null = null;
+    let nextSaucerAt = Infinity;
     let wave = 0;
+    let speedMultiplier = 1;
     let lastFire = 0;
     let scoreValue = 0;
     let livesValue = 3;
 
     const spawnWave = () => {
       wave += 1;
-      const count = 2 + wave;
+      speedMultiplier = getLevelSpeedMultiplier(wave);
+      setLevel(wave);
+      nextSaucerAt = Infinity;
+      const count = getMeteorCountForLevel(wave);
       meteors = meteors.concat(
-        Array.from({ length: count }, () => spawnMeteor(width, height, SIZES.large)),
+        Array.from({ length: count }, () => spawnMeteor(width, height, SIZES.large, speedMultiplier)),
       );
     };
+
+    const resetGame = () => {
+      ship = {
+        pos: { x: width / 2, y: height / 2 },
+        vel: { x: 0, y: 0 },
+        angle: -Math.PI / 2,
+        thrusting: false,
+        invulnerableUntil: performance.now() + 2000,
+      };
+      bullets = [];
+      enemyBullets = [];
+      saucer = null;
+      wave = 0;
+      speedMultiplier = 1;
+      livesValue = 3;
+      scoreValue = 0;
+      meteors = [];
+      spawnWave();
+    };
+    resetGameRef.current = resetGame;
 
     // Keep every entity's relative position (e.g. ship dead centre) when the
     // canvas changes size — entering/exiting fullscreen resizes the canvas,
@@ -150,6 +248,14 @@ export const AsteroidsGame = () => {
         b.pos.x *= scaleX;
         b.pos.y *= scaleY;
       });
+      enemyBullets.forEach((b) => {
+        b.pos.x *= scaleX;
+        b.pos.y *= scaleY;
+      });
+      if (saucer) {
+        saucer.pos.x *= scaleX;
+        saucer.pos.y *= scaleY;
+      }
       width = newWidth;
       height = newHeight;
       canvas.width = width;
@@ -241,6 +347,24 @@ export const AsteroidsGame = () => {
       ctx.restore();
     };
 
+    const drawSaucer = (s: Saucer) => {
+      ctx.save();
+      ctx.translate(s.pos.x, s.pos.y);
+      ctx.strokeStyle = "#95B354";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s.radius, s.radius * 0.45, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(0, -s.radius * 0.35, s.radius * 0.5, s.radius * 0.32, 0, Math.PI, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s.radius * 0.6, 0);
+      ctx.lineTo(s.radius * 0.6, 0);
+      ctx.stroke();
+      ctx.restore();
+    };
+
     const loop = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
@@ -267,7 +391,7 @@ export const AsteroidsGame = () => {
         ship.pos.x = wrap(ship.pos.x + ship.vel.x * dt, width);
         ship.pos.y = wrap(ship.pos.y + ship.vel.y * dt, height);
 
-        if (keysRef.current.fire && now - lastFire > FIRE_COOLDOWN) {
+        if (keysRef.current.fire && now - lastFire > FIRE_COOLDOWN && bullets.length < MAX_PLAYER_BULLETS) {
           lastFire = now;
           // Bullets should reach from the ship to the far edge of the play
           // field no matter where it's fired from, so range scales with the
@@ -279,10 +403,48 @@ export const AsteroidsGame = () => {
             expiresAt: now + (maxRange / BULLET_SPEED) * 1000,
           });
         }
+
+        // UFOs: schedule the next one once the current level allows them,
+        // let it fly across, and have it shoot back at the ship.
+        if (!saucer && wave >= UFO_LARGE_MIN_LEVEL) {
+          if (nextSaucerAt === Infinity) {
+            nextSaucerAt = now + getUfoSpawnIntervalMs(wave);
+          } else if (now >= nextSaucerAt) {
+            const kind: SaucerKind = Math.random() < getSmallSaucerChance(wave) ? "small" : "large";
+            saucer = spawnSaucer(width, height, kind, now);
+            nextSaucerAt = Infinity;
+          }
+        }
+
+        if (saucer) {
+          saucer.pos.x += saucer.vel.x * dt;
+          saucer.pos.y = wrap(saucer.pos.y + saucer.vel.y * dt, height);
+          if (saucer.pos.x < -saucer.radius * 2 || saucer.pos.x > width + saucer.radius * 2) {
+            saucer = null;
+          }
+        }
+
+        if (saucer && now - saucer.lastShotAt > SAUCER_SHOT_COOLDOWN_MS) {
+          saucer.lastShotAt = now;
+          const spread = SAUCER_STATS[saucer.kind].aimSpread;
+          const aimAngle = Math.atan2(ship.pos.y - saucer.pos.y, ship.pos.x - saucer.pos.x) + rand(-spread, spread);
+          const maxRange = Math.hypot(width, height) / 2;
+          enemyBullets.push({
+            pos: { ...saucer.pos },
+            vel: { x: Math.cos(aimAngle) * SAUCER_BULLET_SPEED, y: Math.sin(aimAngle) * SAUCER_BULLET_SPEED },
+            expiresAt: now + (maxRange / SAUCER_BULLET_SPEED) * 1000,
+          });
+        }
       }
 
       bullets = bullets.filter((b) => now < b.expiresAt);
       bullets.forEach((b) => {
+        b.pos.x = wrap(b.pos.x + b.vel.x * dt, width);
+        b.pos.y = wrap(b.pos.y + b.vel.y * dt, height);
+      });
+
+      enemyBullets = enemyBullets.filter((b) => now < b.expiresAt);
+      enemyBullets.forEach((b) => {
         b.pos.x = wrap(b.pos.x + b.vel.x * dt, width);
         b.pos.y = wrap(b.pos.y + b.vel.y * dt, height);
       });
@@ -309,7 +471,7 @@ export const AsteroidsGame = () => {
             if (nextRadius) {
               for (let i = 0; i < 2; i += 1) {
                 const dir = rand(0, Math.PI * 2);
-                const speed = rand(60, 140);
+                const speed = rand(60, 140) * speedMultiplier;
                 survivingMeteors.push({
                   pos: { ...m.pos },
                   vel: { x: Math.cos(dir) * speed, y: Math.sin(dir) * speed },
@@ -326,18 +488,45 @@ export const AsteroidsGame = () => {
         meteors = survivingMeteors;
         bullets = bullets.filter((b) => survivingBullets.has(b));
 
+        if (saucer) {
+          const hitBullet = bullets.find(
+            (b) => Math.hypot(b.pos.x - saucer!.pos.x, b.pos.y - saucer!.pos.y) < saucer!.radius + BULLET_RADIUS,
+          );
+          if (hitBullet) {
+            bullets = bullets.filter((b) => b !== hitBullet);
+            scoreValue += SAUCER_STATS[saucer.kind].score;
+            setScore(scoreValue);
+            saucer = null;
+          }
+        }
+
+        const takeHit = () => {
+          livesValue -= 1;
+          setLives(livesValue);
+          if (livesValue <= 0) {
+            setPhase("gameover");
+          } else {
+            respawnShip();
+          }
+        };
+
         if (now > ship.invulnerableUntil) {
-          const hit = meteors.some(
+          const hitMeteor = meteors.some(
             (m) => Math.hypot(m.pos.x - ship.pos.x, m.pos.y - ship.pos.y) < m.radius + SHIP_RADIUS,
           );
-          if (hit) {
-            livesValue -= 1;
-            setLives(livesValue);
-            if (livesValue <= 0) {
-              setPhase("gameover");
-            } else {
-              respawnShip();
-            }
+          const hitSaucer =
+            saucer && Math.hypot(saucer.pos.x - ship.pos.x, saucer.pos.y - ship.pos.y) < saucer.radius + SHIP_RADIUS;
+          const hitEnemyBullet = enemyBullets.some(
+            (b) => Math.hypot(b.pos.x - ship.pos.x, b.pos.y - ship.pos.y) < BULLET_RADIUS + SHIP_RADIUS,
+          );
+          if (hitSaucer) saucer = null;
+          if (hitEnemyBullet) {
+            enemyBullets = enemyBullets.filter(
+              (b) => Math.hypot(b.pos.x - ship.pos.x, b.pos.y - ship.pos.y) >= BULLET_RADIUS + SHIP_RADIUS,
+            );
+          }
+          if (hitMeteor || hitSaucer || hitEnemyBullet) {
+            takeHit();
           }
         }
 
@@ -347,8 +536,15 @@ export const AsteroidsGame = () => {
       }
 
       meteors.forEach(drawMeteor);
+      if (saucer) drawSaucer(saucer);
       ctx.fillStyle = "#EEEDEB";
       bullets.forEach((b) => {
+        ctx.beginPath();
+        ctx.arc(b.pos.x, b.pos.y, BULLET_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = "#824529";
+      enemyBullets.forEach((b) => {
         ctx.beginPath();
         ctx.arc(b.pos.x, b.pos.y, BULLET_RADIUS, 0, Math.PI * 2);
         ctx.fill();
@@ -399,6 +595,9 @@ export const AsteroidsGame = () => {
           </Text>
           <Text c="chamonix.0" fw={600} size="sm">
             Liv: {lives}
+          </Text>
+          <Text c="chamonix.0" fw={600} size="sm">
+            Nivå: {level}
           </Text>
         </Group>
 

@@ -1,5 +1,21 @@
 # Olle's page: Asteroids clone with photo meteors
 
+## Update: level progression + UFOs
+
+Added, without touching existing controls/physics/splitting/rendering:
+
+- Speed multiplier per level: `1 + (level-1) * 0.08`, capped at 1.9x.
+- Large-meteor count per level: 4 / 6 / 8 / 10 (level 4+), matching the original.
+- Large saucer from level 3, small (more accurate, 1000 pts vs 200) from level 6;
+  spawn interval shrinks and small-saucer odds rise as level climbs; saucers fly
+  in from a random side, shoot at the ship on a cooldown, wrap vertically,
+  despawn off the far edge. All tunable via named constants at the top of
+  `AsteroidsGame.tsx` (`LEVEL_*`, `UFO_*`, `SAUCER_*`).
+- Restart now properly resets to level 1 (4 meteors) instead of carrying over
+  the idle decorative meteors from the start screen — needed a `resetGameRef`
+  so the component-level "start/restart" button can reach into the effect's
+  game state.
+
 Branch: `lab3/or-olle-asteroids`, on top of the current tip of
 `lab3/or-consultant-scaffolding` (which already contains the merged scaffolding
 + Olle's bio-style page from PR #4).
