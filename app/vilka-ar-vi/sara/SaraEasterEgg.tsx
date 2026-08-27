@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Box, Modal, Stack, Text } from "@mantine/core";
 
 import { Snake } from "./games/Snake";
@@ -63,9 +63,18 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
   const scrambledRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Attaches synchronously, before paint — a plain useEffect fires after
+    // paint, which left a real window where a click landed on the anchor's
+    // native href before our handler existed (first click "just navigated").
+    // A tiny inline <script> in page.tsx covers the remaining gap before
+    // hydration; if it already scrambled the page, adopt that state here
+    // instead of re-triggering it.
     const content = document.getElementById("sara-page-content");
     if (!content) return;
+    if (content.dataset.scrambled === "true") {
+      scrambledRef.current = true;
+    }
 
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -78,6 +87,7 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
         event.stopPropagation();
         if (!scrambledRef.current) {
           scrambledRef.current = true;
+          content.dataset.scrambled = "true";
           const effect = pickRandom(EFFECTS);
           Object.assign(content.style, EFFECT_STYLE[effect]);
         }
@@ -102,6 +112,7 @@ export const SaraEasterEgg = ({ colleaguePhotos }: SaraEasterEggProps) => {
     if (content) {
       content.style.transform = "";
       content.style.filter = "";
+      delete content.dataset.scrambled;
     }
     setGame(null);
 

@@ -42,6 +42,43 @@ export default function SaraPage() {
           </Stack>
         </div>
 
+        {/*
+          Plain, hydration-independent listener. React's own click handler
+          (SaraEasterEgg) attaches after hydration; on a slow load the first
+          click could land on the anchor's native href before that JS runs,
+          which just re-loaded this same page instead of scrambling it. This
+          runs the moment the browser parses this tag, so the very first
+          click on Sara's card always scrambles. It only sets a style + a
+          data attribute — SaraEasterEgg reads that attribute on mount so
+          both stay in sync, and doesn't touch anything else on the page.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              var content = document.getElementById("sara-page-content");
+              if (!content) return;
+              content.addEventListener("click", function (event) {
+                var link = event.target.closest("a");
+                if (!link || link.getAttribute("href") !== "/vilka-ar-vi/sara") return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (content.dataset.scrambled === "true") return;
+                content.dataset.scrambled = "true";
+                var effects = [
+                  "scaleY(-1)",
+                  "scaleX(-1)",
+                  "rotate(8deg) skew(6deg, 3deg)"
+                ];
+                var effect = effects[Math.floor(Math.random() * effects.length)];
+                content.style.transform = effect;
+                if (effect.indexOf("rotate") === 0) {
+                  content.style.filter = "hue-rotate(140deg) saturate(1.6)";
+                }
+              }, true);
+            })();`,
+          }}
+        />
+
         <SaraEasterEgg colleaguePhotos={colleaguePhotos} />
       </Container>
     </Box>
