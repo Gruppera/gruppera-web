@@ -322,3 +322,156 @@ Manual, `npm run dev`:
 
 Update PR #10 - body gets an Iteration 3 section with real `lint` + `build`
 output. Stop at the PR - no merge.
+
+---
+
+# Iteration 4 - Personal mode content: the consultant-crossing game
+
+Same branch `lab/jonathan`, on top of PR #10. Fills in what Personal ("fun")
+mode actually shows. Corporate mode and every other file are untouched.
+
+## Concept
+
+A small Frogger-style game. Jonathan (his portrait) starts at the bottom and
+crosses lanes of traffic to reach the top. The traffic is the other Gruppera
+consultants - each a round `Avatar` of their photo - sliding across the lanes at
+different speeds and directions. Touch one and you lose a life. Reach the top and
+the score goes up, everything speeds up a notch, and you go again. Three lives,
+then "Spela igen".
+
+"Frogger" is a trademark - it is the shape of the game, never a word in the UI or
+the filenames. Component/file: **`KonsultCrossing.tsx`**.
+
+## Files
+
+- **New** `app/vilka-ar-vi/jonathan/KonsultCrossing.tsx`, `"use client"` - the
+  whole game. `"use client"` is justified: `requestAnimationFrame` loop, keyboard
+  + pointer input, game state.
+- **Edit** `app/vilka-ar-vi/jonathan/ModeView.tsx` - the `mode === "personal"`
+  branch renders a short heading + one instruction line + `<KonsultCrossing />`
+  instead of the current stub `Text`. Nothing else in `ModeView` changes
+  (identity block, konami hint, corporate `children` path all stay).
+- `page.tsx` - unchanged.
+- No shared files. `KonsultCrossing` reads `app/mockdata.json` through the
+  existing `consultantListSchema` from `@/features/consultants/schemas`
+  (read-only, same pattern as `ConsultantPhoto` / `ConsultantPeers`).
+
+## Board model
+
+- Grid: `COLS = 9`, `ROWS = 9`. Row `8` = start band, row `0` = goal band,
+  row `4` = safe band; rows `1-3` and `5-7` are the six traffic lanes.
+- Player: `{ col, row }` in grid units, starts `{ 4, 8 }`. Moves one cell per
+  input, clamped to the grid.
+- Lanes: a static `LANES` array, one entry per traffic row:
+  `{ row, dir: 1 | -1, speed /* cols per second, ~1.1-2.4 */, count: 2 }`.
+  Direction alternates lane to lane; speeds hand-picked and varied.
+- Obstacles: `LANES.flatMap` -> for each lane, `count` consultants spaced
+  `COLS / count` apart, cycling through the 11 consultants
+  (`consultants[(laneIndex * count + i) % consultants.length]`). Jonathan can
+  appear in traffic too - fine.
+- Obstacle x at time `t` seconds:
+  `x = (((phase + dir * speed * t) % COLS) + COLS) % COLS` - wraps seamlessly.
+  A second ghost copy is drawn at `x - COLS` / `x + COLS` so tokens slide in from
+  the edge instead of popping.
+
+## Loop & state
+
+- `useState`: `status: "idle" | "playing" | "over"`, `score`, `lives` (start 3),
+  `player`, `tick` (latest RAF timestamp - what drives obstacle re-render).
+- `useRef`: `rafRef`, `startRef` (perf clock for the current run), `playerRef`
+  (kept in sync with `player` so the RAF callback can read it), `speedMultRef`
+  (starts 1, `*= 1.15` per crossing), `pausedElapsedRef`.
+- `start()`: `status = "playing"`, reset score/lives/player/speedMult, seed
+  `startRef`, kick the loop. Shown as a **"Starta"** button - nothing animates
+  until the user asks, which also covers `prefers-reduced-motion`.
+- `loop(now)`: `t = (now - startRef) / 1000`; `setTick(now)`; compute every
+  obstacle x at `t`; if any obstacle on `playerRef.row` has
+  `|x - (col + 0.5)| < HIT` (`HIT ~= 0.85`) -> `loseLife()`; else
+  `rafRef = requestAnimationFrame(loop)`.
+- `move(dx, dy)`: clamp; if new `row === 0` -> `win()`; otherwise set `player`
+  (+ `playerRef`).
+- `win()`: `score + 1`, `speedMultRef *= 1.15`, player back to start band, run
+  continues.
+- `loseLife()`: `lives - 1`, player back to start; at `0` -> `status = "over"`,
+  cancel RAF. HUD shows **"Spela igen"**.
+- Effects:
+  - keydown listener on `window`, added only while `status === "playing"`;
+    arrows call `move` and `preventDefault()` (stop page scroll). Removed on
+    cleanup / status change. (No clash with the konami listener in `ModeView`:
+    the konami sequence ends in `b`, `a`, which arrow-only play never sends, so
+    gameplay can't flip the mode.)
+  - `visibilitychange`: tab hidden -> pause (cancel RAF, stash elapsed);
+    visible -> rebase `startRef` and resume.
+  - unmount -> `cancelAnimationFrame`.
+
+## Rendering (Mantine + brand tokens only, no hex)
+
+- Wrapper: `Box maw={480} mx="auto"` -> `AspectRatio ratio={1}` -> `Box
+  pos="relative"` with `overflow: "hidden"`, `borderRadius:
+  var(--mantine-radius-md)`, `border: 1px solid var(--mantine-color-default-border)`.
+- Lane bands: absolutely positioned `Box`, `top: row / ROWS * 100%`, `height:
+  100% / ROWS`. Goal `bg="sprout.9"`, start `bg="moss.9"`, safe `bg="moss.8"`,
+  traffic lanes `bg="grafite.8"` / `bg="grafite.7"` alternating. Goal band
+  carries a `Badge color="sprout" variant="filled" size="sm"` reading
+  **"Deployad!"** (nods to the CI/CD line in the corporate bio; easy to change).
+- Obstacles + player: `Avatar` (`radius="xl"`), `src={`/photos/${photo}`}`,
+  `alt={name}`; width/height = one cell via `style`, `left`/`top` from grid ->
+  `%`. `Avatar` renders initials automatically if an image is missing, so no
+  broken tiles. Player `Avatar` = `/photos/jonathan.png`, `color="sprout"` with
+  a sprout ring via `style` outline token.
+- HUD (`Group` above the board): `Text size="sm"` "Poäng: {score}"; lives as
+  three hearts (`IconHeartFilled` / `IconHeart` from `@tabler/icons-react`,
+  already installed); the `Button size="xs"` ("Starta" / "Spela igen", hidden
+  while playing).
+- D-pad below the board for touch + discoverability: four `ActionIcon
+  variant="default"` with `IconArrowUp/Down/Left/Right`, laid out as a plus,
+  calling the same `move`. Visible at all widths.
+- In `ModeView` personal branch, above the game: `Title order={3}
+  fz={{ base: 22, md: 28 }}` "Konami-läge" + `Text c="dimmed"
+  fz={{ base: 14, sm: 16 }}` "Hjälp Jonathan förbi kollegorna. Piltangenter
+  eller knapparna."
+
+## Constraints check
+
+- Mantine only: `Avatar`, `ActionIcon`, `AspectRatio`, `Badge`, `Button`,
+  `Box`, `Group`, `Text`, `Title` are all `@mantine/core`. Icons from the
+  already-installed `@tabler/icons-react`. **No new dependency.**
+- Brand tokens only (`sprout`, `moss`, `grafite`, `dimmed`, default-border);
+  no hex anywhere.
+- Type scale: `Title order={3}` 22/28, body 14/16, HUD `size="sm"`. No invented
+  sizes.
+- `next/image` not used; consultant art goes through Mantine `Avatar`.
+- `KonsultCrossing` only ever mounts after the konami toggle, i.e. never during
+  static export - no `window`/`document` at module or render scope, only in
+  effects.
+- Known tradeoff: the source photos are 0.5-1.6 MB PNGs loaded at avatar size
+  (image optimisation is off for the static export). Acceptable for an easter
+  egg; a future pass could add downscaled copies. Noted in the PR.
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+Both must pass. `out/vilka-ar-vi/jonathan.html` and `out/vilka-ar-vi/jonathan/`
+still exist; the SSR HTML still contains the corporate content and does **not**
+contain game markup (client-only + konami-gated). `npm test` still does not exist
+- not run, not claimed.
+
+Per the standing workflow note, browser/gameplay checks are the user's to run.
+The PR lists them as unchecked boxes:
+
+- [ ] "Starta" begins a run; arrow keys and the on-screen D-pad both move Jonathan
+- [ ] consultant avatars slide across the six lanes, wrap without popping
+- [ ] touching one costs a life; losing all three shows "Spela igen"
+- [ ] reaching the top raises the score, resets Jonathan, speeds things up
+- [ ] arrow keys don't scroll the page while playing; konami still returns to
+      Corporate; switching modes mid-game doesn't leave a RAF running
+- [ ] holds at 360px width; no console errors
+
+## PR
+
+Update PR #10 - add an Iteration 4 section with real `lint` + `build` output and
+the checklist above. Stop at the PR - no merge.

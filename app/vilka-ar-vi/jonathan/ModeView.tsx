@@ -11,6 +11,8 @@ import {
   Transition,
 } from "@mantine/core";
 
+import { KonsultCrossing } from "./KonsultCrossing";
+
 type Mode = "corporate" | "personal";
 
 const HINT_DELAY_MS = 5_000;
@@ -103,9 +105,15 @@ export const ModeView = ({ children }: ModeViewProps) => {
       {mode === "corporate" ? (
         children
       ) : (
-        <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
-          Personligt läge — kommer snart.
-        </Text>
+        <Stack gap="md">
+          <Title order={3} fz={{ base: 22, md: 28 }}>
+            Konami-läge
+          </Title>
+          <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
+            Hjälp Jonathan förbi kollegorna. Piltangenter eller knapparna.
+          </Text>
+          <KonsultCrossing />
+        </Stack>
       )}
     </Stack>
   );
