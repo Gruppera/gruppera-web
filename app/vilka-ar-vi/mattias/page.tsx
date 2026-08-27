@@ -33,7 +33,17 @@ export default function MattiasPage() {
             </Badge>
           </Stack>
 
-          <ConsultantPhoto slug="mattias" />
+          <Box style={{ position: "relative", maxWidth: 480 }}>
+            <ConsultantPhoto slug="mattias" />
+            <Badge
+              color="cognac"
+              variant="filled"
+              size="md"
+              style={{ position: "absolute", top: 12, right: 12 }}
+            >
+              Editors choice
+            </Badge>
+          </Box>
 
           {/* FIXED — every page ends the same way. Renders the link */}
           {/* grid to all other consultants plus the back link.      */}
