@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { colorForIndex } from "./palette";
 
 const COLS = 32;
-const INITIAL_ROWS = 16;
+const INITIAL_ROWS = 13; // ~1/5 fewer bubbles than a full 16 rows
 const MAX_ROWS = 36;
 const MATCH_SIZE = 3;
 const BASE_BULLET_SPEED = 9;
