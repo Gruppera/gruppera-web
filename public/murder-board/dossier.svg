@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f2eadc"/>
+  <rect x="22" y="18" width="276" height="144" fill="#f8f2e9" stroke="#8a6a4d" stroke-width="3"/>
+  <rect x="22" y="18" width="276" height="26" fill="#d2bf9e"/>
+  <text x="34" y="36" font-family="Arial, sans-serif" font-size="14" fill="#5a402c" font-weight="700">CASE FILE #042</text>
+  <path d="M36 64h164M36 80h220M36 96h182M36 112h240M36 128h196M36 144h220" stroke="#b8a792" stroke-width="4"/>
+  <rect x="230" y="60" width="52" height="74" fill="#d4c1a5"/>
+  <circle cx="256" cy="97" r="18" fill="#bca98a"/>
+</svg>

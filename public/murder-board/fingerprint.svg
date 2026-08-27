@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f3ede2"/>
+  <g fill="none" stroke="#3a3a3a" stroke-width="3" stroke-linecap="round">
+    <path d="M110 125c0-32 20-54 50-54s50 22 50 54"/>
+    <path d="M96 126c0-42 28-72 64-72s64 30 64 72"/>
+    <path d="M83 127c0-50 34-86 77-86s77 36 77 86"/>
+    <path d="M122 128c0-24 14-40 38-40s38 16 38 40"/>
+    <path d="M136 128c0-16 9-28 24-28s24 12 24 28"/>
+    <path d="M152 128c0-8 4-14 8-14s8 6 8 14"/>
+  </g>
+  <text x="12" y="22" font-family="Arial, sans-serif" font-size="16" fill="#7a3b2f">Fingerprint Lab</text>
+</svg>

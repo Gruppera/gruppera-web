@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f6f0e6"/>
+  <text x="12" y="30" font-family="Georgia, serif" font-size="28" fill="#745640" font-weight="700">NEWS</text>
+  <rect x="14" y="44" width="120" height="86" fill="#ddd3c2"/>
+  <path d="M150 52h152M150 66h136M150 80h148M150 94h142M14 142h288M14 156h274" stroke="#b8a995" stroke-width="4"/>
+  <rect x="24" y="54" width="100" height="66" fill="#c7baa6"/>
+  <circle cx="74" cy="87" r="24" fill="#b8aa95"/>
+</svg>

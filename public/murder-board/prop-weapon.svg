@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#efe9dc"/>
+  <g>
+    <rect x="64" y="72" width="170" height="32" rx="8" fill="#2f3547"/>
+    <rect x="212" y="78" width="58" height="20" rx="6" fill="#4d576f"/>
+    <path d="M116 104h44l-8 40h-28z" fill="#232a38"/>
+    <rect x="68" y="78" width="26" height="12" rx="4" fill="#6f7790"/>
+    <circle cx="101" cy="88" r="4" fill="#a6aec7"/>
+  </g>
+  <text x="12" y="24" font-family="Arial, sans-serif" font-size="16" fill="#603f2a">Prop Analysis</text>
+</svg>

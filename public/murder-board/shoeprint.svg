@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="#f1ebdf"/>
+  <g fill="#2d2d35">
+    <ellipse cx="110" cy="72" rx="32" ry="20"/>
+    <rect x="88" y="72" width="44" height="72" rx="14"/>
+    <ellipse cx="210" cy="100" rx="32" ry="20"/>
+    <rect x="188" y="28" width="44" height="72" rx="14"/>
+    <circle cx="102" cy="146" r="6"/>
+    <circle cx="118" cy="146" r="6"/>
+    <circle cx="202" cy="20" r="6"/>
+    <circle cx="218" cy="20" r="6"/>
+  </g>
+  <text x="14" y="22" font-family="Arial, sans-serif" font-size="16" fill="#5a4535">Shoeprint Cast</text>
+</svg>
