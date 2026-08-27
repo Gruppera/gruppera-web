@@ -31,6 +31,7 @@ type BubblesProps = {
 export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const countRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -301,9 +302,9 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
         return;
       }
 
-      ctx.fillStyle = "#EEEDEB";
-      ctx.font = `${Math.max(14, Math.round(16 * scale))}px sans-serif`;
-      ctx.fillText(`Kvar: ${remainingCount}`, 8, 20 * scale);
+      if (countRef.current) {
+        countRef.current.textContent = `Kvar: ${remainingCount}`;
+      }
 
       const r = radius();
       for (let row = 0; row < MAX_ROWS; row += 1) {
@@ -426,24 +427,45 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
 
   return (
     <div
-      ref={containerRef}
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
       }}
     >
-      <canvas
-        ref={canvasRef}
+      <div
+        ref={countRef}
         style={{
-          width: "100%",
-          height: "100%",
-          border: "2px solid #95B354",
-          boxSizing: "border-box",
+          color: "#EEEDEB",
+          fontSize: "1.1rem",
+          fontWeight: 600,
+          padding: "0 2px 6px",
+          flexShrink: 0,
         }}
-      />
+      >
+        Kvar: —
+      </div>
+      <div
+        ref={containerRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "2px solid #95B354",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
     </div>
   );
 };
