@@ -354,28 +354,37 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       ctx.arc(sx, sy, r, 0, Math.PI * 2);
       ctx.stroke();
 
-      const arrowLen = r * 2.2;
-      const tipX = sx + Math.sin(aim) * arrowLen;
-      const tipY = sy - Math.cos(aim) * arrowLen;
+      // Unit direction vector for the current aim (0 = straight up), so the
+      // shaft and head are computed from the same origin/angle — drawing
+      // the shaft from an offset start but the head from center (as before)
+      // is what made the arrow look skewed at non-zero angles.
+      const dirX = Math.sin(aim);
+      const dirY = -Math.cos(aim);
+      const shaftStart = r * 1.15;
+      const shaftEnd = r * 3.2;
+      const startX = sx + dirX * shaftStart;
+      const startY = sy + dirY * shaftStart;
+      const tipX = sx + dirX * shaftEnd;
+      const tipY = sy + dirY * shaftEnd;
+
       ctx.strokeStyle = "#EEEDEB";
       ctx.lineWidth = Math.max(1, 1.5 * scale);
       ctx.beginPath();
-      ctx.moveTo(sx, sy - r * 1.15);
+      ctx.moveTo(startX, startY);
       ctx.lineTo(tipX, tipY);
       ctx.stroke();
-      const headAngle = Math.PI / 7;
-      const dirAngle = Math.atan2(tipY - sy, tipX - sx);
+
+      const perpX = -dirY;
+      const perpY = dirX;
+      const headLen = r * 0.6;
+      const headWidth = r * 0.4;
+      const backX = tipX - dirX * headLen;
+      const backY = tipY - dirY * headLen;
       ctx.beginPath();
       ctx.moveTo(tipX, tipY);
-      ctx.lineTo(
-        tipX - Math.cos(dirAngle - headAngle) * r * 0.5,
-        tipY - Math.sin(dirAngle - headAngle) * r * 0.5,
-      );
+      ctx.lineTo(backX + perpX * headWidth, backY + perpY * headWidth);
       ctx.moveTo(tipX, tipY);
-      ctx.lineTo(
-        tipX - Math.cos(dirAngle + headAngle) * r * 0.5,
-        tipY - Math.sin(dirAngle + headAngle) * r * 0.5,
-      );
+      ctx.lineTo(backX - perpX * headWidth, backY - perpY * headWidth);
       ctx.stroke();
 
       if (!started) {
