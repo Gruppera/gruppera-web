@@ -1,3 +1,5 @@
+"use client";
+
 import { AspectRatio, Card, Image } from "@mantine/core";
 
 import mockData from "@/app/mockdata.json";
