@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ActionIcon,
   Anchor,
@@ -9,6 +10,7 @@ import {
   Box,
   Button,
   Group,
+  Stack,
   Text,
 } from "@mantine/core";
 import {
@@ -63,10 +65,11 @@ type Obstacle = {
   phase: number;
   x: number;
   name: string;
+  slug: string;
   photo: string;
 };
 
-type Consultant = { name: string; photo: string };
+type Consultant = { name: string; slug: string; photo: string };
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -95,6 +98,7 @@ const buildObstacles = (level: number, consultants: Consultant[]): Obstacle[] =>
         phase,
         x: phase,
         name: consultant.name,
+        slug: consultant.slug,
         photo: consultant.photo,
       });
     }
@@ -123,6 +127,9 @@ export const KonsultCrossing = () => {
   const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(LIVES);
   const [player, setPlayer] = useState({ col: START_COL, row: START_ROW });
+  const [culprit, setCulprit] = useState<{ name: string; slug: string } | null>(
+    null,
+  );
   const [, setTick] = useState(0);
 
   const obstaclesRef = useRef<Obstacle[] | null>(null);
@@ -147,6 +154,7 @@ export const KonsultCrossing = () => {
     setLives(LIVES);
     obstaclesRef.current = buildObstacles(1, consultants);
     lastNowRef.current = null;
+    setCulprit(null);
     resetPlayer();
     setStatus("playing");
   };
@@ -189,17 +197,18 @@ export const KonsultCrossing = () => {
       }
 
       const { col, row } = playerRef.current;
-      const hit = obstacles.some((obstacle) => {
+      const struck = obstacles.find((obstacle) => {
         if (obstacle.row !== row) return false;
         const raw = Math.abs(obstacle.x - (col + 0.5));
         return Math.min(raw, COLS - raw) < HIT;
       });
 
-      if (hit) {
+      if (struck) {
         livesRef.current -= 1;
         setLives(livesRef.current);
         resetPlayer();
         if (livesRef.current <= 0) {
+          setCulprit({ name: struck.name, slug: struck.slug });
           setStatus("over");
           return;
         }
@@ -390,16 +399,27 @@ export const KonsultCrossing = () => {
       </Box>
 
       {status === "over" ? (
-        <Text size="sm" c="dimmed" ta="center" mt="sm">
-          Game over — nådde nivå {level}. Testa vårt andra spel:{" "}
-          <Anchor
-            href="https://skiordie.gruppera.se/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Ski or Die
-          </Anchor>
-        </Text>
+        <Stack gap={4} align="center" mt="sm">
+          {culprit ? (
+            <Text size="sm" c="dimmed" ta="center">
+              Du mötte{" "}
+              <Anchor component={Link} href={`/vilka-ar-vi/${culprit.slug}`}>
+                {culprit.name}
+              </Anchor>{" "}
+              på väg till kaffemaskinen.
+            </Text>
+          ) : null}
+          <Text size="sm" c="dimmed" ta="center">
+            Game over — nådde nivå {level}. Testa vårt andra spel:{" "}
+            <Anchor
+              href="https://skiordie.gruppera.se/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ski or Die
+            </Anchor>
+          </Text>
+        </Stack>
       ) : null}
 
       <Box maw={168} mx="auto" mt="sm">

@@ -612,3 +612,19 @@ his portrait is only the playable character. The other 10 consultants still cycl
 through the lanes.
 
 `npm run lint` + `npm run build` must pass. Browser check is the user's.
+
+---
+
+# Iteration 10 - name the colleague who ended the run
+
+`KonsultCrossing.tsx` only.
+
+- `Obstacle` / `Consultant` carry `slug`; `buildObstacles` copies it through.
+- Collision uses `.find` instead of `.some`; on the fatal hit the struck
+  consultant `{ name, slug }` is stored in a `culprit` state (cleared in
+  `start()`).
+- Game-over block gains a line above the "Ski or Die" line: "Du mötte
+  &lt;name&gt; på väg till kaffemaskinen.", the name an `Anchor component={Link}`
+  to `/vilka-ar-vi/<slug>`. The two lines sit in a centered `Stack`.
+
+`npm run lint` + `npm run build` must pass. Browser check is the user's.
