@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { colorForIndex } from "./palette";
 
-const TARGET_CELL_PX = 24; // desired bubble size — count follows from this
+const TARGET_CELL_PX = 34; // desired bubble size — count follows from this
 const MATCH_SIZE = 3;
 const BASE_BULLET_SPEED = 9;
 const BUBBLE_RADIUS_FACTOR = 0.5; // fills the cell — bubbles touch, no gaps
@@ -64,7 +64,21 @@ export const Bubbles = ({ photos, saraPhoto, onWin, onLose }: BubblesProps) => {
       10,
       Math.round((height - TARGET_CELL_PX * 3) / TARGET_CELL_PX),
     );
-    const INITIAL_ROWS = Math.max(4, Math.round(MAX_ROWS * 0.36));
+    // Starting bubble count follows screen size too, but stays within
+    // [MIN_START, MAX_START] — a huge monitor still starts at MAX_START
+    // bubbles, not an ever-growing pile, and a tiny one still gets at
+    // least MIN_START to actually be a game.
+    const MIN_START = 100;
+    const MAX_START = 500;
+    const naturalStart = COLS * Math.round(MAX_ROWS * 0.36);
+    const startCount = Math.min(MAX_START, Math.max(MIN_START, naturalStart));
+    let INITIAL_ROWS = Math.max(
+      1,
+      Math.min(MAX_ROWS, Math.floor(startCount / COLS)),
+    );
+    if (INITIAL_ROWS * COLS < MIN_START && INITIAL_ROWS < MAX_ROWS) {
+      INITIAL_ROWS += 1;
+    }
 
     const applySize = () => {
       width = container.clientWidth;
