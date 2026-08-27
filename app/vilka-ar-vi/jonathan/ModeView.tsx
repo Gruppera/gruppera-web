@@ -1,19 +1,32 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Badge,
   Group,
-  SegmentedControl,
   Stack,
   Text,
   Title,
+  Tooltip,
   Transition,
 } from "@mantine/core";
 
 type Mode = "corporate" | "personal";
 
-const TOGGLE_DELAY_MS = 10_000;
+const HINT_DELAY_MS = 5_000;
+
+const KONAMI = [
+  "arrowup",
+  "arrowup",
+  "arrowdown",
+  "arrowdown",
+  "arrowleft",
+  "arrowright",
+  "arrowleft",
+  "arrowright",
+  "b",
+  "a",
+] as const;
 
 type ModeViewProps = {
   children: ReactNode;
@@ -21,34 +34,64 @@ type ModeViewProps = {
 
 export const ModeView = ({ children }: ModeViewProps) => {
   const [mode, setMode] = useState<Mode>("corporate");
-  const [showToggle, setShowToggle] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const progress = useRef(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowToggle(true), TOGGLE_DELAY_MS);
+    const timer = setTimeout(() => setShowHint(true), HINT_DELAY_MS);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.altKey || event.metaKey) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === KONAMI[progress.current]) {
+        progress.current += 1;
+      } else {
+        progress.current = key === KONAMI[0] ? 1 : 0;
+      }
+
+      if (progress.current === KONAMI.length) {
+        progress.current = 0;
+        setMode((current) =>
+          current === "corporate" ? "personal" : "corporate",
+        );
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   return (
     <Stack gap="lg">
       {/* FIXED — identity block. Rendered client-side on this page so the */}
-      {/* mode toggle can sit next to the name (see plans/lab/jonathan.md). */}
+      {/* konami hint can sit next to the name (see plans/lab/jonathan.md). */}
       <Stack gap="sm">
         <Group gap="sm" align="center" wrap="wrap">
           <Title order={1} fz={{ base: 36, md: 52 }}>
             Jonathan
           </Title>
-          <Transition mounted={showToggle} transition="pop" duration={200}>
+          <Transition mounted={showHint} transition="fade" duration={200}>
             {(styles) => (
-              <SegmentedControl
-                style={styles}
-                size="xs"
-                value={mode}
-                onChange={(value) => setMode(value as Mode)}
-                data={[
-                  { label: "Corporate", value: "corporate" },
-                  { label: "Personal", value: "personal" },
-                ]}
-              />
+              <Tooltip label="↑ ↑ ↓ ↓ ← → ← → B A" withArrow>
+                <Text
+                  style={styles}
+                  component="span"
+                  tabIndex={0}
+                  c="dimmed"
+                  size="sm"
+                >
+                  {mode === "corporate"
+                    ? "Kan du konami-koden?"
+                    : "Konami igen för att gå tillbaka"}
+                </Text>
+              </Tooltip>
             )}
           </Transition>
         </Group>

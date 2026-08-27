@@ -231,3 +231,94 @@ Manual, `npm run dev`:
 
 Update the existing PR for `lab/jonathan` (or open one if none), body links this
 plan and pastes real `lint` + `build` output. Stop at the PR - no merge.
+
+---
+
+# Iteration 3 - konami-code unlock for Personal mode
+
+Same branch `lab/jonathan`, on top of PR #10. **Supersedes the mode-switch
+mechanism from Iteration 2** (the 10 s `SegmentedControl`). Iteration 2's layout
+work - smaller photo, "Teknisk ryggrad" stacked beside it - stays exactly as is.
+
+## Change requested
+
+Drop the visible Corporate / Personal button. Instead:
+
+1. 5 seconds after load, the text **"Kan du konami-koden?"** fades in next to the
+   name, where the toggle used to sit.
+2. Hovering (or focusing) that text shows a `Tooltip` spelling out the code:
+   `↑ ↑ ↓ ↓ ← → ← → B A`.
+3. Typing that key sequence anywhere on the page switches to **Personal**
+   ("fun") mode. Typing it again switches back.
+
+Personal-mode content stays the Iteration 2 stub line - built out in a later
+iteration.
+
+## `ModeView.tsx` changes
+
+- Drop the `SegmentedControl` import + usage and the `showToggle` 10 s timer.
+  Add a `showHint` timer at **5000 ms**.
+- Konami tracking, all client-side:
+  - `const KONAMI = ["arrowup","arrowup","arrowdown","arrowdown","arrowleft",
+    "arrowright","arrowleft","arrowright","b","a"] as const`.
+  - `useEffect` adds one `window` `keydown` listener; progress index kept in a
+    `useRef`. Per key: lower-case `event.key`; if it equals `KONAMI[index]`,
+    advance; otherwise reset (to `1` if the key equals `KONAMI[0]`, else `0`).
+    On reaching the end: `setMode(m => m === "corporate" ? "personal"
+    : "corporate")` and reset the index. Cleanup removes the listener.
+  - Ignore repeats while a modifier (ctrl/alt/meta) is held; don't preventDefault
+    (the arrows still scroll - fine for an easter egg).
+- The hint element:
+  ```tsx
+  <Transition mounted={showHint} transition="fade" duration={200}>
+    {(styles) => (
+      <Tooltip label="↑ ↑ ↓ ↓ ← → ← → B A" withArrow>
+        <Text style={styles} component="span" tabIndex={0} c="dimmed" size="sm">
+          {mode === "corporate"
+            ? "Kan du konami-koden?"
+            : "Konami igen för att gå tillbaka"}
+        </Text>
+      </Tooltip>
+    )}
+  </Transition>
+  ```
+  `tabIndex={0}` so the tooltip is keyboard-reachable, not hover-only. The hint
+  stays mounted in both modes once it has appeared, so there is always a way back
+  without a reload.
+- Still `"use client"` - justified by the 5 s timer, the keydown listener and the
+  mode state. `Tooltip`, `Transition`, `Text`, `Group`, `Badge`, `Title`, `Stack`
+  are all `@mantine/core`. No new dependency.
+- `page.tsx` unchanged from Iteration 2: server component, keeps `metadata`,
+  passes the corporate free zone as `children`, `ConsultantPeers` last.
+
+## Deviations from the shared skeleton (unchanged in spirit from Iteration 2)
+
+Identity block still renders inside a client component; instead of a control it
+now carries a dimmed easter-egg hint next to the name. Name still on top,
+`Title order={1}` + sprout `Badge`, nothing above the name. One sibling client
+file in the owned directory. No shared files touched.
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+Both must pass; `out/vilka-ar-vi/jonathan.html` and `out/vilka-ar-vi/jonathan/`
+still exist; SSR HTML still contains the corporate content. `npm test` still does
+not exist - not run, not claimed.
+
+Manual, `npm run dev`:
+
+- [ ] no hint for the first 5 s; "Kan du konami-koden?" then fades in by the name
+- [ ] hovering or focusing it shows the tooltip `↑ ↑ ↓ ↓ ← → ← → B A`
+- [ ] entering the sequence flips to Personal (stub line); a wrong key mid-run
+      resets cleanly; entering it again returns to Corporate and the hint text
+      swaps accordingly
+- [ ] peer list + back link unchanged; holds at 360 px; no console errors
+
+## PR
+
+Update PR #10 - body gets an Iteration 3 section with real `lint` + `build`
+output. Stop at the PR - no merge.
