@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Divider, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 
