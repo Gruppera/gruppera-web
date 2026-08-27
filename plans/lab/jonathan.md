@@ -602,3 +602,13 @@ content only). Browser checks are the user's.
 
 `npm run lint` + `npm run build` must pass; SSR output unchanged. Browser checks
 are the user's.
+
+---
+
+# Iteration 9 - Jonathan is only the player, never traffic
+
+`KonsultCrossing.tsx` only. The obstacle pool filters out the `jonathan` slug, so
+his portrait is only the playable character. The other 10 consultants still cycle
+through the lanes.
+
+`npm run lint` + `npm run build` must pass. Browser check is the user's.

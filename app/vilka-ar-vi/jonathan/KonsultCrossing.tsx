@@ -112,7 +112,10 @@ const bandBg = (row: number) => {
 
 export const KonsultCrossing = () => {
   const consultants = useMemo<Consultant[]>(
-    () => consultantListSchema.parse(mockData),
+    () =>
+      consultantListSchema
+        .parse(mockData)
+        .filter((consultant) => consultant.slug !== "jonathan"),
     [],
   );
 
