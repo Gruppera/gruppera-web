@@ -24,16 +24,23 @@ this is (fixed point 4), it demonstrates the mechanic before you click anything,
 and it leaves exactly ten pairs to find — the ten colleagues that have to be
 reachable.
 
-## Reachability — the part that needs care
+## Reachability — revised after review
 
-The rule I proposed in #12 says a game may reveal links as people play, but must
-not be the only way out. My own page is the first thing that rule constrains, so:
+The "Fler konsulter" grid is **gone**. It duplicated what the cards already do,
+and the cards *are* the navigation.
 
-- `<ConsultantPeers currentSlug="daniel" />` stays on the page, below the game.
-  Every colleague is a real `<a href>` in the prerendered HTML whether or not
-  anyone plays, which also keeps the page crawlable — the match-revealed links
-  exist only after client interaction and are invisible to a crawler.
-- The game is the fun path. `ConsultantPeers` is the guaranteed one.
+In its place is a single back link to `/vilka-ar-vi`, the index, which links to
+all eleven. The page still has an ungated path out, one hop longer.
+
+The cost, stated plainly because it is real: the prerendered HTML now contains
+**zero** direct links to colleagues. Match-revealed links exist only after client
+interaction, so a crawler, or anyone who will not play, sees only the back link.
+Colleague pages stay discoverable because `/vilka-ar-vi` links to every one of
+them — discovery never depended on this page.
+
+This is a deliberate deviation from the letter of the rule in #12, which asks for
+every colleague to be reachable *from your page*. Flagged in the PR rather than
+quietly taken.
 
 ## Files
 
@@ -51,9 +58,13 @@ installed) supplies `useReducedMotion`.
 - Card back is `/gruppera-logo-symbol.svg` on `moss`.
 - Click two cards. Same `slug` + different `kind` → matched, stays up, becomes a link.
   Otherwise they flip back after a beat. Move counter and a `n / 11 par` readout.
-- **Shuffle happens in `useEffect` on mount, never during render** — the page is
-  prerendered by the static export, so shuffling in render would be a hydration
-  mismatch. Cards are face-down at first paint, so the reorder is invisible.
+- **The deal is random per page load.** The seed is picked once at module
+  evaluation in the browser — never during render (`Math.random()` there is impure
+  and `react-hooks/purity` rejects it) and never in an effect
+  (`react-hooks/set-state-in-effect` rejects that too). A `useSyncExternalStore`
+  flag makes the first client render use a fixed seed so it matches the
+  prerendered HTML, then the real deal takes over. Face-down cards are identical,
+  so the hand-off is invisible.
 - Keyboard: every unmatched card is a real `<button>`; matched cards are real links.
   An `aria-live` region announces matches and completion.
 
