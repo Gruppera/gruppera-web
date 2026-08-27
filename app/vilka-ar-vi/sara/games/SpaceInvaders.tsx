@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { colorForIndex } from "./palette";
-
 const BASE_WIDTH = 400;
 const BASE_HEIGHT = 320;
 const BASE_INVADER_SIZE = 20;
@@ -23,7 +21,6 @@ type Invader = {
   y: number;
   alive: boolean;
   image: HTMLImageElement;
-  borderColor: string;
   jitterX: number;
   jitterY: number;
 };
@@ -101,7 +98,6 @@ export const SpaceInvaders = ({
             y: marginY + row * (size + gap),
             alive: true,
             image,
-            borderColor: colorForIndex(photoIndex),
             // Randomized per wave so the formation looks less like a rigid
             // grid and more like a loose cluster.
             jitterX: (Math.random() - 0.5) * colSlot * 0.5,
@@ -258,7 +254,7 @@ export const SpaceInvaders = ({
           ctx.arc(icx, icy, ir, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.strokeStyle = invader.borderColor;
+        ctx.strokeStyle = "#95B354";
         ctx.lineWidth = Math.max(0.75, 0.9 * scale);
         ctx.beginPath();
         ctx.arc(icx, icy, ir, 0, Math.PI * 2);
@@ -284,7 +280,7 @@ export const SpaceInvaders = ({
         ctx.clip();
         ctx.drawImage(playerImage, playerX, pcy - pr, pWidth, pWidth);
         ctx.restore();
-        ctx.strokeStyle = "#E0CCBE";
+        ctx.strokeStyle = "#95B354";
         ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);

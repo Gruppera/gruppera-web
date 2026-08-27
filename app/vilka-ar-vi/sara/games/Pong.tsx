@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { colorForIndex } from "./palette";
-
 const BASE_WIDTH = 400;
 const BASE_HEIGHT = 300;
 const BASE_PADDLE_WIDTH = 10;
@@ -61,11 +59,9 @@ export const Pong = ({ photos, onWin }: PongProps) => {
     let started = false;
 
     const ballImage = new Image();
-    let ballBorderColor = colorForIndex(0);
     const setRandomBallImage = () => {
       const index = Math.floor(Math.random() * photos.length);
       ballImage.src = photos[index];
-      ballBorderColor = colorForIndex(index);
     };
     setRandomBallImage();
 
@@ -197,7 +193,7 @@ export const Pong = ({ photos, onWin }: PongProps) => {
         ctx.clip();
         ctx.drawImage(ballImage, ballX, ballY, ballSize, ballSize);
         ctx.restore();
-        ctx.strokeStyle = ballBorderColor;
+        ctx.strokeStyle = "#95B354";
         ctx.lineWidth = Math.max(0.75, 1 * scale);
         ctx.beginPath();
         ctx.arc(

@@ -180,12 +180,19 @@ export const Bubbles = ({ photos, saraPhoto, onWin }: BubblesProps) => {
       ctx.fillStyle = "#0D0D0C";
       ctx.fillRect(0, 0, width, height);
 
-      const remaining = grid.some((r) => r.some((c) => c !== null));
-      if (!remaining) {
+      const remainingCount = grid.reduce(
+        (sum, r) => sum + r.filter((c) => c !== null).length,
+        0,
+      );
+      if (remainingCount === 0) {
         alive = false;
         onWin();
         return;
       }
+
+      ctx.fillStyle = "#EEEDEB";
+      ctx.font = `${Math.max(14, Math.round(16 * scale))}px sans-serif`;
+      ctx.fillText(`Kvar: ${remainingCount}`, 8, 20 * scale);
 
       for (let row = 0; row < MAX_ROWS; row += 1) {
         for (let col = 0; col < COLS; col += 1) {

@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { colorForIndex } from "./palette";
-
 const COLS = 24;
 const ROWS = 18;
 const BASE_CELL = 20;
@@ -132,16 +130,16 @@ export const Snake = ({ photos, saraPhoto, onWin }: SnakeProps) => {
         const cx = segment.x * cell + cell / 2;
         const cy = segment.y * cell + cell / 2;
         if (index === 0) {
-          drawPortrait(cx, cy, r, saraImage, "#E0CCBE");
+          drawPortrait(cx, cy, r, saraImage, "#95B354");
         } else {
           const faceIndex = segmentFaces[index - 1];
-          drawPortrait(cx, cy, r, foodImages[faceIndex], colorForIndex(faceIndex));
+          drawPortrait(cx, cy, r, foodImages[faceIndex], "#95B354");
         }
       });
 
       const fcx = food.x * cell + cell / 2;
       const fcy = food.y * cell + cell / 2;
-      drawPortrait(fcx, fcy, r, foodImages[foodIndex], colorForIndex(foodIndex));
+      drawPortrait(fcx, fcy, r, foodImages[foodIndex], "#95B354");
 
       ctx.fillStyle = "#EEEDEB";
       ctx.font = `${Math.max(14, Math.round(cell * 0.7))}px sans-serif`;

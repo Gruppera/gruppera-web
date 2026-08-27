@@ -36,15 +36,6 @@ const GAME_TITLES: Record<Game, string> = {
   bubbles: "Bubblor",
 };
 
-const GAME_HINTS: Record<Game, string> = {
-  snake: "Pilarna styr. Sara är ormen — ät alla kollegor för att vinna.",
-  invaders:
-    "Pilarna flyttar, mellanslag skjuter. Du är den som skjuter — kollegorna skjuter tillbaka. Skjut ner alla för att vinna.",
-  pong: "Pil upp/ner styr. Först till 3 poäng vinner.",
-  bubbles:
-    "Pilarna väljer kolumn, mellanslag skjuter uppåt. Gruppera 3 av samma ansikte för att slå bort dem — töm brädet för att vinna.",
-};
-
 type SaraEasterEggProps = {
   colleaguePhotos: string[];
   saraPhoto: string;
@@ -198,7 +189,7 @@ export const SaraEasterEgg = ({
         closeOnEscape={false}
         fullScreen
         zIndex={1001}
-        title={game ? `Klara ${GAME_TITLES[game]} för att komma vidare` : ""}
+        title={game ? GAME_TITLES[game] : ""}
         styles={{
           inner: { overflow: "hidden" },
           content: {
@@ -218,9 +209,6 @@ export const SaraEasterEgg = ({
         }}
       >
       <Stack h="100%" gap="xs" style={{ minHeight: 0 }}>
-        <Text c="dimmed" size="sm">
-          {game ? GAME_HINTS[game] : ""} Sidan är scramblad tills du vinner.
-        </Text>
         <Box style={{ flex: 1, minHeight: 0 }}>
           {game === "snake" && (
             <Snake
