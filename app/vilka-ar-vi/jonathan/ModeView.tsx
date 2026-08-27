@@ -110,7 +110,8 @@ export const ModeView = ({ children }: ModeViewProps) => {
             Konami-läge
           </Title>
           <Text c="dimmed" fz={{ base: 14, sm: 16 }}>
-            Hjälp Jonathan förbi kollegorna. Piltangenter eller knapparna.
+            Hjälp Jonathan förbi kollegorna till kaffemaskinen. Piltangenter
+            eller knapparna.
           </Text>
           <KonsultCrossing />
         </Stack>

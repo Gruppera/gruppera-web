@@ -475,3 +475,79 @@ The PR lists them as unchecked boxes:
 
 Update PR #10 - add an Iteration 4 section with real `lint` + `build` output and
 the checklist above. Stop at the PR - no merge.
+
+---
+
+# Iteration 5 - level-based difficulty + coffee-machine goal
+
+Same branch, on top of PR #10. Only `KonsultCrossing.tsx` changes plus one line
+of copy in `ModeView.tsx`. Corporate mode, `page.tsx` and shared files untouched.
+
+## Changes
+
+1. **"Poäng" -> "Nivå".** The HUD counter is the level, not a score. Starts at
+   **1**, +1 each time Jonathan reaches the goal. Drop the separate
+   "Nivå {1 + score}" text shown while playing - one number now, always visible.
+   Rename `score` / `scoreRef` / `setScore` -> `level` / `levelRef` / `setLevel`
+   (initial `1`).
+
+2. **Level = difficulty, gentle start, ramps up.** Two dials, both a function of
+   the current level:
+   - **Speed factor** `min(BASE_FACTOR + (level - 1) * LEVEL_STEP, MAX_FACTOR)`
+     with `BASE_FACTOR = 0.6`, `LEVEL_STEP = 0.16`, `MAX_FACTOR = 2.4`. Applied
+     to per-lane base speeds, which drop to `1.3 / 0.9 / 1.7 / 1.1 / 1.5 / 1.9`
+     cols per second. Level 1 ~= 0.6x -> clearly easy; the cap is reached around
+     level 13. Replaces the old flat `1 + score * 0.15`.
+   - **Density** `count = min(2 + floor((level - 1) / 3), 4)` consultants per
+     lane: 2 through level 3, 3 at levels 4-6, 4 from level 7 (gap 2.25 cells,
+     still crossable).
+   - Obstacles are rebuilt from `buildObstacles(level, consultants)` on each
+     level-up (the player is already resetting to the start line, so the board
+     visibly re-lays-out for the new level). Same builder feeds `start()` for
+     level 1 and the idle-state board. `LANES` now carries `baseSpeed` and no
+     `count`; the consultant list stays a `useMemo`.
+
+3. **Goal is a coffee machine.** Replace the `Badge` "Deployad!" in the goal band
+   with a small machine built from `Box`es + `IconCoffee`
+   (`@tabler/icons-react`, already installed): a `grafite` body, a `grafite`
+   hopper strip, a `cognac` `IconCoffee` for the cup, a `sprout` power-dot.
+   `aria-label="Kaffemaskin"`. Goal band `bg` shifts `sprout.9` -> `cognac.9`
+   (still a brand token); the player keeps its sprout outline. `ModeView`'s
+   instruction line gains "... till kaffemaskinen."
+
+4. **Game-over cross-promo.** When `status === "over"`, render a line under the
+   board: `Text size="sm"` "Game over - nådde nivå {level}. Testa vårt andra
+   spel: " + `Anchor` ("Ski or Die", `href="https://skiordie.gruppera.se/"`,
+   `target="_blank"`, `rel="noreferrer"`). `Anchor` is `@mantine/core`. Only
+   shown in the over state; no styling colour outside brand tokens (default
+   `Anchor` colour).
+
+## Constraints
+
+Still Mantine + brand tokens only (`grafite`, `cognac`, `sprout`, `moss`), no
+hex, **no new dependency**. Type scale untouched. `KonsultCrossing` stays
+client-only and konami-gated.
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+Both pass; `out/vilka-ar-vi/jonathan.html` and `out/vilka-ar-vi/jonathan/` still
+present; SSR HTML unchanged (corporate content only, no game markup). `npm test`
+still absent. Gameplay checks are the user's - PR lists them:
+
+- [ ] HUD reads "Nivå: 1" at start and counts up on each crossing
+- [ ] level 1 is slow and easy; both speed and lane density climb with the level
+- [ ] the goal renders as a coffee machine; reaching it advances the level
+- [ ] the board re-seeds cleanly on level-up; lives and RAF behave as before
+- [ ] game over shows the "Ski or Die" line linking to
+      https://skiordie.gruppera.se/ (opens in a new tab)
+- [ ] 360px width holds; no console errors
+
+## PR
+
+Update PR #10 - Iteration 5 section with real `lint` + `build` output.
+Stop at the PR - no merge.

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActionIcon,
+  Anchor,
   AspectRatio,
   Avatar,
-  Badge,
   Box,
   Button,
   Group,
@@ -16,6 +16,7 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconArrowUp,
+  IconCoffee,
   IconHeart,
   IconHeartFilled,
 } from "@tabler/icons-react";
@@ -31,25 +32,28 @@ const START_ROW = 8;
 const START_COL = 4;
 const LIVES = 3;
 const HIT = 0.85;
-const LEVEL_STEP = 0.15;
 const MAX_DT = 0.05;
+
+const BASE_FACTOR = 0.6;
+const LEVEL_STEP = 0.16;
+const MAX_FACTOR = 2.4;
+const MAX_COUNT = 4;
 
 type Status = "idle" | "playing" | "over";
 
 type Lane = {
   row: number;
   dir: 1 | -1;
-  speed: number;
-  count: number;
+  baseSpeed: number;
 };
 
 const LANES: Lane[] = [
-  { row: 1, dir: -1, speed: 1.6, count: 2 },
-  { row: 2, dir: 1, speed: 1.1, count: 2 },
-  { row: 3, dir: -1, speed: 2.2, count: 2 },
-  { row: 5, dir: 1, speed: 1.4, count: 2 },
-  { row: 6, dir: -1, speed: 1.9, count: 2 },
-  { row: 7, dir: 1, speed: 2.4, count: 2 },
+  { row: 1, dir: -1, baseSpeed: 1.3 },
+  { row: 2, dir: 1, baseSpeed: 0.9 },
+  { row: 3, dir: -1, baseSpeed: 1.7 },
+  { row: 5, dir: 1, baseSpeed: 1.1 },
+  { row: 6, dir: -1, baseSpeed: 1.5 },
+  { row: 7, dir: 1, baseSpeed: 1.9 },
 ];
 
 type Obstacle = {
@@ -57,60 +61,74 @@ type Obstacle = {
   dir: 1 | -1;
   speed: number;
   phase: number;
+  x: number;
   name: string;
   photo: string;
-  x: number;
 };
+
+type Consultant = { name: string; photo: string };
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
+const countForLevel = (level: number) =>
+  Math.min(2 + Math.floor((level - 1) / 3), MAX_COUNT);
+
+const speedFactor = (level: number) =>
+  Math.min(BASE_FACTOR + (level - 1) * LEVEL_STEP, MAX_FACTOR);
+
+const buildObstacles = (level: number, consultants: Consultant[]): Obstacle[] => {
+  const count = countForLevel(level);
+  const seed: Obstacle[] = [];
+  let picked = 0;
+
+  LANES.forEach((lane, laneIndex) => {
+    const gap = COLS / count;
+    for (let i = 0; i < count; i += 1) {
+      const consultant = consultants[picked % consultants.length];
+      picked += 1;
+      const phase = (i * gap + laneIndex * 1.3) % COLS;
+      seed.push({
+        row: lane.row,
+        dir: lane.dir,
+        speed: lane.baseSpeed,
+        phase,
+        x: phase,
+        name: consultant.name,
+        photo: consultant.photo,
+      });
+    }
+  });
+
+  return seed;
+};
+
 const bandBg = (row: number) => {
-  if (row === GOAL_ROW) return "sprout.9";
+  if (row === GOAL_ROW) return "cognac.9";
   if (row === START_ROW) return "moss.9";
   if (row === SAFE_ROW) return "moss.8";
   return row % 2 === 0 ? "grafite.7" : "grafite.8";
 };
 
 export const KonsultCrossing = () => {
-  const obstacleSeed = useMemo<Obstacle[]>(() => {
-    const consultants = consultantListSchema.parse(mockData);
-    const seed: Obstacle[] = [];
-    let picked = 0;
-
-    LANES.forEach((lane, laneIndex) => {
-      const gap = COLS / lane.count;
-      for (let i = 0; i < lane.count; i += 1) {
-        const consultant = consultants[picked % consultants.length];
-        picked += 1;
-        seed.push({
-          row: lane.row,
-          dir: lane.dir,
-          speed: lane.speed,
-          phase: (i * gap + laneIndex * 1.3) % COLS,
-          name: consultant.name,
-          photo: consultant.photo,
-          x: (i * gap + laneIndex * 1.3) % COLS,
-        });
-      }
-    });
-
-    return seed;
-  }, []);
+  const consultants = useMemo<Consultant[]>(
+    () => consultantListSchema.parse(mockData),
+    [],
+  );
 
   const [status, setStatus] = useState<Status>("idle");
-  const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(LIVES);
   const [player, setPlayer] = useState({ col: START_COL, row: START_ROW });
   const [, setTick] = useState(0);
 
   const obstaclesRef = useRef<Obstacle[] | null>(null);
   if (obstaclesRef.current === null) {
-    obstaclesRef.current = obstacleSeed.map((o) => ({ ...o }));
+    obstaclesRef.current = buildObstacles(1, consultants);
   }
 
   const playerRef = useRef(player);
-  const scoreRef = useRef(0);
+  const levelRef = useRef(1);
   const livesRef = useRef(LIVES);
   const lastNowRef = useRef<number | null>(null);
 
@@ -120,11 +138,11 @@ export const KonsultCrossing = () => {
   };
 
   const start = () => {
-    scoreRef.current = 0;
+    levelRef.current = 1;
     livesRef.current = LIVES;
-    setScore(0);
+    setLevel(1);
     setLives(LIVES);
-    obstaclesRef.current = obstacleSeed.map((o) => ({ ...o }));
+    obstaclesRef.current = buildObstacles(1, consultants);
     lastNowRef.current = null;
     resetPlayer();
     setStatus("playing");
@@ -139,8 +157,9 @@ export const KonsultCrossing = () => {
     };
 
     if (next.row === GOAL_ROW) {
-      scoreRef.current += 1;
-      setScore(scoreRef.current);
+      levelRef.current += 1;
+      setLevel(levelRef.current);
+      obstaclesRef.current = buildObstacles(levelRef.current, consultants);
       resetPlayer();
       return;
     }
@@ -158,12 +177,11 @@ export const KonsultCrossing = () => {
       const previous = lastNowRef.current ?? now;
       lastNowRef.current = now;
       const dt = Math.min((now - previous) / 1000, MAX_DT);
-      const levelFactor = 1 + scoreRef.current * LEVEL_STEP;
+      const factor = speedFactor(levelRef.current);
 
       const obstacles = obstaclesRef.current ?? [];
       for (const obstacle of obstacles) {
-        const moved =
-          obstacle.x + obstacle.dir * obstacle.speed * levelFactor * dt;
+        const moved = obstacle.x + obstacle.dir * obstacle.speed * factor * dt;
         obstacle.x = ((moved % COLS) + COLS) % COLS;
       }
 
@@ -222,7 +240,7 @@ export const KonsultCrossing = () => {
     <Box>
       <Group justify="space-between" align="center" mb="sm">
         <Text size="sm" fw={500}>
-          Poäng: {score}
+          Nivå: {level}
         </Text>
         <Group gap={4} aria-label={`${lives} liv kvar`}>
           {Array.from({ length: LIVES }, (_, i) =>
@@ -245,11 +263,7 @@ export const KonsultCrossing = () => {
           <Button size="xs" color="sprout" onClick={start}>
             {status === "over" ? "Spela igen" : "Starta"}
           </Button>
-        ) : (
-          <Text size="sm" c="dimmed">
-            Nivå {1 + score}
-          </Text>
-        )}
+        ) : null}
       </Group>
 
       <Box maw={480} mx="auto">
@@ -276,19 +290,56 @@ export const KonsultCrossing = () => {
               />
             ))}
 
-            <Badge
-              color="sprout"
-              variant="filled"
-              size="sm"
+            <Box
               pos="absolute"
+              aria-label="Kaffemaskin"
               style={{
                 left: "50%",
                 top: `${GOAL_ROW * cellH + cellH / 2}%`,
                 transform: "translate(-50%, -50%)",
+                width: `${cellW * 1.9}%`,
+                height: `${cellH * 0.92}%`,
               }}
             >
-              Deployad!
-            </Badge>
+              <Box
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "var(--mantine-color-grafite-5)",
+                  border: "1px solid var(--mantine-color-default-border)",
+                  borderRadius: "var(--mantine-radius-sm)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
+                }}
+              >
+                <Box
+                  style={{
+                    width: "62%",
+                    height: "24%",
+                    background: "var(--mantine-color-grafite-7)",
+                    borderRadius: 2,
+                  }}
+                />
+                <IconCoffee
+                  size={16}
+                  style={{ color: "var(--mantine-color-cognac-4)" }}
+                />
+              </Box>
+              <Box
+                style={{
+                  position: "absolute",
+                  top: 3,
+                  right: 3,
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "var(--mantine-color-sprout-4)",
+                }}
+              />
+            </Box>
 
             {obstacles.flatMap((obstacle, index) =>
               [-COLS, 0, COLS].map((ghost) => {
@@ -331,6 +382,19 @@ export const KonsultCrossing = () => {
           </Box>
         </AspectRatio>
       </Box>
+
+      {status === "over" ? (
+        <Text size="sm" c="dimmed" ta="center" mt="sm">
+          Game over — nådde nivå {level}. Testa vårt andra spel:{" "}
+          <Anchor
+            href="https://skiordie.gruppera.se/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ski or Die
+          </Anchor>
+        </Text>
+      ) : null}
 
       <Box maw={168} mx="auto" mt="sm">
         <Group justify="center" gap={4} mb={4}>
