@@ -266,49 +266,36 @@ export const Board = ({
   const draggingRef = useRef<Drag | null>(null);
   const suppressClickRef = useRef(false);
 
-  // Grabbing near one end of a piece stretches a new plain wire out from
-  // that grid point instead of moving the whole piece — grabbing the
-  // middle third still moves it.
-  const END_ZONE = 0.25;
-
   const handlePieceGrab = (event: PointerEvent<SVGRectElement>) => {
+    const pieceId = event.currentTarget.dataset.pieceId;
+    if (!pieceId) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    draggingRef.current = { mode: "move", pieceId, startX: event.clientX, startY: event.clientY, moved: false };
+  };
+
+  // Dedicated small handle at each end of a placed piece: dragging one
+  // stretches a new plain wire out from that exact grid point instead of
+  // moving the whole piece. A fixed data attribute identifies the endpoint
+  // directly, rather than inferring "which end" from where within the main
+  // hit-rect a press landed.
+  const handleExtendGrab = (event: PointerEvent<SVGCircleElement>) => {
     const ds = event.currentTarget.dataset;
     const pieceId = ds.pieceId;
     if (!pieceId) return;
+    event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-
-    const rectBox = event.currentTarget.getBoundingClientRect();
-    const horizontal = ds.rowA === ds.rowB;
-    const along = horizontal
-      ? (event.clientX - rectBox.left) / rectBox.width
-      : (event.clientY - rectBox.top) / rectBox.height;
-
-    if (along < END_ZONE) {
-      draggingRef.current = {
-        mode: "extend",
-        pieceId,
-        endCol: Number(ds.colA),
-        endRow: Number(ds.rowA),
-        startX: event.clientX,
-        startY: event.clientY,
-        moved: false,
-      };
-    } else if (along > 1 - END_ZONE) {
-      draggingRef.current = {
-        mode: "extend",
-        pieceId,
-        endCol: Number(ds.colB),
-        endRow: Number(ds.rowB),
-        startX: event.clientX,
-        startY: event.clientY,
-        moved: false,
-      };
-    } else {
-      draggingRef.current = { mode: "move", pieceId, startX: event.clientX, startY: event.clientY, moved: false };
-    }
+    draggingRef.current = {
+      mode: "extend",
+      pieceId,
+      endCol: Number(ds.endCol),
+      endRow: Number(ds.endRow),
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
   };
 
-  const handlePieceDrag = (event: PointerEvent<SVGRectElement>) => {
+  const handlePieceDrag = (event: PointerEvent<SVGRectElement | SVGCircleElement>) => {
     const drag = draggingRef.current;
     if (!drag) return;
     const dx = event.clientX - drag.startX;
@@ -316,7 +303,7 @@ export const Board = ({
     if (Math.hypot(dx, dy) > 6) drag.moved = true;
   };
 
-  const handlePieceRelease = (event: PointerEvent<SVGRectElement>) => {
+  const handlePieceRelease = (event: PointerEvent<SVGRectElement | SVGCircleElement>) => {
     const drag = draggingRef.current;
     draggingRef.current = null;
     const pieceId = event.currentTarget.dataset.pieceId;
@@ -539,7 +526,7 @@ export const Board = ({
           }
 
           const label = piece
-            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort, dra i mitten för att flytta eller i en ände för att förlänga med en wire`
+            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort eller dra för att flytta — dra i ett handtag i änden för att förlänga med en wire`
             : armed
               ? "Tom plats, tryck för att placera den valda komponenten"
               : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
@@ -595,6 +582,48 @@ export const Board = ({
               key={`flip-${id}`}
               transform={`translate(${pa.x},${pa.y}) rotate(${horizontal ? 0 : 90})`}
             >
+              {/* End handles — drag one to stretch a new plain wire out from
+                  that exact grid point, separate from dragging the piece
+                  itself (which moves the whole thing). */}
+              <circle
+                className="circuit-control"
+                cx={0}
+                cy={0}
+                r={5}
+                fill={PCB.copper}
+                stroke={PCB.bgBoardDark}
+                strokeWidth={1}
+                style={{ cursor: "crosshair" }}
+                data-piece-id={piece.id}
+                data-end-col={a.col}
+                data-end-row={a.row}
+                onPointerDown={handleExtendGrab}
+                onPointerMove={handlePieceDrag}
+                onPointerUp={handlePieceRelease}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <title>Dra härifrån för att förlänga med en wire</title>
+              </circle>
+              <circle
+                className="circuit-control"
+                cx={L}
+                cy={0}
+                r={5}
+                fill={PCB.copper}
+                stroke={PCB.bgBoardDark}
+                strokeWidth={1}
+                style={{ cursor: "crosshair" }}
+                data-piece-id={piece.id}
+                data-end-col={b.col}
+                data-end-row={b.row}
+                onPointerDown={handleExtendGrab}
+                onPointerMove={handlePieceDrag}
+                onPointerUp={handlePieceRelease}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <title>Dra härifrån för att förlänga med en wire</title>
+              </circle>
+
               <g
                 className="circuit-control"
                 role="button"
