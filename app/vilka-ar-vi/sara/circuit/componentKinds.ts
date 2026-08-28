@@ -80,7 +80,7 @@ export const KIND_LABELS: Record<ComponentKind, string> = {
 
 /** Why each kind maps to the role(s) it does — shown under the heading. */
 export const KIND_DESCRIPTIONS: Record<ComponentKind, string> = {
-  battery: "Kretsens strömkälla — du kan använda flera.",
+  battery: "Kretsens strömkälla.",
   resistor: "Stabiliserar flödet.",
   wire: "Arbetar i hela kedjan och får allt att fungera.",
   capacitor: "Lagrar och buffrar.",

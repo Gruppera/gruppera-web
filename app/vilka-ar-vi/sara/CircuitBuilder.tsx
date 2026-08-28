@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, Stack, Text } from "@mantine/core";
 
 import { Board } from "./circuit/Board";
 import { Palette } from "./circuit/Palette";
@@ -83,11 +83,26 @@ export const CircuitBuilder = () => {
     );
   };
 
+  const handleClearCircuit = () => {
+    setPlaced([]);
+  };
+
   return (
     <Stack gap="lg">
-      <Text c="dimmed" size="sm" maw={560}>
-        Dra komponenter och slut kretsen.
-      </Text>
+      <Group justify="space-between" align="flex-end" wrap="wrap">
+        <Text c="dimmed" size="sm" maw={560}>
+          Dra komponenter och slut kretsen.
+        </Text>
+        <Button
+          variant="outline"
+          color="cloud"
+          size="xs"
+          disabled={placed.length === 0}
+          onClick={handleClearCircuit}
+        >
+          Rensa krets
+        </Button>
+      </Group>
 
       <Palette
         usedConsultantSlugs={usedConsultantSlugs}

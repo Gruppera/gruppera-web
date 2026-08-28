@@ -328,14 +328,7 @@ export const Board = ({
               style={{ cursor: piece ? "pointer" : "copy" }}
               onDragOver={piece ? undefined : handleDragOver}
               onDrop={piece ? undefined : handleDrop(a, b)}
-              onClick={
-                piece
-                  ? () =>
-                      piece.kind === "switch"
-                        ? onTogglePiece(piece.id)
-                        : onRemovePiece(piece.id)
-                  : undefined
-              }
+              onClick={piece ? () => onRemovePiece(piece.id) : undefined}
             >
               <title>
                 {piece
@@ -387,6 +380,38 @@ export const Board = ({
                 <polygon points="4,-2 4,3 -1,-2" fill="#C3CED9" />
                 <title>Vänd komponenten</title>
               </g>
+
+              {piece.kind === "switch" && (
+                <g
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${piece.closed ? "Öppna" : "Stäng"} ${piece.consultantName ?? KIND_LABELS[piece.kind]}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTogglePiece(piece.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onTogglePiece(piece.id);
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                  transform={`translate(${L * 0.82},-20)`}
+                >
+                  <circle r={9} fill="#0D0D0C" stroke="#757263" strokeWidth={1} />
+                  <line
+                    x1={-3}
+                    y1={3}
+                    x2={3}
+                    y2={-3}
+                    stroke="#C3CED9"
+                    strokeWidth={1.4}
+                    transform={piece.closed ? "rotate(45)" : undefined}
+                  />
+                  <title>{piece.closed ? "Öppna brytaren" : "Stäng brytaren"}</title>
+                </g>
+              )}
             </g>
           );
         })}
