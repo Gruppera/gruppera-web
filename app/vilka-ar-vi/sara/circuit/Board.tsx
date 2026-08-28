@@ -17,6 +17,8 @@ type BoardProps = {
   onRemovePiece: (id: string) => void;
   onTogglePiece: (id: string) => void;
   onFlipPiece: (id: string) => void;
+  armedCorner: GridPoint | null;
+  onCornerClick: (point: GridPoint) => void;
 };
 
 const activateOnKey = (onActivate: () => void) => (event: KeyboardEvent) => {
@@ -221,6 +223,8 @@ export const Board = ({
   onRemovePiece,
   onTogglePiece,
   onFlipPiece,
+  armedCorner,
+  onCornerClick,
 }: BoardProps) => {
   const edges = allEdges();
   const width = COLS * CELL;
@@ -260,9 +264,7 @@ export const Board = ({
   // closing over it, both to avoid one closure per grid cell and because
   // touching a ref from a closure defined during render trips the
   // react-hooks/refs lint rule even when the read itself is deferred.
-  type Drag =
-    | { mode: "move"; pieceId: string; startX: number; startY: number; moved: boolean }
-    | { mode: "extend"; pieceId: string; endCol: number; endRow: number; startX: number; startY: number; moved: boolean };
+  type Drag = { pieceId: string; startX: number; startY: number; moved: boolean };
   const draggingRef = useRef<Drag | null>(null);
   const suppressClickRef = useRef(false);
 
@@ -270,32 +272,10 @@ export const Board = ({
     const pieceId = event.currentTarget.dataset.pieceId;
     if (!pieceId) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    draggingRef.current = { mode: "move", pieceId, startX: event.clientX, startY: event.clientY, moved: false };
+    draggingRef.current = { pieceId, startX: event.clientX, startY: event.clientY, moved: false };
   };
 
-  // Dedicated small handle at each end of a placed piece: dragging one
-  // stretches a new plain wire out from that exact grid point instead of
-  // moving the whole piece. A fixed data attribute identifies the endpoint
-  // directly, rather than inferring "which end" from where within the main
-  // hit-rect a press landed.
-  const handleExtendGrab = (event: PointerEvent<SVGCircleElement>) => {
-    const ds = event.currentTarget.dataset;
-    const pieceId = ds.pieceId;
-    if (!pieceId) return;
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    draggingRef.current = {
-      mode: "extend",
-      pieceId,
-      endCol: Number(ds.endCol),
-      endRow: Number(ds.endRow),
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false,
-    };
-  };
-
-  const handlePieceDrag = (event: PointerEvent<SVGRectElement | SVGCircleElement>) => {
+  const handlePieceDrag = (event: PointerEvent<SVGRectElement>) => {
     const drag = draggingRef.current;
     if (!drag) return;
     const dx = event.clientX - drag.startX;
@@ -303,7 +283,7 @@ export const Board = ({
     if (Math.hypot(dx, dy) > 6) drag.moved = true;
   };
 
-  const handlePieceRelease = (event: PointerEvent<SVGRectElement | SVGCircleElement>) => {
+  const handlePieceRelease = (event: PointerEvent<SVGRectElement>) => {
     const drag = draggingRef.current;
     draggingRef.current = null;
     const pieceId = event.currentTarget.dataset.pieceId;
@@ -317,16 +297,6 @@ export const Board = ({
     if (!piece || !target?.classList.contains("circuit-slot") || target.dataset.occupied === "true") return;
     const a = { col: Number(target.dataset.colA), row: Number(target.dataset.rowA) };
     const b = { col: Number(target.dataset.colB), row: Number(target.dataset.rowB) };
-
-    if (drag.mode === "extend") {
-      // Only extends into an edge that actually touches the endpoint that
-      // was grabbed — otherwise it isn't really "extending" anything.
-      const touchesEndpoint =
-        (a.col === drag.endCol && a.row === drag.endRow) || (b.col === drag.endCol && b.row === drag.endRow);
-      if (!touchesEndpoint) return;
-      onDropPiece(a, b, JSON.stringify({ kind: "wire" }));
-      return;
-    }
 
     onDropPiece(
       a,
@@ -392,26 +362,6 @@ export const Board = ({
           stroke={PCB.bgBoardDark}
           strokeWidth={2}
         />
-
-        {/* Grid dots: via-holes, purely decorative. */}
-        <g aria-hidden="true">
-          {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
-            const col = index % (COLS + 1);
-            const row = Math.floor(index / (COLS + 1));
-            const { x, y } = pixelOf({ col, row });
-            return (
-              <circle
-                key={`dot-${col}-${row}`}
-                cx={x}
-                cy={y}
-                r={2}
-                fill={PCB.bgBoardDark}
-                stroke="rgba(238, 247, 240, 0.35)"
-                strokeWidth={0.75}
-              />
-            );
-          })}
-        </g>
 
         {edges.map(([a, b]) => {
           const id = edgeId(a, b);
@@ -526,7 +476,7 @@ export const Board = ({
           }
 
           const label = piece
-            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort eller dra för att flytta — dra i ett handtag i änden för att förlänga med en wire`
+            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort eller dra för att flytta`
             : armed
               ? "Tom plats, tryck för att placera den valda komponenten"
               : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
@@ -568,6 +518,42 @@ export const Board = ({
           );
         })}
 
+        {/* Grid-point corners: via-holes that double as click targets, on
+            top of the hit-rects so a precise click near a corner reaches
+            the corner rather than whichever edge rect sits underneath it.
+            Press a corner that touches a placed piece to arm it, then press
+            another corner reachable in an unobstructed straight line to
+            fill that stretch with wire. */}
+        {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
+          const col = index % (COLS + 1);
+          const row = Math.floor(index / (COLS + 1));
+          const point = { col, row };
+          const { x, y } = pixelOf(point);
+          const isArmed = armedCorner?.col === col && armedCorner?.row === row;
+          return (
+            <circle
+              key={`corner-${col}-${row}`}
+              className="circuit-control"
+              cx={x}
+              cy={y}
+              r={isArmed ? 6 : 3}
+              fill={isArmed ? PCB.copperBright : PCB.bgBoardDark}
+              stroke={isArmed ? PCB.copperBright : "rgba(238, 247, 240, 0.35)"}
+              strokeWidth={isArmed ? 2 : 0.75}
+              role="button"
+              tabIndex={0}
+              aria-label={
+                isArmed
+                  ? "Valt hörn — tryck på ett annat hörn i rak linje utan hinder för att förlänga med wire, eller tryck igen för att avbryta"
+                  : "Hörn — tryck på ett hörn med en komponent för att börja förlänga med wire"
+              }
+              style={{ cursor: "pointer" }}
+              onClick={() => onCornerClick(point)}
+              onKeyDown={activateOnKey(() => onCornerClick(point))}
+            />
+          );
+        })}
+
         {/* Flip controls, on top of everything so they stay clickable/
             focusable over the hit-rects above. */}
         {edges.map(([a, b]) => {
@@ -582,48 +568,6 @@ export const Board = ({
               key={`flip-${id}`}
               transform={`translate(${pa.x},${pa.y}) rotate(${horizontal ? 0 : 90})`}
             >
-              {/* End handles — drag one to stretch a new plain wire out from
-                  that exact grid point, separate from dragging the piece
-                  itself (which moves the whole thing). */}
-              <circle
-                className="circuit-control"
-                cx={0}
-                cy={0}
-                r={5}
-                fill={PCB.copper}
-                stroke={PCB.bgBoardDark}
-                strokeWidth={1}
-                style={{ cursor: "crosshair" }}
-                data-piece-id={piece.id}
-                data-end-col={a.col}
-                data-end-row={a.row}
-                onPointerDown={handleExtendGrab}
-                onPointerMove={handlePieceDrag}
-                onPointerUp={handlePieceRelease}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <title>Dra härifrån för att förlänga med en wire</title>
-              </circle>
-              <circle
-                className="circuit-control"
-                cx={L}
-                cy={0}
-                r={5}
-                fill={PCB.copper}
-                stroke={PCB.bgBoardDark}
-                strokeWidth={1}
-                style={{ cursor: "crosshair" }}
-                data-piece-id={piece.id}
-                data-end-col={b.col}
-                data-end-row={b.row}
-                onPointerDown={handleExtendGrab}
-                onPointerMove={handlePieceDrag}
-                onPointerUp={handlePieceRelease}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <title>Dra härifrån för att förlänga med en wire</title>
-              </circle>
-
               <g
                 className="circuit-control"
                 role="button"

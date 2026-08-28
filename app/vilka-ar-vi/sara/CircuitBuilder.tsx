@@ -24,6 +24,7 @@ export const CircuitBuilder = () => {
   const [placed, setPlaced] = useState<PlacedPiece[]>([]);
   const [unlockedSlugs, setUnlockedSlugs] = useState<Set<string>>(new Set());
   const [armedPayload, setArmedPayload] = useState<DropPayload | null>(null);
+  const [armedCorner, setArmedCorner] = useState<GridPoint | null>(null);
 
   const result = useMemo(() => evaluateCircuit(placed), [placed]);
 
@@ -129,6 +130,64 @@ export const CircuitBuilder = () => {
     if (armedPayload.consultantSlug) setArmedPayload(null);
   };
 
+  /**
+   * Simpler alternative to dragging: press a corner that touches a placed
+   * piece to arm it, then press another corner reachable in an unobstructed
+   * straight line (same row or column, every edge between them empty) to
+   * fill that whole stretch with wire in one go.
+   */
+  const handleCornerClick = (point: GridPoint) => {
+    const key = pointId(point);
+    const touchesPiece = placed.some((p) => p.from === key || p.to === key);
+
+    if (!armedCorner) {
+      if (touchesPiece) setArmedCorner(point);
+      return;
+    }
+
+    if (pointId(armedCorner) === key) {
+      setArmedCorner(null);
+      return;
+    }
+
+    const sameRow = armedCorner.row === point.row;
+    const sameCol = armedCorner.col === point.col;
+    if (!sameRow && !sameCol) {
+      setArmedCorner(touchesPiece ? point : null);
+      return;
+    }
+
+    const steps: [GridPoint, GridPoint][] = [];
+    if (sameRow) {
+      const lo = Math.min(armedCorner.col, point.col);
+      const hi = Math.max(armedCorner.col, point.col);
+      for (let c = lo; c < hi; c += 1) {
+        steps.push([{ col: c, row: point.row }, { col: c + 1, row: point.row }]);
+      }
+    } else {
+      const lo = Math.min(armedCorner.row, point.row);
+      const hi = Math.max(armedCorner.row, point.row);
+      for (let r = lo; r < hi; r += 1) {
+        steps.push([{ col: point.col, row: r }, { col: point.col, row: r + 1 }]);
+      }
+    }
+
+    const occupiedEdges = new Set(placed.map((p) => [p.from, p.to].sort().join("|")));
+    const blocked = steps.some(([a, b]) => occupiedEdges.has([pointId(a), pointId(b)].sort().join("|")));
+    setArmedCorner(null);
+    if (blocked || steps.length === 0) return;
+
+    setPlaced((prev) => [
+      ...prev,
+      ...steps.map(([a, b]) => ({
+        id: `piece-${nextId++}`,
+        kind: "wire" as ComponentKind,
+        from: pointId(a),
+        to: pointId(b),
+      })),
+    ]);
+  };
+
   return (
     <Stack gap="lg">
       <Palette
@@ -150,6 +209,8 @@ export const CircuitBuilder = () => {
             onRemovePiece={handleRemovePiece}
             onTogglePiece={handleTogglePiece}
             onFlipPiece={handleFlipPiece}
+            armedCorner={armedCorner}
+            onCornerClick={handleCornerClick}
           />
         </div>
         <Button
@@ -169,7 +230,9 @@ export const CircuitBuilder = () => {
 
       <Text size="sm" maw={560} style={{ color: PCB.silkDim }}>
         Dra komponenter till schemat för att bygga kretsen, eller välj en
-        komponent och tryck sedan på en tom plats.
+        komponent och tryck sedan på en tom plats. Tryck på ett hörn på en
+        komponent och sedan ett ledigt hörn i rak linje för att förlänga med
+        en wire.
       </Text>
 
       <div aria-live="polite">
