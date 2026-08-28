@@ -1,4 +1,4 @@
-import { Box, Container, Stack, Text, Title } from "@mantine/core";
+import { Box, Container, Stack, Title } from "@mantine/core";
 
 import { CircuitBuilder } from "./CircuitBuilder";
 
@@ -16,9 +16,6 @@ export default function SaraPage() {
             <Title order={1} fz={{ base: 36, md: 52 }}>
               Gruppera är en sluten krets
             </Title>
-            <Text c="dimmed" size="sm">
-              — Saras bild av Gruppera
-            </Text>
           </Stack>
 
           <CircuitBuilder />
