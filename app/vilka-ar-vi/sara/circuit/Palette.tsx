@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge, Card, Group, SimpleGrid, Stack, Text } from "@mantine/core";
 
 import {
+  ALWAYS_SHOWN_KINDS,
   CONSULTANT_COMPONENTS,
   KIND_DESCRIPTIONS,
   KIND_LABELS,
@@ -36,7 +37,11 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
 
   return (
     <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-      {KIND_ORDER.map((kind) => {
+      {KIND_ORDER.filter(
+        (kind) =>
+          ALWAYS_SHOWN_KINDS.includes(kind) ||
+          CONSULTANT_COMPONENTS.some((c) => c.kind === kind),
+      ).map((kind) => {
         const people = CONSULTANT_COMPONENTS.filter((c) => c.kind === kind);
         return (
           <Card key={kind} withBorder padding="sm" radius="md" bg="chamonix.9">

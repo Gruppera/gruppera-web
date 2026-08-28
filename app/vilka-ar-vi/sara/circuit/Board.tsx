@@ -18,22 +18,53 @@ type BoardProps = {
 
 const KIND_COLOR: Record<ComponentKind, string> = {
   battery: "#E0CCBE",
-  resistor: "#95B354",
+  ic: "#95B354",
   wire: "#C3CED9",
-  capacitor: "#824529",
-  switch: "#757263",
-  led: "#95B354",
+  logic: "#824529",
+  oscillator: "#757263",
+  sensor: "#95B354",
   ground: "#C3CED9",
+  microcontroller: "#95B354",
+  display: "#C3CED9",
+  testPoint: "#824529",
+  controlSignal: "#757263",
+  techLead: "#824529",
+  memory: "#824529",
+  fuse: "#757263",
 };
 
 const L = CELL;
 
+/** Small shared box-with-glyph symbol for the not-yet-staffed kinds. */
+const GenericBox = ({ stroke, glyph }: { stroke: string; glyph: string }) => {
+  const w = L * 0.34;
+  return (
+    <g stroke={stroke} strokeWidth={2} fill="none">
+      <line x1={0} y1={0} x2={L / 2 - w / 2} y2={0} />
+      <rect x={L / 2 - w / 2} y={-11} width={w} height={22} />
+      <line x1={L / 2 + w / 2} y1={0} x2={L} y2={0} />
+      <text
+        x={L / 2}
+        y={4}
+        textAnchor="middle"
+        fontSize={10}
+        stroke="none"
+        fill={stroke}
+      >
+        {glyph}
+      </text>
+    </g>
+  );
+};
+
 /**
- * Standard schematic symbols, drawn in local coordinates for a horizontal
- * edge running from (0,0) to (L,0) — the caller rotates/translates the
- * whole <g> into place for vertical edges. IEC-ish conventions: zigzag
- * resistor, parallel-plate capacitor, knife switch, multi-line battery,
- * diode-triangle LED with emission arrows, ground hatch.
+ * Standard-ish schematic symbols, drawn in local coordinates for a
+ * horizontal edge running from (0,0) to (L,0) — the caller rotates/
+ * translates the whole <g> into place for vertical edges. IEC-ish
+ * conventions where they exist (multi-line battery, knife-switch
+ * oscillator, diode-triangle sensor with perception arrows, ground hatch);
+ * chip/IC outlines for the roles that don't have a classic passive-component
+ * analog.
  */
 const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => {
   const stroke = KIND_COLOR[kind];
@@ -42,43 +73,49 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
   switch (kind) {
     case "wire":
       return <line x1={0} y1={0} x2={L} y2={0} {...common} />;
-    case "resistor": {
-      const a = L * 0.32;
-      const b = L * 0.68;
-      const seg = (b - a) / 6;
-      const amp = 8;
-      const zig = [
-        [a, 0],
-        [a + seg, -amp],
-        [a + seg * 2, amp],
-        [a + seg * 3, -amp],
-        [a + seg * 4, amp],
-        [a + seg * 5, -amp],
-        [b, 0],
-      ]
-        .map((p) => p.join(","))
-        .join(" ");
+    case "ic": {
+      const w = L * 0.36;
+      const pin = 6;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={L / 2 - w / 2} y2={0} />
+          <rect x={L / 2 - w / 2} y={-12} width={w} height={24} />
+          <line x1={L / 2 - w / 2 + pin} y1={-12} x2={L / 2 - w / 2 + pin} y2={-18} />
+          <line x1={L / 2 + w / 2 - pin} y1={-12} x2={L / 2 + w / 2 - pin} y2={-18} />
+          <line x1={L / 2 - w / 2 + pin} y1={12} x2={L / 2 - w / 2 + pin} y2={18} />
+          <line x1={L / 2 + w / 2 - pin} y1={12} x2={L / 2 + w / 2 - pin} y2={18} />
+          <line x1={L / 2 + w / 2} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    case "microcontroller": {
+      const w = L * 0.4;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={L / 2 - w / 2} y2={0} />
+          <rect x={L / 2 - w / 2} y={-13} width={w} height={26} />
+          {[-14, -4, 6].map((dx) => (
+            <g key={dx}>
+              <line x1={L / 2 + dx} y1={-13} x2={L / 2 + dx} y2={-18} />
+              <line x1={L / 2 + dx} y1={13} x2={L / 2 + dx} y2={18} />
+            </g>
+          ))}
+          <line x1={L / 2 + w / 2} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    case "logic": {
+      const a = L * 0.36;
+      const b = L * 0.64;
       return (
         <g {...common}>
           <line x1={0} y1={0} x2={a} y2={0} />
-          <polyline points={zig} />
+          <path d={`M ${a},-11 L ${b - 6},-11 A 11 11 0 0 1 ${b - 6},11 L ${a},11 Z`} />
           <line x1={b} y1={0} x2={L} y2={0} />
         </g>
       );
     }
-    case "capacitor": {
-      const a = L * 0.46;
-      const b = L * 0.54;
-      return (
-        <g {...common}>
-          <line x1={0} y1={0} x2={a} y2={0} />
-          <line x1={a} y1={-11} x2={a} y2={11} />
-          <line x1={b} y1={-11} x2={b} y2={11} />
-          <line x1={b} y1={0} x2={L} y2={0} />
-        </g>
-      );
-    }
-    case "switch": {
+    case "oscillator": {
       const a = L * 0.35;
       const b = L * 0.65;
       return (
@@ -108,7 +145,7 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
         </g>
       );
     }
-    case "led": {
+    case "sensor": {
       const a = L * 0.4;
       const b = L * 0.6;
       return (
@@ -146,6 +183,18 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
         </g>
       );
     }
+    case "display":
+      return <GenericBox stroke={stroke} glyph="OUT" />;
+    case "testPoint":
+      return <GenericBox stroke={stroke} glyph="QA" />;
+    case "controlSignal":
+      return <GenericBox stroke={stroke} glyph="PO" />;
+    case "techLead":
+      return <GenericBox stroke={stroke} glyph="TL" />;
+    case "memory":
+      return <GenericBox stroke={stroke} glyph="MEM" />;
+    case "fuse":
+      return <GenericBox stroke={stroke} glyph="SEC" />;
     default:
       return null;
   }
@@ -381,7 +430,7 @@ export const Board = ({
                 <title>Vänd komponenten</title>
               </g>
 
-              {piece.kind === "switch" && (
+              {piece.kind === "oscillator" && (
                 <g
                   role="button"
                   tabIndex={0}
@@ -409,7 +458,7 @@ export const Board = ({
                     strokeWidth={1.4}
                     transform={piece.closed ? "rotate(45)" : undefined}
                   />
-                  <title>{piece.closed ? "Öppna brytaren" : "Stäng brytaren"}</title>
+                  <title>{piece.closed ? "Öppna oscillatorn" : "Stäng oscillatorn"}</title>
                 </g>
               )}
             </g>

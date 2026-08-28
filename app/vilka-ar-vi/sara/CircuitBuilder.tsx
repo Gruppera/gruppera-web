@@ -61,7 +61,7 @@ export const CircuitBuilder = () => {
       consultantSlug: data.consultantSlug,
       consultantName: data.consultantName,
       consultantPhoto: data.consultantPhoto,
-      closed: data.kind === "switch" ? false : undefined,
+      closed: data.kind === "oscillator" ? false : undefined,
     };
     nextId += 1;
     setPlaced((prev) => [...prev, piece]);
@@ -89,10 +89,23 @@ export const CircuitBuilder = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-end" wrap="wrap">
-        <Text c="dimmed" size="sm" maw={560}>
-          Dra komponenter och slut kretsen.
-        </Text>
+      <Palette
+        usedConsultantSlugs={usedConsultantSlugs}
+        unlockedSlugs={unlockedSlugs}
+      />
+
+      <Group align="flex-start" wrap="wrap" gap="md">
+        <div style={{ overflowX: "auto", padding: "8px 0" }}>
+          <Board
+            placed={placed}
+            energizedIds={result.won ? result.energizedIds : new Set()}
+            flowDirection={result.won ? result.flowDirection : new Map()}
+            onDropPiece={handleDropPiece}
+            onRemovePiece={handleRemovePiece}
+            onTogglePiece={handleTogglePiece}
+            onFlipPiece={handleFlipPiece}
+          />
+        </div>
         <Button
           variant="outline"
           color="cloud"
@@ -104,22 +117,9 @@ export const CircuitBuilder = () => {
         </Button>
       </Group>
 
-      <Palette
-        usedConsultantSlugs={usedConsultantSlugs}
-        unlockedSlugs={unlockedSlugs}
-      />
-
-      <div style={{ overflowX: "auto", padding: "8px 0" }}>
-        <Board
-          placed={placed}
-          energizedIds={result.won ? result.energizedIds : new Set()}
-          flowDirection={result.won ? result.flowDirection : new Map()}
-          onDropPiece={handleDropPiece}
-          onRemovePiece={handleRemovePiece}
-          onTogglePiece={handleTogglePiece}
-          onFlipPiece={handleFlipPiece}
-        />
-      </div>
+      <Text c="dimmed" size="sm" maw={560}>
+        Dra komponenter till schemat för att bygga kretsen.
+      </Text>
 
       {result.won ? (
         <Alert color="sprout" variant="light">
