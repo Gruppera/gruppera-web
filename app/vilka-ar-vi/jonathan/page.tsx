@@ -13,7 +13,6 @@ import {
 } from "@mantine/core";
 import { IconArrowDown, IconQuote } from "@tabler/icons-react";
 
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
 import { ConsultantPhoto } from "@/features/consultants/components/ConsultantPhoto";
 import { ModeView } from "./ModeView";
 
@@ -115,10 +114,6 @@ export default function JonathanPage() {
             </Blockquote>
             {/* ------------------------------------- */}
           </ModeView>
-
-          {/* FIXED — every page ends the same way. Renders the link */}
-          {/* grid to all other consultants plus the back link.      */}
-          <ConsultantPeers currentSlug="jonathan" />
         </Stack>
       </Container>
     </Box>
