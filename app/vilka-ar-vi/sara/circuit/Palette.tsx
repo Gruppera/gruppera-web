@@ -95,30 +95,35 @@ export const Palette = ({
               <Text size="xs" style={{ color: PCB.silkDim }}>
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
-              <div
-                role="button"
-                tabIndex={0}
-                aria-pressed={isArmed(buildPayload(kind))}
-                aria-label={`Välj ${KIND_LABELS[kind]} för att placera i schemat`}
-                draggable
-                onDragStart={onDragStart(JSON.stringify(buildPayload(kind)))}
-                onClick={() => onArmPiece(buildPayload(kind))}
-                onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
-                style={{
-                  cursor: "grab",
-                  alignSelf: "flex-start",
-                  padding: 4,
-                  outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
-                  outlineOffset: 2,
-                  borderRadius: 4,
-                }}
-              >
-                <svg viewBox="-6 -26 92 52" width={64} height={36} style={{ overflow: "visible", display: "block" }}>
-                  <Symbol kind={kind} />
-                </svg>
-              </div>
 
               <SimpleGrid cols={{ base: 4, xs: 5 }} spacing={4}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isArmed(buildPayload(kind))}
+                  aria-label={`Välj ${KIND_LABELS[kind]} för att placera i schemat`}
+                  draggable
+                  onDragStart={onDragStart(JSON.stringify(buildPayload(kind)))}
+                  onClick={() => onArmPiece(buildPayload(kind))}
+                  onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
+                  style={{
+                    cursor: "grab",
+                    width: 56,
+                    height: 40,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 4,
+                    borderRadius: 8,
+                    outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
+                    outlineOffset: 2,
+                  }}
+                >
+                  <svg viewBox="-6 -26 92 52" width={44} height={25} style={{ overflow: "visible", display: "block" }}>
+                    <Symbol kind={kind} />
+                  </svg>
+                </div>
+
                 {people.map((consultant) => {
                 const isSara = consultant.slug === "sara";
                 const used = usedConsultantSlugs.has(consultant.slug);
