@@ -29,8 +29,8 @@ export default function SaraPage() {
                 textShadow: `0 0 24px ${PCB.glowSoft}`,
               }}
             >
-              <span style={{ color: PCB.glow }}>&gt;</span> Gruppera är en
-              sluten krets
+              <span style={{ color: PCB.glow }}>&gt;</span> Viktiga på egen
+              hand, starkare tillsammans
             </Title>
           </Stack>
 
