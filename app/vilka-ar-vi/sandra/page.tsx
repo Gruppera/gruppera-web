@@ -36,9 +36,13 @@ export default function SandraPage() {
   return (
     <Box>
       <Container size="lg" py={{ base: "lg", sm: "xl" }}>
-        <Stack gap="lg">
+        <Stack gap="lg" align="center">
           {/* ---------- YOURS TO DESIGN ---------- */}
-          <Flex direction={{ base: "column", sm: "row" }} gap={{ base: "lg", sm: 56 }}>
+          <Flex
+            direction={{ base: "column", sm: "row" }}
+            gap={{ base: "lg", sm: 56 }}
+            w={{ base: "100%", sm: "auto" }}
+          >
             <Card
               radius="md"
               p={0}
