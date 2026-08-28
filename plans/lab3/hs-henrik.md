@@ -204,3 +204,109 @@ Manual browser checklist per `.claude/CLAUDE.md`, plus game-specific checks:
   `AsteroidsGame`, not `StarField`), confirms new files are scoped to
   `app/vilka-ar-vi/henrik/` plus the new `public/photos/corridor/` assets, and
   confirms no other consultant's files were touched.
+
+Shipped as [Gruppera/gruppera-web#20](https://github.com/Gruppera/gruppera-web/pull/20),
+still open. The addendum below is a second commit on the same branch/PR
+rather than a new branch — same page, same lab-3 task, PR not yet merged.
+
+---
+
+## Addendum — Tinder-style peer cards
+
+Replaces this page's use of `<ConsultantPeers>` with a swipeable card deck.
+Per fixed point 3 in `.claude/CLAUDE.md`, `ConsultantPeers` is "a convenience,
+not a mandate" — it can be replaced by anything that keeps (a) real links in
+the HTML and (b) a way to reach everyone that doesn't require playing along.
+This only touches `app/vilka-ar-vi/henrik/`; `ConsultantPeers.tsx` itself is
+untouched and keeps working as-is on everyone else's page.
+
+### New file: `app/vilka-ar-vi/henrik/TinderPeers.tsx`
+
+`"use client"`.
+
+- Data: `consultantListSchema.parse(mockData)` filtered to exclude `henrik`,
+  sorted the same way `ConsultantPeers` does (`localeCompare(…, "sv")`) —
+  deterministic order, so there's no server/client hydration mismatch from
+  randomizing on render.
+- **Every peer's card is rendered in the DOM at all times** — absolutely
+  stacked (top card full opacity/scale, next one or two peeking behind at a
+  slight scale/offset for the classic depth effect, the rest stacked
+  underneath at 0 offset). This isn't just a visual choice: it's what makes
+  the "real links in the HTML" requirement hold — a card that's third in the
+  deck still has its `<Link href="/vilka-ar-vi/<slug>">` in the static export,
+  crawlable, regardless of swipe state.
+- Each card: `ConsultantPhoto`-style portrait (existing `/photos/<slug>.png`,
+  `Image` from Mantine, not `next/image`), name (`Title order={3}`), focus
+  (`Badge color="sprout"`), and their `about` text from `mockdata.json` as the
+  "vilka är vi" summary the request asked for — same copy already on the
+  `/vilka-ar-vi` grid card, just presented one at a time instead of in a grid.
+- The whole card is wrapped in a real `<Link>` to `/vilka-ar-vi/<slug>` — a
+  plain tap/click with no drag navigates directly, no gesture required.
+
+### Interaction
+
+- Pointer events (`onPointerDown/Move/Up` — covers touch and mouse in one
+  code path, unlike the corridor game's separate touch buttons) on the top
+  card only: drag horizontally, card follows the pointer with a slight
+  rotation proportional to drag distance, matching the familiar Tinder feel.
+- Release past a distance threshold (~80px): card animates off in that
+  direction. **Right = besök** (`router.push` to their page after the
+  animation). **Left = nästa** (just advances to the next card, no
+  navigation). Release under the threshold: card springs back to center.
+- Below the card: explicit ✗ (Nästa) and ❤ (Besök) buttons doing the same two
+  actions without any drag — covers mouse users who don't want to drag and is
+  the accessible fallback fixed point 3 asks for ("someone who will not or
+  cannot play still needs a way").
+- End of deck: a "Det var alla — börja om?" state with a restart button
+  (resets to the first card). The always-rendered links underneath are
+  unaffected by this state either way.
+- **Extra safety net, cheap to add:** a small row of plain text links under
+  the deck ("Hoppa direkt till: Anton, Christopher, …") — effectively a
+  compact `ConsultantPeers`-equivalent, so fixed point 3 is satisfied by two
+  independent mechanisms, not just an interpretation of how obviously
+  "gated" a swipe deck is.
+
+### `prefers-reduced-motion` — applied here, unlike the corridor game
+
+Different case from `CorridorGame`: here the drag/fly-off/spring-back motion
+is decorative flourish on top of an interaction that works identically
+without it (a plain click always navigates or advances, animated or not).
+That matches `StarField.tsx`'s situation, not `AsteroidsGame.tsx`'s. Plan:
+check `prefers-reduced-motion` once on mount, and when set, skip the CSS
+transition durations (state changes apply instantly — card just disappears
+and the next one is already there) rather than skipping the feature.
+
+### Not in scope
+
+- No changes to `app/mockdata.json`, `ConsultantPeers.tsx`, or any other
+  consultant's directory.
+- No new image assets — reuses the existing full-size `/photos/<slug>.png`
+  portraits the same way `ConsultantPhoto` already does elsewhere on the site.
+
+### Verification before pushing
+
+```bash
+npm run lint
+npm run build
+ls out/vilka-ar-vi/henrik.html
+```
+
+Manual checklist, in addition to the original page's checklist:
+
+- [ ] Every peer's `<Link>` is present in `out/vilka-ar-vi/henrik.html`
+      regardless of deck position (`grep` the export for each slug).
+- [ ] Swipe left/right, the two buttons, and a plain click/tap on the card
+      all work; holds up at mobile width.
+- [ ] Reaching every colleague works using only the ✗/❤ buttons — no drag.
+- [ ] `prefers-reduced-motion` removes the animation, not the functionality.
+- [ ] No console errors.
+
+### PR
+
+- Additional commit on the existing branch (`lab3/hs-henrik`), updating the
+  already-open PR #20 rather than opening a new one.
+- Conventional commit, e.g. `feat: replace ConsultantPeers with a swipeable card deck`.
+- PR comment/description update explains the `prefers-reduced-motion`
+  decision (this time following `StarField`, not `AsteroidsGame` — the
+  opposite of the first commit's reasoning, for the opposite reason) and
+  reconfirms `ConsultantPeers.tsx` itself was not modified.
