@@ -113,6 +113,9 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
                       cursor: unlocked ? "pointer" : used ? "default" : "grab",
                       textAlign: "center",
                       width: 56,
+                      padding: 4,
+                      borderRadius: 8,
+                      backgroundColor: unlocked ? "rgba(149, 179, 84, 0.25)" : undefined,
                     }}
                   >
                     {unlocked ? (
