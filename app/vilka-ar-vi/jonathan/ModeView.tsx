@@ -139,7 +139,7 @@ export const ModeView = ({ children }: ModeViewProps) => {
                     component="span"
                     tabIndex={0}
                     c="dimmed"
-                    size="sm"
+                    size="xs"
                   >
                     Kan du konami-koden?
                   </Text>
