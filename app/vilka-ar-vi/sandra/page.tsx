@@ -1,7 +1,20 @@
-import { Box, Container, Stack, Text, Title } from "@mantine/core";
+import Link from "next/link";
+import {
+  AspectRatio,
+  Box,
+  Card,
+  CardSection,
+  Container,
+  Divider,
+  Flex,
+  Image,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
 
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
-import { ConsultantPhoto } from "@/features/consultants/components/ConsultantPhoto";
+import mockData from "@/app/mockdata.json";
+import { consultantListSchema } from "@/features/consultants/schemas";
 
 export const metadata = {
   title: "Sandra — Gruppera",
@@ -9,37 +22,94 @@ export const metadata = {
 };
 
 export default function SandraPage() {
+  const consultants = consultantListSchema.parse(mockData);
+  const sandra = consultants.find((consultant) => consultant.slug === "sandra");
+
+  if (!sandra) {
+    throw new Error('No consultant found for slug "sandra"');
+  }
+
+  const peers = consultants
+    .filter((consultant) => consultant.slug !== "sandra")
+    .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+
   return (
     <Box>
       <Container size="lg" py={{ base: "lg", sm: "xl" }}>
         <Stack gap="lg">
           {/* ---------- YOURS TO DESIGN ---------- */}
-          <ConsultantPhoto slug="sandra" />
+          <Flex direction={{ base: "column", sm: "row" }} gap={{ base: "lg", sm: 56 }}>
+            <Card
+              radius="md"
+              p={0}
+              w={{ base: "100%", sm: 358 }}
+              style={{ flexShrink: 0 }}
+            >
+              <CardSection
+                bg="sprout.6"
+                style={{
+                  borderRadius: "var(--mantine-radius-md)",
+                  overflow: "hidden",
+                }}
+              >
+                <AspectRatio ratio={358 / 460}>
+                  <Image
+                    alt={`${sandra.name} portrait`}
+                    src={`/photos/${sandra.photo}`}
+                    fit="cover"
+                  />
+                </AspectRatio>
+              </CardSection>
+            </Card>
 
-          <Stack gap="xs">
-            <Title order={1} fz={{ base: 36, md: 52 }}>
-              Sandra
-            </Title>
-            <Text c="cognac.6" fw={500} size="sm">
-              UX & tillgänglighet
-            </Text>
-            <Text c="dimmed" fz={{ base: 14, sm: 15 }} maw={700}>
-              Sandra är UX Specialist som förenar kreativitet med strategiskt
-              tänkande och skapar digitala upplevelser som är intuitiva,
-              tillgängliga och genererar mätbar affärsnytta. Hon har ett
-              helhetsperspektiv på kundresan och arbetar med allt från
-              research och interaktionsdesign till prototyping,
-              tillgänglighet och designsystem, och har även lett designarbete
-              som Head of Design. Utöver det operativa arbetet är hon en
-              engagerad mentor och utbildare, med erfarenhet som huvudlärare
-              inom YH-utbildningar i UX och interaktionsdesign.
-            </Text>
-          </Stack>
+            <Stack gap="xs" maw={{ sm: 471 }}>
+              <Title order={1} fz={{ base: 28, sm: 36 }}>
+                {sandra.name}
+              </Title>
+              <Text c="sprout.4" fw={500} size="sm">
+                {sandra.focus}
+              </Text>
+              <Text
+                c="dimmed"
+                fz={{ base: 14, sm: 15 }}
+                style={{ whiteSpace: "pre-line" }}
+              >
+                {sandra.about}
+              </Text>
+            </Stack>
+          </Flex>
           {/* ------------------------------------- */}
 
-          {/* FIXED — every page ends the same way. Renders the link */}
-          {/* grid to all other consultants plus the back link.      */}
-          <ConsultantPeers currentSlug="sandra" />
+          {/* FIXED — every page ends the same way: every colleague reachable  */}
+          {/* plus the back link. Custom layout (centered on desktop, left on */}
+          {/* mobile) instead of <ConsultantPeers /> to match this page's      */}
+          {/* design without touching the shared component.                   */}
+          <Flex direction="column" gap="lg" align={{ base: "flex-start", sm: "center" }} w="100%">
+            <Divider w="100%" />
+            <Flex direction="column" gap="md" align={{ base: "flex-start", sm: "center" }} w="100%">
+              <Title order={3} fz={{ base: 22, md: 28 }}>
+                Fler konsulter
+              </Title>
+              <Flex justify={{ sm: "center" }} wrap="wrap" gap="md" rowGap={4} w="100%">
+                {peers.map((peer) => (
+                  <Link
+                    key={peer.slug}
+                    href={`/vilka-ar-vi/${peer.slug}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <Text component="span" c="sprout.4" fw={500} size="sm">
+                      {peer.name}
+                    </Text>
+                  </Link>
+                ))}
+              </Flex>
+            </Flex>
+            <Link href="/vilka-ar-vi" style={{ textDecoration: "none" }}>
+              <Text component="span" c="dimmed" size="sm">
+                ← Tillbaka till Vilka är vi
+              </Text>
+            </Link>
+          </Flex>
         </Stack>
       </Container>
     </Box>
