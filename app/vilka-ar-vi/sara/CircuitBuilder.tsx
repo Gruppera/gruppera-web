@@ -8,6 +8,7 @@ import { Palette } from "./circuit/Palette";
 import { evaluateCircuit, type PlacedPiece } from "./circuit/graph";
 import { pointId, type GridPoint } from "./circuit/grid";
 import type { ComponentKind } from "./circuit/componentKinds";
+import { PCB } from "./circuit/theme";
 
 type DropPayload = {
   kind: ComponentKind;
@@ -153,29 +154,47 @@ export const CircuitBuilder = () => {
         </div>
         <Button
           variant="outline"
-          color="cloud"
           size="xs"
           disabled={placed.length === 0}
           onClick={handleClearCircuit}
+          style={{
+            color: PCB.copperBright,
+            borderColor: PCB.copper,
+            fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+          }}
         >
           Rensa krets
         </Button>
       </Group>
 
-      <Text c="dimmed" size="sm" maw={560}>
+      <Text size="sm" maw={560} style={{ color: PCB.silkDim }}>
         Dra komponenter till schemat för att bygga kretsen, eller välj en
         komponent och tryck sedan på en tom plats.
       </Text>
 
       <div aria-live="polite">
         {result.won ? (
-          <Alert color="sprout" variant="light">
+          <Alert
+            variant="light"
+            style={{
+              backgroundColor: PCB.glowSoft,
+              border: `1px solid ${PCB.glow}`,
+              color: PCB.silk,
+            }}
+          >
             Kretsen lyser! Klicka på en upplåst kollega ovan för att gå till
             deras sida.
           </Alert>
         ) : (
           result.hint && (
-            <Alert color="cloud" variant="light">
+            <Alert
+              variant="light"
+              style={{
+                backgroundColor: PCB.chip,
+                border: `1px solid ${PCB.chipBorder}`,
+                color: PCB.silk,
+              }}
+            >
               {result.hint}
             </Alert>
           )

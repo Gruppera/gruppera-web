@@ -12,6 +12,7 @@ import {
   KIND_ORDER,
   type ComponentKind,
 } from "./componentKinds";
+import { PCB } from "./theme";
 
 type ArmedPayload = {
   kind: ComponentKind;
@@ -68,12 +69,29 @@ export const Palette = ({
       ).map((kind) => {
         const people = CONSULTANT_COMPONENTS.filter((c) => c.kind === kind);
         return (
-          <Card key={kind} withBorder padding="sm" radius="md" bg="chamonix.9">
+          <Card
+            key={kind}
+            padding="sm"
+            radius="sm"
+            style={{
+              backgroundColor: PCB.chip,
+              border: `1px solid ${PCB.chipBorder}`,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+            }}
+          >
             <Stack gap="xs">
-              <Text size="sm" fw={700} c="chamonix.0">
+              <Text
+                size="sm"
+                fw={700}
+                style={{
+                  color: PCB.copperBright,
+                  fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+                  letterSpacing: 0.5,
+                }}
+              >
                 {KIND_LABELS[kind]}
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" style={{ color: PCB.silkDim }}>
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
               <div
@@ -88,12 +106,20 @@ export const Palette = ({
                 style={{
                   cursor: "grab",
                   alignSelf: "flex-start",
-                  outline: isArmed(buildPayload(kind)) ? "2px solid #95B354" : undefined,
+                  outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
                   outlineOffset: 2,
                   borderRadius: 4,
                 }}
               >
-                <Badge variant="outline" color="cloud" style={{ cursor: "grab" }}>
+                <Badge
+                  variant="outline"
+                  style={{
+                    cursor: "grab",
+                    color: PCB.copper,
+                    borderColor: PCB.copper,
+                    fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+                  }}
+                >
                   {KIND_LABELS[kind]}
                 </Badge>
               </div>
@@ -113,9 +139,10 @@ export const Palette = ({
                       alignItems: "center",
                       justifyContent: "center",
                       border: unlocked
-                        ? "2px solid #95B354"
-                        : "1px solid #757263",
-                      backgroundColor: unlocked ? "#95B354" : undefined,
+                        ? `2px solid ${PCB.glow}`
+                        : `1px solid ${PCB.chipBorder}`,
+                      backgroundColor: unlocked ? PCB.glow : undefined,
+                      boxShadow: unlocked ? `0 0 10px ${PCB.glowSoft}` : undefined,
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -154,7 +181,7 @@ export const Palette = ({
                       width: 56,
                       padding: 4,
                       borderRadius: 8,
-                      outline: armed ? "2px solid #95B354" : undefined,
+                      outline: armed ? `2px solid ${PCB.copperBright}` : undefined,
                       outlineOffset: 2,
                     }}
                   >
@@ -165,7 +192,7 @@ export const Palette = ({
                     ) : (
                       avatar
                     )}
-                    <Text size="xs" c="chamonix.3" truncate>
+                    <Text size="xs" style={{ color: PCB.silkDim }} truncate>
                       {consultant.name}
                     </Text>
                   </div>

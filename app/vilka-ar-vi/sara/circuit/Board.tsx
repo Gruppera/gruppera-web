@@ -5,6 +5,7 @@ import { useRef, type DragEvent, type KeyboardEvent, type PointerEvent } from "r
 import { KIND_LABELS, type ComponentKind } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, pointId, ROWS, type GridPoint } from "./grid";
 import type { FlowDirection, PlacedPiece } from "./graph";
+import { PCB } from "./theme";
 
 type BoardProps = {
   placed: PlacedPiece[];
@@ -26,20 +27,20 @@ const activateOnKey = (onActivate: () => void) => (event: KeyboardEvent) => {
 };
 
 const KIND_COLOR: Record<ComponentKind, string> = {
-  battery: "#E0CCBE",
-  ic: "#95B354",
-  wire: "#C3CED9",
-  capacitor: "#824529",
-  switch: "#757263",
-  led: "#95B354",
-  ground: "#C3CED9",
-  microcontroller: "#95B354",
-  display: "#C3CED9",
-  testPoint: "#824529",
-  relay: "#757263",
-  diode: "#824529",
-  memory: "#824529",
-  fuse: "#757263",
+  battery: PCB.copperBright,
+  ic: PCB.silk,
+  wire: PCB.copper,
+  capacitor: "#5fb8a8",
+  switch: "#c7d0cb",
+  led: PCB.glow,
+  ground: PCB.copper,
+  microcontroller: PCB.silk,
+  display: PCB.silk,
+  testPoint: PCB.warn,
+  relay: "#c7d0cb",
+  diode: "#5fb8a8",
+  memory: "#5fb8a8",
+  fuse: PCB.warn,
 };
 
 const L = CELL;
@@ -332,7 +333,7 @@ export const Board = ({
         }
         .circuit-control:focus-visible,
         .circuit-slot:focus-visible {
-          outline: 2px solid #B7E07A;
+          outline: 2px solid ${PCB.glow};
           outline-offset: 2px;
         }
       `}</style>
@@ -343,13 +344,36 @@ export const Board = ({
         aria-label="Kretsschema — komponenter kan tas bort, vändas eller (för brytare) öppnas/stängas med tangentbordet"
         style={{ display: "block", height: "auto", overflow: "visible" }}
       >
-        {/* Grid dots: purely decorative. */}
+        {/* Board substrate. */}
+        <rect
+          aria-hidden="true"
+          x={-8}
+          y={-8}
+          width={width + 16}
+          height={height + 16}
+          rx={6}
+          fill={PCB.bgBoard}
+          stroke={PCB.bgBoardDark}
+          strokeWidth={2}
+        />
+
+        {/* Grid dots: via-holes, purely decorative. */}
         <g aria-hidden="true">
           {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
             const col = index % (COLS + 1);
             const row = Math.floor(index / (COLS + 1));
             const { x, y } = pixelOf({ col, row });
-            return <circle key={`dot-${col}-${row}`} cx={x} cy={y} r={1.5} fill="#757263" />;
+            return (
+              <circle
+                key={`dot-${col}-${row}`}
+                cx={x}
+                cy={y}
+                r={2}
+                fill={PCB.bgBoardDark}
+                stroke="rgba(238, 247, 240, 0.35)"
+                strokeWidth={0.75}
+              />
+            );
           })}
         </g>
 
@@ -375,7 +399,7 @@ export const Board = ({
                 cx={L / 2}
                 cy={0}
                 r={14}
-                fill="#0D0D0C"
+                fill={PCB.bgBoardDark}
                 stroke={KIND_COLOR[piece.kind]}
                 strokeWidth={1.5}
               />
@@ -410,7 +434,7 @@ export const Board = ({
                         y1={0}
                         x2={enteringAtA ? L : 0}
                         y2={0}
-                        stroke="#B7E07A"
+                        stroke={PCB.glow}
                         strokeWidth={3}
                         className="circuit-flow"
                       />
@@ -433,7 +457,7 @@ export const Board = ({
                   y1={0}
                   x2={L}
                   y2={0}
-                  stroke="rgba(195, 206, 217, 0.2)"
+                  stroke="rgba(238, 247, 240, 0.18)"
                   strokeWidth={1}
                   strokeDasharray="3 4"
                 />
@@ -535,14 +559,14 @@ export const Board = ({
                 style={{ cursor: "pointer" }}
                 transform={`translate(${L * 0.18},-20)`}
               >
-                <circle r={9} fill="#0D0D0C" stroke="#757263" strokeWidth={1} />
+                <circle r={9} fill={PCB.bgBoardDark} stroke={PCB.chipBorder} strokeWidth={1} />
                 <path
                   d="M -4,-2 A 5 5 0 1 0 4,-2"
-                  stroke="#C3CED9"
+                  stroke={PCB.silk}
                   strokeWidth={1.4}
                   fill="none"
                 />
-                <polygon points="4,-2 4,3 -1,-2" fill="#C3CED9" />
+                <polygon points="4,-2 4,3 -1,-2" fill={PCB.silk} />
                 <title>Vänd komponenten</title>
               </g>
 
@@ -560,13 +584,13 @@ export const Board = ({
                   style={{ cursor: "pointer" }}
                   transform={`translate(${L * 0.82},-20)`}
                 >
-                  <circle r={9} fill="#0D0D0C" stroke="#757263" strokeWidth={1} />
+                  <circle r={9} fill={PCB.bgBoardDark} stroke={PCB.chipBorder} strokeWidth={1} />
                   <line
                     x1={-3}
                     y1={3}
                     x2={3}
                     y2={-3}
-                    stroke="#C3CED9"
+                    stroke={PCB.silk}
                     strokeWidth={1.4}
                     transform={piece.closed ? "rotate(45)" : undefined}
                   />
