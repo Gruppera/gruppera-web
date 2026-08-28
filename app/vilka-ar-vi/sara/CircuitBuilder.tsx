@@ -182,8 +182,8 @@ export const CircuitBuilder = () => {
               color: PCB.silk,
             }}
           >
-            Kretsen lyser! Klicka på en upplåst kollega ovan för att gå till
-            deras sida.
+            Kretsen lyser! Klicka på en upplåst konsult för att läsa mer om
+            den.
           </Alert>
         ) : (
           result.hint && (
