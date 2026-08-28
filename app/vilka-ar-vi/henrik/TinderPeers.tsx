@@ -224,12 +224,7 @@ export const TinderPeers = ({ currentSlug }: TinderPeersProps) => {
                         {peer.focus}
                       </Badge>
                     </Group>
-                    <Text
-                      fz={14}
-                      c="chamonix.2"
-                      style={{ overflowY: "auto" }}
-                      lineClamp={8}
-                    >
+                    <Text fz={14} c="chamonix.2" lineClamp={4}>
                       {peer.about}
                     </Text>
                   </Stack>
