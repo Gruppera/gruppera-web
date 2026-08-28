@@ -14,6 +14,7 @@ type DropPayload = {
   consultantSlug?: string;
   consultantName?: string;
   consultantPhoto?: string;
+  moveFromId?: string;
 };
 
 let nextId = 1;
@@ -52,20 +53,35 @@ export const CircuitBuilder = () => {
     } catch {
       return;
     }
-    if (data.consultantSlug && usedConsultantSlugs.has(data.consultantSlug)) return;
+
+    const moving = data.moveFromId
+      ? placed.find((p) => p.id === data.moveFromId)
+      : undefined;
+    // A moved piece isn't "used" by its own old placement — exclude it before
+    // checking whether this consultant is already elsewhere on the board.
+    const otherUsedSlugs = data.moveFromId
+      ? new Set(
+          placed
+            .filter((p) => p.id !== data.moveFromId)
+            .map((p) => p.consultantSlug)
+            .filter((slug): slug is string => Boolean(slug)),
+        )
+      : usedConsultantSlugs;
+    if (data.consultantSlug && otherUsedSlugs.has(data.consultantSlug)) return;
 
     const piece: PlacedPiece = {
-      id: `piece-${nextId}`,
+      id: moving?.id ?? `piece-${nextId}`,
       kind: data.kind,
       from: pointId(a),
       to: pointId(b),
       consultantSlug: data.consultantSlug,
       consultantName: data.consultantName,
       consultantPhoto: data.consultantPhoto,
-      closed: data.kind === "oscillator" ? false : undefined,
+      closed: moving ? moving.closed : data.kind === "switch" ? false : undefined,
+      flipped: moving?.flipped,
     };
-    nextId += 1;
-    setPlaced((prev) => [...prev, piece]);
+    if (!moving) nextId += 1;
+    setPlaced((prev) => [...prev.filter((p) => p.id !== data.moveFromId), piece]);
   };
 
   const handleRemovePiece = (id: string) => {

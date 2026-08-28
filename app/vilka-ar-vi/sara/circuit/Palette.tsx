@@ -2,7 +2,7 @@
 
 import type { DragEvent, KeyboardEvent } from "react";
 import Link from "next/link";
-import { Badge, Card, Group, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Badge, Card, SimpleGrid, Stack, Text } from "@mantine/core";
 
 import {
   ALWAYS_SHOWN_KINDS,
@@ -70,16 +70,9 @@ export const Palette = ({
         return (
           <Card key={kind} withBorder padding="sm" radius="md" bg="chamonix.9">
             <Stack gap="xs">
-              <Group gap="xs" align="baseline">
-                <Text size="sm" fw={700} c="chamonix.0">
-                  {KIND_LABELS[kind]}
-                </Text>
-                <Text size="xs" c="chamonix.4">
-                  {people.length > 0
-                    ? `— ${people.map((p) => p.name).join(", ")}`
-                    : ""}
-                </Text>
-              </Group>
+              <Text size="sm" fw={700} c="chamonix.0">
+                {KIND_LABELS[kind]}
+              </Text>
               <Text size="xs" c="dimmed">
                 {KIND_DESCRIPTIONS[kind]}
               </Text>

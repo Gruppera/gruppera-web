@@ -5,20 +5,20 @@ export type ComponentKind =
   | "battery"
   | "ic"
   | "wire"
-  | "logic"
-  | "oscillator"
-  | "sensor"
+  | "capacitor"
+  | "switch"
+  | "led"
   | "ground"
   | "microcontroller"
   | "display"
   | "testPoint"
-  | "controlSignal"
-  | "techLead"
+  | "relay"
+  | "diode"
   | "memory"
   | "fuse";
 
 /** Kinds that light up when they're part of a closed loop. */
-export const INDICATOR_KINDS: ComponentKind[] = ["sensor"];
+export const INDICATOR_KINDS: ComponentKind[] = ["led"];
 
 /**
  * Infrastructure kinds that stay in the palette even with nobody mapped to
@@ -33,31 +33,35 @@ export const KIND_ORDER: ComponentKind[] = [
   "battery",
   "ic",
   "microcontroller",
-  "logic",
-  "oscillator",
-  "sensor",
+  "capacitor",
+  "switch",
+  "led",
   "ground",
   "wire",
   "display",
   "testPoint",
-  "controlSignal",
-  "techLead",
+  "relay",
+  "diode",
   "memory",
   "fuse",
 ];
 
-// Mapped from each person's actual role to the closest real circuit
-// component, not a generic "everyone's a wire" placeholder:
-// architects design the schematic itself (IC — its datasheet/pinout is the
-// interface contract everything else is built against), fullstack handles
-// inputs/logic/outputs at once (microcontroller), backend does the internal
-// processing and storage (logic circuit), coaching/project leadership sets
-// pace and sequencing (oscillator), UX is the human-facing signal (sensor).
-// Sara — VD — isn't a team role in this taxonomy at all: she's the ground
-// reference the rest of the circuit is tied to, keeping things stable rather
-// than powering or gating anything. Nobody currently holds a DevOps/platform
-// title, so `battery` (the power source a circuit can't run without) stays
-// unstaffed until someone does — same generic-drag treatment as `wire`.
+// Mapped from each person's actual role to the closest real, standard
+// circuit component — favoring common, recognizable parts over invented
+// ones wherever one fits: architects design the schematic itself (IC — its
+// datasheet/pinout is the interface contract everything else is built
+// against), fullstack handles inputs/logic/outputs at once (microcontroller,
+// likewise a very ordinary part today), backend stores and persists state
+// (capacitor — "lagrar och buffrar" is a literal, standard-component match),
+// coaching/project leadership gates whether work proceeds (switch — a real
+// oscillator doesn't have open/closed states, a switch does), UX is the
+// visible, perceived result (LED — the most standard "visible output"
+// component there is). Sara — VD — isn't a team role in this taxonomy at
+// all: she's the ground reference the rest of the circuit is tied to,
+// keeping things stable rather than powering or gating anything. Nobody
+// currently holds a DevOps/platform title, so `battery` (the power source a
+// circuit can't run without) stays unstaffed until someone does — same
+// generic-drag treatment as `wire`.
 const SLUG_TO_KIND: Record<string, ComponentKind> = {
   sara: "ground",
   daniel: "ic",
@@ -66,11 +70,11 @@ const SLUG_TO_KIND: Record<string, ComponentKind> = {
   gunnar: "microcontroller",
   mattias: "microcontroller",
   anton: "microcontroller",
-  jonathan: "logic",
-  james: "logic",
-  olle: "oscillator",
-  henrik: "oscillator",
-  sandra: "sensor",
+  jonathan: "capacitor",
+  james: "capacitor",
+  olle: "switch",
+  henrik: "switch",
+  sandra: "led",
 };
 
 export type ConsultantComponent = {
@@ -92,40 +96,39 @@ export const CONSULTANT_COMPONENTS: ConsultantComponent[] = consultants
   .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 
 // English electronics terminology — universal (schematic symbols and
-// abbreviations like IC are conventionally English regardless of locale),
-// unlike the surrounding Swedish copy.
+// abbreviations like IC/LED are conventionally English regardless of
+// locale), unlike the surrounding Swedish copy.
 export const KIND_LABELS: Record<ComponentKind, string> = {
   battery: "Battery",
   ic: "IC",
   wire: "Wire",
-  logic: "Logic circuit",
-  oscillator: "Oscillator",
-  sensor: "Sensor",
+  capacitor: "Capacitor",
+  switch: "Switch",
+  led: "LED",
   ground: "Ground",
   microcontroller: "Microcontroller",
   display: "Display",
   testPoint: "Test point",
-  controlSignal: "Control signal",
-  techLead: "Control unit",
+  relay: "Relay",
+  diode: "Diode",
   memory: "Memory",
   fuse: "Fuse",
 };
 
 /** Why each kind maps to the role(s) it does — shown under the heading. */
 export const KIND_DESCRIPTIONS: Record<ComponentKind, string> = {
-  battery:
-    "Strömförsörjning + spänningsregulator — gör att resten av systemet kan köras stabilt. Utan den slutar allt annat fungera.",
-  ic: "Bestämmer hur komponenterna ska kopplas ihop, vilka gränssnitt som finns och hur helheten ska fungera.",
-  wire: "Den rena kopplingen — ingen egen roll, bara det som binder ihop kretsen.",
-  logic: "Utför den interna bearbetningen, lagrar information och hanterar regler och dataflöden.",
-  oscillator: "Skapar rytm och synkronisering. Ser till att saker händer i rätt ordning och att delarna arbetar tillsammans.",
-  sensor: "Är kontakten mellan människan och systemet: knappar, rattar, display, feedback och hur signaler uppfattas av användaren.",
-  ground: "En neutral punkt att koppla kretsen mot — håller allt stabilt, inget kaos.",
-  microcontroller: "Kan arbeta med både inputs, intern logik och outputs — alltså flera delar av kretsen samtidigt.",
-  display: "Gör systemets interna funktioner synliga och användbara för omvärlden.",
-  testPoint: "Kontrollerar att signalerna är rätt, hittar avvikelser och verifierar att kretsen beter sig som avsett.",
-  controlSignal: "Avgör vilket beteende systemet ska prioritera och vilka funktioner som ska aktiveras.",
-  techLead: "Tar tekniska beslut under drift och koordinerar hur olika tekniska delar ska samverka.",
-  memory: "Ansvarar för att information kan lagras, hämtas och organiseras på ett pålitligt sätt.",
-  fuse: "Förhindrar att felaktiga eller skadliga signaler förstör systemet och begränsar åtkomst.",
+  battery: "Ger kretsen ström. Utan den stannar allt.",
+  ic: "Bestämmer hur allt kopplas ihop och fungerar.",
+  wire: "Bara det som binder ihop kretsen.",
+  capacitor: "Lagrar och buffrar informationen.",
+  switch: "Styr och grindar flödet.",
+  led: "Det synliga resultatet.",
+  ground: "Håller allt stabilt, inget kaos.",
+  microcontroller: "Hanterar input, logik och output på samma gång.",
+  display: "Gör systemet synligt utåt.",
+  testPoint: "Kontrollerar att allt fungerar som tänkt.",
+  relay: "Bestämmer vad systemet ska prioritera.",
+  diode: "Tar tekniska beslut och styr riktningen.",
+  memory: "Lagrar och organiserar information.",
+  fuse: "Skyddar systemet och begränsar åtkomst.",
 };

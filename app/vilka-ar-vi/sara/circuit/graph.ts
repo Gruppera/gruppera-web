@@ -12,8 +12,8 @@ export type PlacedPiece = {
   consultantSlug?: string;
   consultantName?: string;
   consultantPhoto?: string;
-  closed?: boolean; // oscillators only: true = conducting
-  flipped?: boolean; // battery/sensor only: swaps which terminal is +/anode
+  closed?: boolean; // switches only: true = conducting
+  flipped?: boolean; // battery/led only: swaps which terminal is +/anode
 };
 
 /** Which terminal current leaves from — `from` unless the piece is flipped. */
@@ -39,7 +39,7 @@ type Component = { nodes: Set<NodeId>; pieces: Set<string> };
  * Batteries are just another conductive edge now (any number of them,
  * anywhere) — a "closed loop" is any connected component that contains a
  * cycle (edges >= nodes, since a tree has exactly nodes-1 edges; more than
- * that means some path doubles back on itself). Open oscillators simply
+ * that means some path doubles back on itself). Open switches simply
  * don't conduct, so they split the graph instead of forming edges.
  */
 const buildComponents = (
@@ -53,7 +53,7 @@ const buildComponents = (
   };
   const allNodes = new Set<NodeId>();
   pieces.forEach((piece) => {
-    if (piece.kind === "oscillator" && !piece.closed && !includeOpenSwitches) {
+    if (piece.kind === "switch" && !piece.closed && !includeOpenSwitches) {
       allNodes.add(piece.from);
       allNodes.add(piece.to);
       return;
@@ -152,14 +152,14 @@ const computeFlowDirection = (
   return direction;
 };
 
-const findBackwardsSensor = (
+const findBackwardsLed = (
   component: Component,
   byId: Map<string, PlacedPiece>,
   direction: FlowDirection,
 ): PlacedPiece | null => {
   for (const id of component.pieces) {
     const piece = byId.get(id);
-    if (!piece || piece.kind !== "sensor") continue;
+    if (!piece || piece.kind !== "led") continue;
     const flow = direction.get(id);
     if (flow && flow.enter !== positiveTerminal(piece)) return piece;
   }
@@ -171,7 +171,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     return {
       won: false,
       energizedIds: new Set(),
-      hint: "Börja dra hit komponenter från biblioteket eller en kollega.",
+      hint: null,
       flowDirection: new Map(),
     };
   }
@@ -181,18 +181,18 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
 
   const candidates = real.filter((component) => hasCycle(component) && hasBatteryAndIndicator(component, byId));
 
-  let backwardsSensor: PlacedPiece | null = null;
+  let backwardsLed: PlacedPiece | null = null;
   for (const component of candidates) {
     const flowDirection = computeFlowDirection(component, byId);
-    const backwards = findBackwardsSensor(component, byId, flowDirection);
+    const backwards = findBackwardsLed(component, byId, flowDirection);
     if (!backwards) {
       return { won: true, energizedIds: component.pieces, hint: null, flowDirection };
     }
-    backwardsSensor = backwardsSensor ?? backwards;
+    backwardsLed = backwardsLed ?? backwards;
   }
 
-  if (backwardsSensor) {
-    const who = backwardsSensor.consultantName ?? "Sensorn";
+  if (backwardsLed) {
+    const who = backwardsLed.consultantName ?? "Lysdioden";
     return {
       won: false,
       energizedIds: new Set(),
@@ -201,7 +201,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     };
   }
 
-  // Nothing works with real oscillator states. Figure out *why*, prioritizing
+  // Nothing works with real switch states. Figure out *why*, prioritizing
   // the most specific, most encouraging explanation.
   const loose = buildComponents(pieces, { includeOpenSwitches: true });
 
@@ -213,7 +213,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     return {
       won: false,
       energizedIds: new Set(),
-      hint: "Kretsen är sluten och har ett batteri men saknar en sensor — lägg till en för att se att den fungerar.",
+      hint: "Kretsen är sluten och har ett batteri men saknar en lysdiod — lägg till en för att se att den fungerar.",
       flowDirection: new Map(),
     };
   }
@@ -232,12 +232,12 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     const openOscillators = [...looseWinner.pieces]
       .map((id) => byId.get(id))
       .filter(
-        (p): p is PlacedPiece => Boolean(p) && p?.kind === "oscillator" && !p?.closed,
+        (p): p is PlacedPiece => Boolean(p) && p?.kind === "switch" && !p?.closed,
       );
     const names = openOscillators
       .map((p) => p.consultantName)
       .filter((name): name is string => Boolean(name));
-    const who = names.length > 0 ? names.join(", ") : "en oscillator";
+    const who = names.length > 0 ? names.join(", ") : "en brytare";
     return {
       won: false,
       energizedIds: new Set(),

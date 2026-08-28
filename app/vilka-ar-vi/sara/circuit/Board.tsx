@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent, KeyboardEvent } from "react";
+import type { DragEvent, KeyboardEvent, SVGProps } from "react";
 
 import { KIND_LABELS, type ComponentKind } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, pointId, ROWS, type GridPoint } from "./grid";
@@ -29,15 +29,15 @@ const KIND_COLOR: Record<ComponentKind, string> = {
   battery: "#E0CCBE",
   ic: "#95B354",
   wire: "#C3CED9",
-  logic: "#824529",
-  oscillator: "#757263",
-  sensor: "#95B354",
+  capacitor: "#824529",
+  switch: "#757263",
+  led: "#95B354",
   ground: "#C3CED9",
   microcontroller: "#95B354",
   display: "#C3CED9",
   testPoint: "#824529",
-  controlSignal: "#757263",
-  techLead: "#824529",
+  relay: "#757263",
+  diode: "#824529",
   memory: "#824529",
   fuse: "#757263",
 };
@@ -70,10 +70,10 @@ const GenericBox = ({ stroke, glyph }: { stroke: string; glyph: string }) => {
  * Standard-ish schematic symbols, drawn in local coordinates for a
  * horizontal edge running from (0,0) to (L,0) — the caller rotates/
  * translates the whole <g> into place for vertical edges. IEC-ish
- * conventions where they exist (multi-line battery, knife-switch
- * oscillator, diode-triangle sensor with perception arrows, ground hatch);
- * chip/IC outlines for the roles that don't have a classic passive-component
- * analog.
+ * conventions where they exist (parallel-plate capacitor, knife switch,
+ * multi-line battery, diode-triangle LED with perception arrows, ground
+ * hatch); chip/IC outlines for the roles that don't have a classic
+ * passive-component analog.
  */
 const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => {
   const stroke = KIND_COLOR[kind];
@@ -113,18 +113,19 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
         </g>
       );
     }
-    case "logic": {
-      const a = L * 0.36;
-      const b = L * 0.64;
+    case "capacitor": {
+      const a = L * 0.46;
+      const b = L * 0.54;
       return (
         <g {...common}>
           <line x1={0} y1={0} x2={a} y2={0} />
-          <path d={`M ${a},-11 L ${b - 6},-11 A 11 11 0 0 1 ${b - 6},11 L ${a},11 Z`} />
+          <line x1={a} y1={-11} x2={a} y2={11} />
+          <line x1={b} y1={-11} x2={b} y2={11} />
           <line x1={b} y1={0} x2={L} y2={0} />
         </g>
       );
     }
-    case "oscillator": {
+    case "switch": {
       const a = L * 0.35;
       const b = L * 0.65;
       return (
@@ -154,7 +155,7 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
         </g>
       );
     }
-    case "sensor": {
+    case "led": {
       const a = L * 0.4;
       const b = L * 0.6;
       return (
@@ -196,9 +197,9 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
       return <GenericBox stroke={stroke} glyph="OUT" />;
     case "testPoint":
       return <GenericBox stroke={stroke} glyph="QA" />;
-    case "controlSignal":
+    case "relay":
       return <GenericBox stroke={stroke} glyph="PO" />;
-    case "techLead":
+    case "diode":
       return <GenericBox stroke={stroke} glyph="TL" />;
     case "memory":
       return <GenericBox stroke={stroke} glyph="MEM" />;
@@ -269,10 +270,9 @@ export const Board = ({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
-        height="auto"
         role="group"
         aria-label="Kretsschema — komponenter kan tas bort, vändas eller (för brytare) öppnas/stängas med tangentbordet"
-        style={{ display: "block", overflow: "visible" }}
+        style={{ display: "block", height: "auto", overflow: "visible" }}
       >
         {/* Grid dots: purely decorative. */}
         <g aria-hidden="true">
@@ -400,10 +400,25 @@ export const Board = ({
             ? () => onRemovePiece(piece.id)
             : () => onPlaceArmedPiece(a, b);
           const label = piece
-            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort`
+            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort, eller dra för att flytta`
             : armed
               ? "Tom plats, tryck för att placera den valda komponenten"
               : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
+
+          const handleMoveDragStart = (event: DragEvent<SVGRectElement>) => {
+            if (!piece) return;
+            event.dataTransfer.setData(
+              "text/plain",
+              JSON.stringify({
+                kind: piece.kind,
+                consultantSlug: piece.consultantSlug,
+                consultantName: piece.consultantName,
+                consultantPhoto: piece.consultantPhoto,
+                moveFromId: piece.id,
+              }),
+            );
+            event.dataTransfer.effectAllowed = "move";
+          };
 
           return (
             <rect
@@ -417,7 +432,9 @@ export const Board = ({
               role="button"
               tabIndex={0}
               aria-label={label}
-              style={{ cursor: piece ? "pointer" : armed ? "cell" : "copy" }}
+              style={{ cursor: piece ? "grab" : armed ? "cell" : "copy" }}
+              {...({ draggable: Boolean(piece) } as SVGProps<SVGRectElement>)}
+              onDragStart={piece ? handleMoveDragStart : undefined}
               onDragOver={piece ? undefined : handleDragOver}
               onDrop={piece ? undefined : handleDrop(a, b)}
               onClick={activate}
@@ -466,7 +483,7 @@ export const Board = ({
                 <title>Vänd komponenten</title>
               </g>
 
-              {piece.kind === "oscillator" && (
+              {piece.kind === "switch" && (
                 <g
                   className="circuit-control"
                   role="button"
@@ -490,7 +507,7 @@ export const Board = ({
                     strokeWidth={1.4}
                     transform={piece.closed ? "rotate(45)" : undefined}
                   />
-                  <title>{piece.closed ? "Öppna oscillatorn" : "Stäng oscillatorn"}</title>
+                  <title>{piece.closed ? "Öppna brytaren" : "Stäng brytaren"}</title>
                 </g>
               )}
             </g>
