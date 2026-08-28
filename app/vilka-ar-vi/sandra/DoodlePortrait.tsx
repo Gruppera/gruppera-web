@@ -6,14 +6,19 @@ import { AspectRatio, Box, Card, CardSection, Image } from "@mantine/core";
 
 type BasePiece =
   | "mustache"
-  | "horns"
-  | "crown"
-  | "sunglasses"
   | "goatee"
-  | "wrinkles"
-  | "halo"
-  | "grumpy";
-type ThemeKind = "old" | "cool" | "devil" | "angel";
+  | "eyepatch"
+  | "bossGlasses"
+  | "goldChain"
+  | "cigarSmoke"
+  | "stars"
+  | "nerdGlasses"
+  | "headphones"
+  | "techNoise"
+  | "wordBoss"
+  | "wordPirate"
+  | "wordDev";
+type ThemeKind = "pirate" | "boss" | "developer";
 type DoodleKind = BasePiece | ThemeKind | "random";
 
 type DoodlePortraitProps = {
@@ -123,7 +128,147 @@ function fmt(p: Point): string {
   return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
 }
 
-type Stroke = { d: string; extraDots?: Point[] };
+type Stroke = { d: string; extraDots?: Point[]; fast?: boolean };
+
+// A tiny hand-sketched monoline font — only the glyphs the three theme
+// words actually need. Each glyph is one or more strokes, authored as
+// straight-line polylines in a 0–1 (left-right, top-bottom) unit box; the
+// per-point wobble + the shared feTurbulence filter are what make them read
+// as hand-drawn, so the underlying shapes stay simple on purpose.
+const GLYPHS: Record<string, [number, number][][]> = {
+  A: [
+    [[0, 1], [0.5, 0]],
+    [[0.5, 0], [1, 1]],
+    [[0.22, 0.62], [0.78, 0.62]],
+  ],
+  B: [
+    [[0, 1], [0, 0], [0.55, 0], [0.7, 0.12], [0.7, 0.38], [0.55, 0.5], [0, 0.5]],
+    [[0, 0.5], [0.6, 0.5], [0.78, 0.65], [0.78, 0.88], [0.6, 1], [0, 1]],
+  ],
+  G: [
+    [[0.85, 0.22], [0.6, 0.02], [0.3, 0.02], [0.08, 0.25], [0.08, 0.75], [0.3, 0.98], [0.65, 0.98], [0.85, 0.8], [0.85, 0.55], [0.5, 0.55]],
+  ],
+  H: [
+    [[0, 0], [0, 1]],
+    [[1, 0], [1, 1]],
+    [[0, 0.52], [1, 0.52]],
+  ],
+  O: [
+    [[0.5, 0], [0.82, 0.15], [1, 0.5], [0.82, 0.85], [0.5, 1], [0.18, 0.85], [0, 0.5], [0.18, 0.15], [0.5, 0]],
+  ],
+  R: [
+    [[0, 1], [0, 0], [0.55, 0], [0.72, 0.14], [0.72, 0.4], [0.55, 0.52], [0, 0.52]],
+    [[0.32, 0.52], [0.85, 1]],
+  ],
+  S: [
+    [[0.88, 0.18], [0.55, 0], [0.2, 0.05], [0.06, 0.25], [0.15, 0.42], [0.55, 0.5], [0.9, 0.62], [0.95, 0.82], [0.75, 0.98], [0.35, 0.98], [0.08, 0.82]],
+  ],
+  "!": [
+    [[0.5, 0], [0.46, 0.68]],
+    [[0.44, 0.85], [0.56, 0.85], [0.56, 0.97], [0.44, 0.97], [0.44, 0.85]],
+  ],
+  "4": [
+    [[0.68, 0], [0.02, 0.65], [1, 0.65]],
+    [[0.7, 0], [0.7, 1]],
+  ],
+  "0": [
+    [[0.5, 0], [0.82, 0.15], [1, 0.5], [0.82, 0.85], [0.5, 1], [0.18, 0.85], [0, 0.5], [0.18, 0.15], [0.5, 0]],
+    [[0.32, 0.78], [0.68, 0.2]],
+  ],
+  "1": [
+    [[0.25, 0.18], [0.5, 0], [0.5, 1]],
+    [[0.25, 1], [0.75, 1]],
+  ],
+  "{": [
+    [[0.7, 0], [0.4, 0.14], [0.4, 0.4], [0.15, 0.5], [0.4, 0.6], [0.4, 0.86], [0.7, 1]],
+  ],
+  "}": [
+    [[0.3, 0], [0.6, 0.14], [0.6, 0.4], [0.85, 0.5], [0.6, 0.6], [0.6, 0.86], [0.3, 1]],
+  ],
+  "<": [
+    [[0.75, 0.1], [0.2, 0.5], [0.75, 0.9]],
+  ],
+  ">": [
+    [[0.25, 0.1], [0.8, 0.5], [0.25, 0.9]],
+  ],
+  "/": [
+    [[0.15, 1], [0.85, 0]],
+  ],
+};
+
+// Lays a word out left-to-right, centered under `origin`, in eye-distance
+// units — same `place()` rotation every other piece uses, so it tilts with
+// the head. Each glyph stroke becomes its own `fast` pen-stroke: a word is
+// "drawn" the same way as everything else, just quickly, like handwriting
+// rather than a careful sketch.
+function wordStrokes(
+  word: string,
+  lm: Landmarks,
+  eyeDist: number,
+  angle: number,
+  // How far below the chin the word starts, in eye-distance units — tuned
+  // per theme so it clears whatever else that theme already draws down
+  // there (a gold chain, a goatee) while staying inside the small gap
+  // before the "Fler konsulter" section below the photo.
+  baseYOffset = 0.5,
+): Stroke[] {
+  const origin: Point = { x: (lm.faceLeft.x + lm.faceRight.x) / 2, y: lm.chin.y };
+  const letterW = 0.17;
+  const gap = 0.045;
+  const letterH = 0.24;
+  const baseY = baseYOffset;
+  const totalW = word.length * letterW + (word.length - 1) * gap;
+  const w = (n: number, seed: number) => n + seededWobble(seed) * 0.025;
+  const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+
+  const strokes: Stroke[] = [];
+  let cursor = -totalW / 2;
+  for (let ci = 0; ci < word.length; ci++) {
+    const glyph = GLYPHS[word[ci]];
+    if (glyph) {
+      for (let si = 0; si < glyph.length; si++) {
+        const pts = glyph[si];
+        const d = pts
+          .map((pt, pi) => {
+            const lx = cursor + w(pt[0] * letterW, ci * 30 + si * 6 + pi);
+            const ly = baseY + w(pt[1] * letterH, ci * 30 + si * 6 + pi + 3);
+            return `${pi === 0 ? "M" : "L"} ${p([lx, ly])}`;
+          })
+          .join(" ");
+        strokes.push({ d, fast: true });
+      }
+    }
+    cursor += letterW + gap;
+  }
+  return strokes;
+}
+
+// Small decorative marks scattered around the face — background texture,
+// not anchored to a specific feature, positioned as fixed offsets from
+// stable landmarks so they stay clear of the face and of each theme's word.
+function scatterGlyphs(
+  marks: { ch: string; origin: Point; scale: number; seed: number }[],
+  eyeDist: number,
+  angle: number,
+): Stroke[] {
+  const w = (n: number, seed: number) => n + seededWobble(seed) * 0.04;
+  return marks.flatMap(({ ch, origin, scale, seed }) => {
+    const glyph = GLYPHS[ch];
+    if (!glyph) return [];
+    return glyph.map((pts, si) => ({
+      d: pts
+        .map((pt, pi) => {
+          const local: [number, number] = [
+            w((pt[0] - 0.5) * scale * 2, seed + si * 10 + pi),
+            w((pt[1] - 0.5) * scale * 2, seed + si * 10 + pi + 5),
+          ];
+          return `${pi === 0 ? "M" : "L"} ${fmt(place(local, origin, eyeDist, angle))}`;
+        })
+        .join(" "),
+      fast: true,
+    }));
+  });
+}
 
 /**
  * Each builder returns one or more *strokes* — separate pieces drawn one
@@ -137,83 +282,25 @@ type Stroke = { d: string; extraDots?: Point[] };
  */
 const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: number) => Stroke[]> = {
   mustache: (lm, eyeDist, angle) => {
-    const origin: Point = { x: (lm.mouthTop.x + lm.noseTip.x) / 2, y: (lm.mouthTop.y + lm.noseTip.y) / 2 };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
+    // MediaPipe's `mouthTop` landmark sits at the inner lip line (close to
+    // mouth center), not the outer edge of the upper lip, so the origin is
+    // pulled up toward the nose to actually land above the lip.
+    const origin: Point = {
+      x: lm.mouthTop.x * 0.4 + lm.noseTip.x * 0.6,
+      y: lm.mouthTop.y * 0.4 + lm.noseTip.y * 0.6,
+    };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
     return [
       {
         d: [
-          `M ${p([w(-0.55, 1), w(0.05, 2)])}`,
-          `C ${p([w(-0.4, 3), w(-0.22, 4)])} ${p([w(-0.18, 5), w(-0.2, 6)])} ${p([0, w(-0.02, 7)])}`,
-          `C ${p([w(0.18, 8), w(-0.2, 9)])} ${p([w(0.4, 10), w(-0.22, 11)])} ${p([w(0.55, 12), w(0.05, 13)])}`,
-          `C ${p([w(0.42, 14), w(0.18, 15)])} ${p([w(0.22, 16), w(0.1, 17)])} ${p([0, w(0.12, 18)])}`,
-          `C ${p([w(-0.22, 19), w(0.1, 20)])} ${p([w(-0.42, 21), w(0.18, 22)])} ${p([w(-0.55, 23), w(0.05, 24)])}`,
+          `M ${p([w(-0.38, 1), w(0.03, 2)])}`,
+          `C ${p([w(-0.28, 3), w(-0.14, 4)])} ${p([w(-0.12, 5), w(-0.13, 6)])} ${p([0, w(-0.01, 7)])}`,
+          `C ${p([w(0.12, 8), w(-0.13, 9)])} ${p([w(0.28, 10), w(-0.14, 11)])} ${p([w(0.38, 12), w(0.03, 13)])}`,
+          `C ${p([w(0.29, 14), w(0.12, 15)])} ${p([w(0.15, 16), w(0.06, 17)])} ${p([0, w(0.07, 18)])}`,
+          `C ${p([w(-0.15, 19), w(0.06, 20)])} ${p([w(-0.29, 21), w(0.12, 22)])} ${p([w(-0.38, 23), w(0.03, 24)])}`,
           "Z",
         ].join(" "),
-      },
-    ];
-  },
-
-  sunglasses: (lm, eyeDist, angle) => {
-    const rad = eyeDist * 0.34;
-    const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
-      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
-      const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
-      return {
-        d: [
-          `M ${p([w(-0.34, seedBase), 0])}`,
-          `C ${p([-0.34, w(-0.22, seedBase + 1)])} ${p([w(0.1, seedBase + 2), -0.3])} ${p([0.34, w(-0.12, seedBase + 3)])}`,
-          `C ${p([0.5, w(0.02, seedBase + 4)])} ${p([w(0.4, seedBase + 5), 0.3])} ${p([w(0.1, seedBase + 6), 0.32])}`,
-          `C ${p([w(-0.18, seedBase + 7), 0.34])} ${p([-0.36, w(0.2, seedBase + 8)])} ${p([w(-0.34, seedBase + 9), 0])}`,
-          "Z",
-        ].join(" "),
-      };
-    };
-    const bridge: Stroke = {
-      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.9, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.9, y: lm.rightEye.y })}`,
-    };
-    return [lens(lm.leftEye, 1, 1), lens(lm.rightEye, -1, 20), bridge];
-  },
-
-  horns: (lm, eyeDist, angle) => {
-    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    const horn = (side: 1 | -1, seedBase: number): Stroke => ({
-      d: [
-        `M ${p([side * w(0.55, seedBase), w(0.1, seedBase + 1)])}`,
-        `C ${p([side * w(0.7, seedBase + 2), w(-0.45, seedBase + 3)])} ${p([side * w(0.62, seedBase + 4), w(-1.0, seedBase + 5)])} ${p([side * w(0.4, seedBase + 6), w(-1.3, seedBase + 7)])}`,
-        `C ${p([side * w(0.3, seedBase + 8), w(-1.1, seedBase + 9)])} ${p([side * w(0.32, seedBase + 10), w(-0.8, seedBase + 11)])} ${p([side * w(0.28, seedBase + 12), w(-0.5, seedBase + 13)])}`,
-        "Z",
-      ].join(" "),
-    });
-    return [horn(-1, 1), horn(1, 15)];
-  },
-
-  crown: (lm, eyeDist, angle) => {
-    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    const base = -0.15;
-    return [
-      {
-        d: [
-          `M ${p([-0.75, w(base, 1)])}`,
-          `L ${p([-0.75, w(base - 0.35, 2)])}`,
-          `L ${p([-0.45, w(base - 0.05, 3)])}`,
-          `L ${p([-0.22, w(base - 0.65, 4)])}`,
-          `L ${p([0, w(base - 0.1, 5)])}`,
-          `L ${p([0.22, w(base - 0.65, 6)])}`,
-          `L ${p([0.45, w(base - 0.05, 7)])}`,
-          `L ${p([0.75, w(base - 0.35, 8)])}`,
-          `L ${p([0.75, w(base, 9)])}`,
-          "Z",
-        ].join(" "),
-        extraDots: [
-          place([-0.22, base - 0.55], origin, eyeDist, angle),
-          place([0, base - 0.0], origin, eyeDist, angle),
-          place([0.22, base - 0.55], origin, eyeDist, angle),
-        ],
       },
     ];
   },
@@ -238,77 +325,206 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
     ];
   },
 
-  wrinkles: (lm, eyeDist, angle) => {
-    // Three short wavy lines across the forehead, between the hairline
-    // landmark and brow level.
-    const origin: Point = {
-      x: (lm.forehead.x + (lm.leftEye.x + lm.rightEye.x) / 2) / 2,
-      y: (lm.forehead.y + (lm.leftEye.y + lm.rightEye.y) / 2) / 2,
-    };
+  eyepatch: (lm, eyeDist, angle) => {
+    // Covers her right eye (screen-left), strap running up and across
+    // toward the opposite temple.
+    const origin: Point = lm.leftEye;
     const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
-    const line = (yBase: number, seedBase: number): Stroke => {
-      const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    const patch: Stroke = {
+      d: [
+        `M ${p([w(-0.3, 1), w(-0.24, 2)])}`,
+        `C ${p([w(-0.32, 3), w(-0.38, 4)])} ${p([w(0.32, 5), w(-0.38, 6)])} ${p([w(0.3, 7), w(-0.24, 8)])}`,
+        `C ${p([w(0.38, 9), w(0, 10)])} ${p([w(0.34, 11), w(0.3, 12)])} ${p([w(0.26, 13), w(0.32, 14)])}`,
+        `C ${p([w(0, 15), w(0.38, 16)])} ${p([w(-0.26, 17), w(0.32, 18)])} ${p([w(-0.26, 19), w(0.3, 20)])}`,
+        `C ${p([w(-0.38, 21), w(0.26, 22)])} ${p([w(-0.38, 23), w(-0.04, 24)])} ${p([w(-0.3, 25), w(-0.24, 26)])}`,
+        "Z",
+      ].join(" "),
+    };
+    const strap: Stroke = {
+      d: [
+        `M ${p([w(0.3, 30), w(-0.12, 31)])}`,
+        `Q ${fmt(place([1.0, -0.5], origin, eyeDist, angle))} ${fmt({ x: lm.faceRight.x, y: lm.faceRight.y - eyeDist * 0.25 })}`,
+      ].join(" "),
+    };
+    return [patch, strap];
+  },
+
+  bossGlasses: (lm, eyeDist, angle) => {
+    // Same lens shape as the old sunglasses piece, scaled up for a bigger,
+    // flashier frame.
+    const rad = eyeDist * 0.42;
+    const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
+      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.07;
+      const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
       return {
         d: [
-          `M ${p([-0.55, w(yBase, seedBase)])}`,
-          `Q ${p([-0.15, w(yBase - 0.08, seedBase + 1)])} ${p([0.1, w(yBase, seedBase + 2)])}`,
-          `Q ${p([0.35, w(yBase + 0.06, seedBase + 3)])} ${p([0.55, w(yBase - 0.02, seedBase + 4)])}`,
+          `M ${p([w(-0.42, seedBase), 0])}`,
+          `C ${p([-0.42, w(-0.28, seedBase + 1)])} ${p([w(0.12, seedBase + 2), -0.38])} ${p([0.42, w(-0.15, seedBase + 3)])}`,
+          `C ${p([0.62, w(0.03, seedBase + 4)])} ${p([w(0.5, seedBase + 5), 0.38])} ${p([w(0.12, seedBase + 6), 0.4])}`,
+          `C ${p([w(-0.22, seedBase + 7), 0.42])} ${p([-0.44, w(0.25, seedBase + 8)])} ${p([w(-0.42, seedBase + 9), 0])}`,
+          "Z",
         ].join(" "),
       };
     };
-    return [line(-0.35, 1), line(-0.2, 5), line(-0.05, 9)];
+    const bridge: Stroke = {
+      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.9, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.9, y: lm.rightEye.y })}`,
+    };
+    return [lens(lm.leftEye, 1, 1), lens(lm.rightEye, -1, 20), bridge];
   },
 
-  halo: (lm, eyeDist, angle) => {
-    // Floats above the head, but not so far up it risks going above the
-    // very top of the page (there's nothing above the header to scroll
-    // into, so anything placed too high is simply unreachable, not just
-    // clipped).
-    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y - eyeDist * 1.0 };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
+  goldChain: (lm, eyeDist, angle) => {
+    const origin: Point = { x: lm.chin.x, y: lm.chin.y };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    const rx = 0.62;
-    const ry = 0.2;
+    const chain: Stroke = {
+      d: [
+        `M ${p([w(-0.75, 1), w(0.2, 2)])}`,
+        `Q ${p([w(-0.35, 3), w(0.75, 4)])} ${p([0, w(0.82, 5)])}`,
+        `Q ${p([w(0.35, 6), w(0.75, 7)])} ${p([w(0.75, 8), w(0.2, 9)])}`,
+      ].join(" "),
+    };
+    const beadAt = (t: number, seed: number): Point => {
+      const x = -0.75 + t * 1.5;
+      const y = 0.2 + Math.sin(t * Math.PI) * 0.62;
+      return place([w(x, seed), w(y, seed + 1)], origin, eyeDist, angle);
+    };
     return [
       {
+        ...chain,
+        extraDots: [beadAt(0.15, 10), beadAt(0.35, 12), beadAt(0.5, 14), beadAt(0.65, 16), beadAt(0.85, 18)],
+      },
+    ];
+  },
+
+  cigarSmoke: (lm, eyeDist, angle) => {
+    const origin: Point = lm.mouthRight;
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    // Kept short — mouthRight already sits close to the photo's right edge,
+    // so a wide/tall reach here bleeds past the card into the text column
+    // next to it.
+    const cigar: Stroke = {
+      d: [
+        `M ${p([w(0.02, 1), w(0.05, 2)])}`,
+        `L ${p([w(0.42, 3), w(0, 4)])}`,
+        `L ${p([w(0.5, 5), w(0.1, 6)])}`,
+        `L ${p([w(0.42, 7), w(0.2, 8)])}`,
+        `L ${p([w(0.02, 9), w(0.15, 10)])}`,
+        "Z",
+      ].join(" "),
+    };
+    const smokeLine = (seedBase: number, dir: 1 | -1): Stroke => ({
+      d: [
+        `M ${p([w(0.5, seedBase), w(0.05, seedBase + 1)])}`,
+        `Q ${p([w(0.6, seedBase + 2), w(-0.15 * dir, seedBase + 3)])} ${p([w(0.5, seedBase + 4), w(-0.35, seedBase + 5)])}`,
+        `Q ${p([w(0.4, seedBase + 6), w(-0.5 * dir, seedBase + 7)])} ${p([w(0.52, seedBase + 8), w(-0.65, seedBase + 9)])}`,
+      ].join(" "),
+      fast: true,
+    });
+    return [cigar, smokeLine(20, 1), smokeLine(30, -1)];
+  },
+
+  stars: (lm, eyeDist, angle) => {
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.04;
+    const star = (origin: Point, scale: number, seedBase: number): Stroke => {
+      const p = (local: [number, number]) => fmt(place(local, origin, eyeDist * scale, angle));
+      const pts: [number, number][] = [
+        [0, -0.5], [0.12, -0.12], [0.5, -0.1], [0.18, 0.12],
+        [0.3, 0.5], [0, 0.25], [-0.3, 0.5], [-0.18, 0.12],
+        [-0.5, -0.1], [-0.12, -0.12],
+      ];
+      const d =
+        pts
+          .map((pt, i) => `${i === 0 ? "M" : "L"} ${p([w(pt[0], seedBase + i), w(pt[1], seedBase + i + 20)])}`)
+          .join(" ") + " Z";
+      return { d, fast: true };
+    };
+    const p1: Point = { x: lm.faceLeft.x - eyeDist * 0.5, y: lm.faceLeft.y - eyeDist * 0.55 };
+    const p2: Point = { x: lm.faceLeft.x - eyeDist * 0.75, y: lm.faceLeft.y + eyeDist * 0.35 };
+    return [star(p1, 0.32, 1), star(p2, 0.24, 40)];
+  },
+
+  nerdGlasses: (lm, eyeDist, angle) => {
+    // Big, round, unfilled frames — bigger and rounder than the sunglasses
+    // lens so the two read as clearly different accessories.
+    const rad = eyeDist * 0.46;
+    const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
+      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
+      const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
+      return {
         d: [
-          `M ${p([w(-rx, 1), w(0, 2)])}`,
-          `C ${p([w(-rx, 3), w(-ry * 1.8, 4)])} ${p([w(rx, 5), w(-ry * 1.8, 6)])} ${p([w(rx, 7), w(0, 8)])}`,
-          `C ${p([w(rx, 9), w(ry * 1.8, 10)])} ${p([w(-rx, 11), w(ry * 1.8, 12)])} ${p([w(-rx, 13), w(0, 14)])}`,
+          `M ${p([w(0.5, seedBase), 0])}`,
+          `C ${p([0.5, w(0.4, seedBase + 1)])} ${p([w(0.2, seedBase + 2), 0.5])} ${p([0, w(0.5, seedBase + 3)])}`,
+          `C ${p([w(-0.2, seedBase + 4), 0.5])} ${p([-0.5, w(0.4, seedBase + 5)])} ${p([-0.5, w(0, seedBase + 6)])}`,
+          `C ${p([-0.5, w(-0.4, seedBase + 7)])} ${p([w(-0.2, seedBase + 8), -0.5])} ${p([0, w(-0.5, seedBase + 9)])}`,
+          `C ${p([w(0.2, seedBase + 10), -0.5])} ${p([0.5, w(-0.4, seedBase + 11)])} ${p([w(0.5, seedBase + 12), 0])}`,
           "Z",
         ].join(" "),
-      },
+      };
+    };
+    const bridge: Stroke = {
+      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.95, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.95, y: lm.rightEye.y })}`,
+    };
+    return [lens(lm.leftEye, 1, 1), lens(lm.rightEye, -1, 20), bridge];
+  },
+
+  headphones: (lm, eyeDist, angle) => {
+    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    // Kept shallow — anything higher risks bleeding above the photo card
+    // into the site header, which has no room to scroll into (see the
+    // halo/horns headroom notes below).
+    const band: Stroke = {
+      d: [
+        `M ${p([w(-0.95, 1), w(0.3, 2)])}`,
+        `Q ${p([w(-0.6, 3), w(-0.6, 4)])} ${p([0, w(-0.75, 5)])}`,
+        `Q ${p([w(0.6, 6), w(-0.6, 7)])} ${p([w(0.95, 8), w(0.3, 9)])}`,
+      ].join(" "),
+    };
+    const earCup = (cupOrigin: Point, seedBase: number): Stroke => {
+      const pp = (local: [number, number]) => fmt(place(local, cupOrigin, eyeDist, angle));
+      return {
+        d: [
+          `M ${pp([w(0, seedBase), w(-0.3, seedBase + 1)])}`,
+          `C ${pp([w(0.28, seedBase + 2), -0.3])} ${pp([0.28, w(0.3, seedBase + 3)])} ${pp([w(0, seedBase + 4), 0.3])}`,
+          `C ${pp([-0.28, w(0.3, seedBase + 5)])} ${pp([-0.28, w(-0.3, seedBase + 6)])} ${pp([w(0, seedBase + 7), -0.3])}`,
+          "Z",
+        ].join(" "),
+      };
+    };
+    return [
+      band,
+      earCup({ x: lm.faceLeft.x, y: lm.faceLeft.y }, 20),
+      earCup({ x: lm.faceRight.x, y: lm.faceRight.y }, 40),
     ];
   },
 
-  grumpy: (lm, eyeDist, angle) => {
-    // A short furrowed "V" between the brows.
-    const origin: Point = {
-      x: (lm.leftEye.x + lm.rightEye.x) / 2,
-      y: (lm.leftEye.y + lm.rightEye.y) / 2 - eyeDist * 0.28,
-    };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.07;
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    return [
-      {
-        d: [
-          `M ${p([w(-0.2, 1), w(-0.14, 2)])}`,
-          `L ${p([w(-0.03, 3), w(0.1, 4)])}`,
-          `M ${p([w(0.2, 5), w(-0.14, 6)])}`,
-          `L ${p([w(0.03, 7), w(0.1, 8)])}`,
-        ].join(" "),
-      },
-    ];
-  },
+  techNoise: (lm, eyeDist, angle) =>
+    scatterGlyphs(
+      [
+        { ch: "{", origin: { x: lm.faceLeft.x - eyeDist * 0.55, y: lm.faceLeft.y + eyeDist * 0.15 }, scale: 0.3, seed: 1 },
+        { ch: "}", origin: { x: lm.faceRight.x + eyeDist * 0.4, y: lm.faceRight.y - eyeDist * 0.5 }, scale: 0.28, seed: 20 },
+        { ch: "<", origin: { x: lm.faceLeft.x - eyeDist * 0.35, y: lm.faceLeft.y - eyeDist * 0.7 }, scale: 0.26, seed: 40 },
+        { ch: "1", origin: { x: lm.chin.x - eyeDist * 0.55, y: lm.chin.y + eyeDist * 0.3 }, scale: 0.28, seed: 60 },
+        { ch: "0", origin: { x: lm.chin.x + eyeDist * 0.15, y: lm.chin.y + eyeDist * 0.45 }, scale: 0.26, seed: 80 },
+      ],
+      eyeDist,
+      angle,
+    ),
+
+  wordBoss: (lm, eyeDist, angle) => wordStrokes("BOSS", lm, eyeDist, angle, 0.95),
+  wordPirate: (lm, eyeDist, angle) => wordStrokes("AARGH!", lm, eyeDist, angle, 0.6),
+  wordDev: (lm, eyeDist, angle) => wordStrokes("404", lm, eyeDist, angle, 0.7),
 };
 
 const THEME_KINDS: Record<ThemeKind, BasePiece[]> = {
-  devil: ["horns", "goatee"],
-  angel: ["halo"],
-  cool: ["sunglasses"],
-  old: ["wrinkles", "grumpy"],
+  pirate: ["eyepatch", "mustache", "goatee", "wordPirate"],
+  boss: ["bossGlasses", "goldChain", "cigarSmoke", "stars", "wordBoss"],
+  developer: ["nerdGlasses", "headphones", "techNoise", "wordDev"],
 };
-const THEME_NAMES: ThemeKind[] = ["old", "cool", "devil", "angel"];
+const THEME_NAMES: ThemeKind[] = ["pirate", "boss", "developer"];
 
 function pickRandomTheme(exclude?: ThemeKind): ThemeKind {
   const pool = exclude ? THEME_NAMES.filter((t) => t !== exclude) : THEME_NAMES;
@@ -324,6 +540,10 @@ function buildPieces(kind: Exclude<DoodleKind, "random">, lm: Landmarks): Stroke
 
 const DRAW_MS_PER_PIECE = 1100;
 const PIECE_PAUSE_MS = 140;
+// Letters and small background marks are short strokes — drawing them at
+// full-piece speed would make a word like "AARGH!" take ~15s on its own.
+const FAST_DRAW_MS = 260;
+const FAST_PAUSE_MS = 40;
 const HOLD_MS = 350;
 
 // White "chalk ink" — a dark, subtle outline underneath gives it edge
@@ -462,10 +682,12 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
           return;
         }
         const total = pathEl.getTotalLength();
+        const duration = strokes[i].fast ? FAST_DRAW_MS : DRAW_MS_PER_PIECE;
+        const pauseMs = strokes[i].fast ? FAST_PAUSE_MS : PIECE_PAUSE_MS;
         const start = performance.now();
         const step = (now: number) => {
           if (sessionRef.current !== mySession) return;
-          const t = Math.min(1, (now - start) / DRAW_MS_PER_PIECE);
+          const t = Math.min(1, (now - start) / duration);
           const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
           setPieceProgress(eased);
           const pt = pathEl.getPointAtLength(eased * total);
@@ -481,7 +703,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
           } else {
             setTimeout(() => {
               if (sessionRef.current === mySession) drawPiece(i + 1);
-            }, PIECE_PAUSE_MS);
+            }, pauseMs);
           }
         };
         rafRef.current = requestAnimationFrame(step);
