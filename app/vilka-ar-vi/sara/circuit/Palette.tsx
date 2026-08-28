@@ -2,7 +2,7 @@
 
 import type { DragEvent, KeyboardEvent } from "react";
 import Link from "next/link";
-import { Badge, Card, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Card, SimpleGrid, Stack, Text } from "@mantine/core";
 
 import {
   ALWAYS_SHOWN_KINDS,
@@ -13,6 +13,7 @@ import {
   type ComponentKind,
 } from "./componentKinds";
 import { PCB } from "./theme";
+import { Symbol } from "./symbols";
 
 type ArmedPayload = {
   kind: ComponentKind;
@@ -106,22 +107,15 @@ export const Palette = ({
                 style={{
                   cursor: "grab",
                   alignSelf: "flex-start",
+                  padding: 4,
                   outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
                   outlineOffset: 2,
                   borderRadius: 4,
                 }}
               >
-                <Badge
-                  variant="outline"
-                  style={{
-                    cursor: "grab",
-                    color: PCB.copper,
-                    borderColor: PCB.copper,
-                    fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
-                  }}
-                >
-                  {KIND_LABELS[kind]}
-                </Badge>
+                <svg viewBox="-6 -26 92 52" width={64} height={36} style={{ overflow: "visible", display: "block" }}>
+                  <Symbol kind={kind} />
+                </svg>
               </div>
 
               <SimpleGrid cols={{ base: 4, xs: 5 }} spacing={4}>
