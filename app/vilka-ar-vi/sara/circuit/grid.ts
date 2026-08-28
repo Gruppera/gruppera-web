@@ -1,8 +1,12 @@
 // A bit roomier than a single loop needs — multiple batteries means
 // multiple independent loops are a reasonable thing to want to build.
+// ROWS is taller relative to COLS than a "natural" board so the schematic
+// reaches further down toward the height of the palette sidebar beside it
+// (Board.tsx also stretches to fill that height exactly; more rows just
+// means less distortion is needed to get there).
 export const COLS = 8;
-export const ROWS = 5;
-export const CELL = 80;
+export const ROWS = 10;
+export const CELL = 60; // 75% of the previous 80px spacing between points
 
 export type GridPoint = { col: number; row: number };
 

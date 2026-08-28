@@ -190,8 +190,8 @@ export const CircuitBuilder = () => {
 
   return (
     <Stack gap="lg">
-      <Group align="flex-start" wrap="wrap" gap="md">
-        <div style={{ flex: "3 1 480px", padding: "8px 0" }}>
+      <Group align="stretch" wrap="wrap" gap="md">
+        <div style={{ flex: "3 1 480px", padding: "8px 0", display: "flex", flexDirection: "column" }}>
           <Board
             placed={placed}
             energizedIds={result.won ? result.energizedIds : new Set()}

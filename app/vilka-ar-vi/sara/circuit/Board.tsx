@@ -164,9 +164,11 @@ export const Board = ({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
+        height="100%"
+        preserveAspectRatio="none"
         role="group"
         aria-label="Kretsschema — komponenter kan tas bort, vändas eller (för brytare) öppnas/stängas med tangentbordet"
-        style={{ display: "block", height: "auto", overflow: "visible" }}
+        style={{ display: "block", flex: "1 1 auto", minHeight: 0, overflow: "visible" }}
       >
         {/* Board substrate. */}
         <rect
