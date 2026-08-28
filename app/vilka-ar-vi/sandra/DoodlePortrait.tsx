@@ -4,7 +4,17 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FaceLandmarker as FaceLandmarkerType } from "@mediapipe/tasks-vision";
 import { AspectRatio, Box, Card, CardSection, Image } from "@mantine/core";
 
-type DoodleKind = "mustache" | "horns" | "crown" | "sunglasses" | "random";
+type BasePiece =
+  | "mustache"
+  | "horns"
+  | "crown"
+  | "sunglasses"
+  | "goatee"
+  | "wrinkles"
+  | "halo"
+  | "grumpy";
+type ThemeKind = "old" | "cool" | "devil" | "angel";
+type DoodleKind = BasePiece | ThemeKind | "random";
 
 type DoodlePortraitProps = {
   src: string;
@@ -26,6 +36,7 @@ type Landmarks = {
   mouthRight: Point;
   mouthTop: Point;
   forehead: Point;
+  chin: Point;
   faceLeft: Point;
   faceRight: Point;
 };
@@ -41,6 +52,7 @@ const LANDMARK_INDEX = {
   mouthRight: 291,
   mouthTop: 13,
   forehead: 10,
+  chin: 152,
   faceLeft: 234,
   faceRight: 454,
 } as const;
@@ -98,12 +110,7 @@ function seededWobble(seed: number): number {
   return (x - Math.floor(x)) * 2 - 1; // -1..1
 }
 
-function place(
-  local: [number, number],
-  origin: Point,
-  scale: number,
-  angle: number,
-): Point {
+function place(local: [number, number], origin: Point, scale: number, angle: number): Point {
   const [lx, ly] = local;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
@@ -116,136 +123,226 @@ function fmt(p: Point): string {
   return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
 }
 
-type DoodlePath = { d: string; extraDots?: Point[] };
+type Stroke = { d: string; extraDots?: Point[] };
 
 /**
- * Builds the SVG path for a doodle in "eye-distance units" (scale = distance
- * between the eyes), then rotates/translates/scales it into place. Points
- * get a small deterministic wobble so edges read as hand-drawn, not
- * geometric.
+ * Each builder returns one or more *strokes* — separate pieces drawn one
+ * after another by a single pen, never simultaneously (two horns starting
+ * at once read as two pens, which isn't how anyone actually draws).
+ * Coordinates are authored in "eye-distance units" around a piece-specific
+ * origin, then rotated/scaled into place. Every point goes through `w()`,
+ * a small deterministic wobble, so the underlying geometry is already
+ * slightly uneven before the feTurbulence filter (applied in the component)
+ * roughens the rendered line further.
  */
-function buildDoodle(kind: Exclude<DoodleKind, "random">, lm: Landmarks): DoodlePath {
+const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: number) => Stroke[]> = {
+  mustache: (lm, eyeDist, angle) => {
+    const origin: Point = { x: (lm.mouthTop.x + lm.noseTip.x) / 2, y: (lm.mouthTop.y + lm.noseTip.y) / 2 };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    return [
+      {
+        d: [
+          `M ${p([w(-0.55, 1), w(0.05, 2)])}`,
+          `C ${p([w(-0.4, 3), w(-0.22, 4)])} ${p([w(-0.18, 5), w(-0.2, 6)])} ${p([0, w(-0.02, 7)])}`,
+          `C ${p([w(0.18, 8), w(-0.2, 9)])} ${p([w(0.4, 10), w(-0.22, 11)])} ${p([w(0.55, 12), w(0.05, 13)])}`,
+          `C ${p([w(0.42, 14), w(0.18, 15)])} ${p([w(0.22, 16), w(0.1, 17)])} ${p([0, w(0.12, 18)])}`,
+          `C ${p([w(-0.22, 19), w(0.1, 20)])} ${p([w(-0.42, 21), w(0.18, 22)])} ${p([w(-0.55, 23), w(0.05, 24)])}`,
+          "Z",
+        ].join(" "),
+      },
+    ];
+  },
+
+  sunglasses: (lm, eyeDist, angle) => {
+    const rad = eyeDist * 0.34;
+    const lens = (origin: Point, seedBase: number): Stroke => {
+      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
+      const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+      return {
+        d: [
+          `M ${p([w(-0.34, seedBase), 0])}`,
+          `C ${p([-0.34, w(-0.22, seedBase + 1)])} ${p([w(0.1, seedBase + 2), -0.3])} ${p([0.34, w(-0.12, seedBase + 3)])}`,
+          `C ${p([0.5, w(0.02, seedBase + 4)])} ${p([w(0.4, seedBase + 5), 0.3])} ${p([w(0.1, seedBase + 6), 0.32])}`,
+          `C ${p([w(-0.18, seedBase + 7), 0.34])} ${p([-0.36, w(0.2, seedBase + 8)])} ${p([w(-0.34, seedBase + 9), 0])}`,
+          "Z",
+        ].join(" "),
+      };
+    };
+    const bridge: Stroke = {
+      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.9, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.9, y: lm.rightEye.y })}`,
+    };
+    return [lens(lm.leftEye, 1), lens(lm.rightEye, 20), bridge];
+  },
+
+  horns: (lm, eyeDist, angle) => {
+    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    const horn = (side: 1 | -1, seedBase: number): Stroke => ({
+      d: [
+        `M ${p([side * w(0.55, seedBase), w(0.1, seedBase + 1)])}`,
+        `C ${p([side * w(0.7, seedBase + 2), w(-0.45, seedBase + 3)])} ${p([side * w(0.62, seedBase + 4), w(-1.0, seedBase + 5)])} ${p([side * w(0.4, seedBase + 6), w(-1.3, seedBase + 7)])}`,
+        `C ${p([side * w(0.3, seedBase + 8), w(-1.1, seedBase + 9)])} ${p([side * w(0.32, seedBase + 10), w(-0.8, seedBase + 11)])} ${p([side * w(0.28, seedBase + 12), w(-0.5, seedBase + 13)])}`,
+        "Z",
+      ].join(" "),
+    });
+    return [horn(-1, 1), horn(1, 15)];
+  },
+
+  crown: (lm, eyeDist, angle) => {
+    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    const base = -0.15;
+    return [
+      {
+        d: [
+          `M ${p([-0.75, w(base, 1)])}`,
+          `L ${p([-0.75, w(base - 0.35, 2)])}`,
+          `L ${p([-0.45, w(base - 0.05, 3)])}`,
+          `L ${p([-0.22, w(base - 0.65, 4)])}`,
+          `L ${p([0, w(base - 0.1, 5)])}`,
+          `L ${p([0.22, w(base - 0.65, 6)])}`,
+          `L ${p([0.45, w(base - 0.05, 7)])}`,
+          `L ${p([0.75, w(base - 0.35, 8)])}`,
+          `L ${p([0.75, w(base, 9)])}`,
+          "Z",
+        ].join(" "),
+        extraDots: [
+          place([-0.22, base - 0.55], origin, eyeDist, angle),
+          place([0, base - 0.0], origin, eyeDist, angle),
+          place([0.22, base - 0.55], origin, eyeDist, angle),
+        ],
+      },
+    ];
+  },
+
+  goatee: (lm, eyeDist, angle) => {
+    // Spans from just below the mouth down to the chin — a pointed tuft,
+    // not a full beard.
+    const origin: Point = {
+      x: (lm.mouthTop.x + lm.chin.x) / 2,
+      y: (lm.mouthTop.y + lm.chin.y) / 2,
+    };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    return [
+      {
+        d: [
+          `M ${p([w(-0.28, 1), w(-0.5, 2)])}`,
+          `C ${p([w(-0.32, 3), w(-0.1, 4)])} ${p([w(-0.2, 5), w(0.35, 6)])} ${p([w(0, 7), w(0.62, 8)])}`,
+          `C ${p([w(0.2, 9), w(0.35, 10)])} ${p([w(0.32, 11), w(-0.1, 12)])} ${p([w(0.28, 13), w(-0.5, 14)])}`,
+        ].join(" "),
+      },
+    ];
+  },
+
+  wrinkles: (lm, eyeDist, angle) => {
+    // Three short wavy lines across the forehead, between the hairline
+    // landmark and brow level.
+    const origin: Point = {
+      x: (lm.forehead.x + (lm.leftEye.x + lm.rightEye.x) / 2) / 2,
+      y: (lm.forehead.y + (lm.leftEye.y + lm.rightEye.y) / 2) / 2,
+    };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
+    const line = (yBase: number, seedBase: number): Stroke => {
+      const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+      return {
+        d: [
+          `M ${p([-0.55, w(yBase, seedBase)])}`,
+          `Q ${p([-0.15, w(yBase - 0.08, seedBase + 1)])} ${p([0.1, w(yBase, seedBase + 2)])}`,
+          `Q ${p([0.35, w(yBase + 0.06, seedBase + 3)])} ${p([0.55, w(yBase - 0.02, seedBase + 4)])}`,
+        ].join(" "),
+      };
+    };
+    return [line(-0.35, 1), line(-0.2, 5), line(-0.05, 9)];
+  },
+
+  halo: (lm, eyeDist, angle) => {
+    // Floats above the head, but not so far up it risks going above the
+    // very top of the page (there's nothing above the header to scroll
+    // into, so anything placed too high is simply unreachable, not just
+    // clipped).
+    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y - eyeDist * 1.0 };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    const rx = 0.62;
+    const ry = 0.2;
+    return [
+      {
+        d: [
+          `M ${p([w(-rx, 1), w(0, 2)])}`,
+          `C ${p([w(-rx, 3), w(-ry * 1.8, 4)])} ${p([w(rx, 5), w(-ry * 1.8, 6)])} ${p([w(rx, 7), w(0, 8)])}`,
+          `C ${p([w(rx, 9), w(ry * 1.8, 10)])} ${p([w(-rx, 11), w(ry * 1.8, 12)])} ${p([w(-rx, 13), w(0, 14)])}`,
+          "Z",
+        ].join(" "),
+      },
+    ];
+  },
+
+  grumpy: (lm, eyeDist, angle) => {
+    // A short furrowed "V" between the brows.
+    const origin: Point = {
+      x: (lm.leftEye.x + lm.rightEye.x) / 2,
+      y: (lm.leftEye.y + lm.rightEye.y) / 2 - eyeDist * 0.28,
+    };
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.07;
+    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+    return [
+      {
+        d: [
+          `M ${p([w(-0.2, 1), w(-0.14, 2)])}`,
+          `L ${p([w(-0.03, 3), w(0.1, 4)])}`,
+          `M ${p([w(0.2, 5), w(-0.14, 6)])}`,
+          `L ${p([w(0.03, 7), w(0.1, 8)])}`,
+        ].join(" "),
+      },
+    ];
+  },
+};
+
+const THEME_KINDS: Record<ThemeKind, BasePiece[]> = {
+  devil: ["horns", "goatee"],
+  angel: ["halo"],
+  cool: ["sunglasses"],
+  old: ["wrinkles", "grumpy"],
+};
+const THEME_NAMES: ThemeKind[] = ["old", "cool", "devil", "angel"];
+
+function buildPieces(kind: Exclude<DoodleKind, "random">, lm: Landmarks): Stroke[] {
   const eyeDist = Math.hypot(lm.rightEye.x - lm.leftEye.x, lm.rightEye.y - lm.leftEye.y);
   const angle = Math.atan2(lm.rightEye.y - lm.leftEye.y, lm.rightEye.x - lm.leftEye.x);
-  // Wobble amplitude bumped up from the first pass — combined with the
-  // feTurbulence "sketch-wobble" filter applied to the rendered stroke
-  // (see the component below), this is what keeps the line from reading as
-  // a clean geometric curve.
-  const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
-
-  if (kind === "mustache") {
-    const origin: Point = { x: (lm.mouthTop.x + lm.noseTip.x) / 2, y: (lm.mouthTop.y + lm.noseTip.y) / 2 };
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    return {
-      d: [
-        `M ${p([w(-0.55, 1), w(0.05, 2)])}`,
-        `C ${p([w(-0.4, 3), w(-0.22, 4)])} ${p([w(-0.18, 5), w(-0.2, 6)])} ${p([0, w(-0.02, 7)])}`,
-        `C ${p([w(0.18, 8), w(-0.2, 9)])} ${p([w(0.4, 10), w(-0.22, 11)])} ${p([w(0.55, 12), w(0.05, 13)])}`,
-        `C ${p([w(0.42, 14), w(0.18, 15)])} ${p([w(0.22, 16), w(0.1, 17)])} ${p([0, w(0.12, 18)])}`,
-        `C ${p([w(-0.22, 19), w(0.1, 20)])} ${p([w(-0.42, 21), w(0.18, 22)])} ${p([w(-0.55, 23), w(0.05, 24)])}`,
-        "Z",
-      ].join(" "),
-    };
-  }
-
-  if (kind === "sunglasses") {
-    const l = lm.leftEye;
-    const r = lm.rightEye;
-    const rad = eyeDist * 0.34;
-    const lp = (local: [number, number]) => fmt(place(local, l, eyeDist, angle));
-    const rp = (local: [number, number]) => fmt(place(local, r, eyeDist, angle));
-    return {
-      d: [
-        `M ${lp([-0.34, 0])}`,
-        `C ${lp([-0.34, -0.22])} ${lp([0.1, -0.3])} ${lp([0.34, -0.12])}`,
-        `C ${lp([0.5, 0.02])} ${lp([0.4, 0.3])} ${lp([0.1, 0.32])}`,
-        `C ${lp([-0.18, 0.34])} ${lp([-0.36, 0.2])} ${lp([-0.34, 0])}`,
-        "Z",
-        `M ${rp([-0.34, -0.1])}`,
-        `C ${rp([-0.4, -0.3])} ${rp([0.05, -0.34])} ${rp([0.32, -0.14])}`,
-        `C ${rp([0.46, 0])} ${rp([0.38, 0.28])} ${rp([0.08, 0.32])}`,
-        `C ${rp([-0.22, 0.36])} ${rp([-0.32, 0.12])} ${rp([-0.34, -0.1])}`,
-        "Z",
-        `M ${fmt({ x: l.x + rad * 0.9, y: l.y })} L ${fmt({ x: r.x - rad * 0.9, y: r.y })}`,
-      ].join(" "),
-    };
-  }
-
-  if (kind === "horns") {
-    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    return {
-      d: [
-        `M ${p([w(-0.55, 1), w(0.1, 2)])}`,
-        `C ${p([w(-0.7, 3), w(-0.5, 4)])} ${p([w(-0.62, 5), w(-1.15, 6)])} ${p([w(-0.4, 7), w(-1.5, 8)])}`,
-        `C ${p([w(-0.3, 9), w(-1.25, 10)])} ${p([w(-0.32, 11), w(-0.9, 12)])} ${p([w(-0.28, 13), w(-0.55, 14)])}`,
-        "Z",
-        `M ${p([w(0.55, 15), w(0.1, 16)])}`,
-        `C ${p([w(0.7, 17), w(-0.5, 18)])} ${p([w(0.62, 19), w(-1.15, 20)])} ${p([w(0.4, 21), w(-1.5, 22)])}`,
-        `C ${p([w(0.3, 23), w(-1.25, 24)])} ${p([w(0.32, 25), w(-0.9, 26)])} ${p([w(0.28, 27), w(-0.55, 28)])}`,
-        "Z",
-      ].join(" "),
-    };
-  }
-
-  // crown
-  const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
-  const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-  const base = -0.15;
-  return {
-    d: [
-      `M ${p([-0.75, w(base, 1)])}`,
-      `L ${p([-0.75, w(base - 0.35, 2)])}`,
-      `L ${p([-0.45, w(base - 0.05, 3)])}`,
-      `L ${p([-0.22, w(base - 0.65, 4)])}`,
-      `L ${p([0, w(base - 0.1, 5)])}`,
-      `L ${p([0.22, w(base - 0.65, 6)])}`,
-      `L ${p([0.45, w(base - 0.05, 7)])}`,
-      `L ${p([0.75, w(base - 0.35, 8)])}`,
-      `L ${p([0.75, w(base, 9)])}`,
-      "Z",
-    ].join(" "),
-    extraDots: [
-      place([-0.22, base - 0.55], origin, eyeDist, angle),
-      place([0, base - 0.0], origin, eyeDist, angle),
-      place([0.22, base - 0.55], origin, eyeDist, angle),
-    ],
-  };
+  const bases = kind in THEME_KINDS ? THEME_KINDS[kind as ThemeKind] : [kind as BasePiece];
+  return bases.flatMap((base) => PIECE_BUILDERS[base](lm, eyeDist, angle));
 }
 
-const DOODLE_KINDS: Exclude<DoodleKind, "random">[] = ["mustache", "horns", "crown", "sunglasses"];
-
-const DRAW_MS = 1700;
+const DRAW_MS_PER_PIECE = 1100;
+const PIECE_PAUSE_MS = 140;
 const HOLD_MS = 350;
 
-// Signature "ink" colour — a neon orange, not the light-vs-dark black/green
-// switch from the first pass. Orange alone has poor grayscale contrast
-// against the sprout-green card backdrop specifically (~1.1:1 — barely
-// distinguishable), so it's always paired with a thin outline stroke
-// underneath whose colour DOES flip with the sampled backdrop luminance.
-// That outline is what actually guarantees legibility on any given patch
-// of the photo (skin, hair, the green background peeking through); the
-// orange on top is what gives it the "glowing ink" personality.
-const ACCENT_COLOR = "#ff7a1a";
-const ACCENT_GLOW =
-  "drop-shadow(0 0 3px rgba(255,122,26,0.85)) drop-shadow(0 0 8px rgba(255,140,40,0.5))";
+// White "chalk ink" — a dark, subtle outline underneath gives it edge
+// definition against any part of the photo, and a soft offset drop-shadow
+// on the whole group gives it a little sticker-like 3D lift, instead of
+// looking like a flat decal.
+const ACCENT_COLOR = "#fdfdfd";
+const OUTLINE_COLOR = "rgba(13,13,12,0.45)";
+const INK_SHADOW = "drop-shadow(1px 2.5px 1.5px rgba(0,0,0,0.4))";
 
 export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460, color }: DoodlePortraitProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
+  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const rafRef = useRef<number | null>(null);
 
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [landmarks, setLandmarks] = useState<Landmarks | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
   const [active, setActive] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..1 draw progress
+  const [pieceIndex, setPieceIndex] = useState(-1);
+  const [pieceProgress, setPieceProgress] = useState(0);
   const [pen, setPen] = useState<{ x: number; y: number; angle: number } | null>(null);
   const strokeColor = color ?? ACCENT_COLOR;
-  // Outline colour is the actual contrast mechanism (see ACCENT_COLOR
-  // comment) — dark ink on light backdrop, light ink on dark backdrop.
-  const [outlineColor, setOutlineColor] = useState("rgba(13,13,12,0.85)");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [session, setSession] = useState(0);
   const sessionRef = useRef(0);
@@ -254,8 +351,8 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
 
   const kind = useMemo<Exclude<DoodleKind, "random">>(() => {
     if (doodle !== "random") return doodle;
-    const idx = Math.abs(Math.floor(seededWobble(src.length * 7.13) * DOODLE_KINDS.length));
-    return DOODLE_KINDS[idx % DOODLE_KINDS.length];
+    const idx = Math.abs(Math.floor(seededWobble(src.length * 7.13) * THEME_NAMES.length));
+    return THEME_NAMES[idx % THEME_NAMES.length];
   }, [doodle, src]);
 
   useEffect(() => {
@@ -265,44 +362,6 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
-
-  // Sample average luminance (composited over the card's sprout backdrop,
-  // since that's what's actually behind the photo's transparent edges) to
-  // pick an outline colour with good contrast against THIS photo.
-  useEffect(() => {
-    const sample = (img: HTMLImageElement) => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 32;
-        canvas.height = 32;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.fillStyle = "#86a14c"; // sprout.6 — the card's backdrop colour
-        ctx.fillRect(0, 0, 32, 32);
-        ctx.drawImage(img, 0, 0, 32, 32);
-        const { data } = ctx.getImageData(0, 0, 32, 32);
-        let sum = 0;
-        let count = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-          count += 1;
-        }
-        const avg = sum / count / 255;
-        setOutlineColor(avg < 0.45 ? "rgba(253,253,253,0.9)" : "rgba(13,13,12,0.85)");
-      } catch {
-        // canvas can throw on cross-origin taint in some browsers — keep default
-      }
-    };
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    // Handler must be wired up BEFORE `.src` is set — for an already-cached
-    // image (near-certain here, since the same URL is already on screen via
-    // the <Image> below) the load can resolve before an onload assigned
-    // afterwards would ever be seen, silently leaving the default colour.
-    img.onload = () => sample(img);
-    img.src = src;
-    if (img.complete && img.naturalWidth > 0) sample(img);
-  }, [src]);
 
   const runDetection = async () => {
     const imgEl = imgRef.current;
@@ -331,6 +390,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
         mouthRight: at(LANDMARK_INDEX.mouthRight),
         mouthTop: at(LANDMARK_INDEX.mouthTop),
         forehead: at(LANDMARK_INDEX.forehead),
+        chin: at(LANDMARK_INDEX.chin),
         faceLeft: at(LANDMARK_INDEX.faceLeft),
         faceRight: at(LANDMARK_INDEX.faceRight),
       });
@@ -348,6 +408,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
         mouthRight: { x: boxW * 0.6, y: boxH * 0.6 },
         mouthTop: { x: boxW * 0.5, y: boxH * 0.57 },
         forehead: { x: boxW * 0.5, y: boxH * 0.22 },
+        chin: { x: boxW * 0.5, y: boxH * 0.72 },
         faceLeft: { x: boxW * 0.28, y: boxH * 0.5 },
         faceRight: { x: boxW * 0.72, y: boxH * 0.5 },
       });
@@ -355,51 +416,71 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     }
   };
 
-  const doodlePath = useMemo(() => (landmarks ? buildDoodle(kind, landmarks) : null), [landmarks, kind]);
+  const pieces = useMemo(() => (landmarks ? buildPieces(kind, landmarks) : null), [landmarks, kind]);
 
   const stopAnimation = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
   };
 
-  const animateIn = (mySession: number) => {
-    const pathEl = pathRef.current;
-    if (!pathEl) return;
+  // Draws pieces strictly one at a time — a single pen, a single tip moving
+  // at any moment. Each piece finishes fully before the next one starts.
+  const animateSequence = (mySession: number, strokes: Stroke[]) => {
     if (reduceMotion) {
-      setProgress(1);
+      setPieceIndex(strokes.length - 1);
+      setPieceProgress(1);
       setPen(null);
       return;
     }
-    const total = pathEl.getTotalLength();
-    const start = performance.now();
-    const step = (now: number) => {
-      // A later hover (leave + re-enter) bumps the session — bail out so
-      // this stale loop can't keep animating (or snap progress backwards)
-      // over the new one.
+    const drawPiece = (i: number) => {
       if (sessionRef.current !== mySession) return;
-      const t = Math.min(1, (now - start) / DRAW_MS);
-      // Ease-in-out cubic: the pen "sets down" gently, draws at speed
-      // through the middle, and eases off at the end — reads as a hand
-      // actually drawing rather than a mechanical wipe.
-      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      setProgress(eased);
-      const pt = pathEl.getPointAtLength(eased * total);
-      const ahead = pathEl.getPointAtLength(Math.min(total, eased * total + 2));
-      const angle = Math.atan2(ahead.y - pt.y, ahead.x - pt.x);
-      setPen({
-        x: pt.x + seededWobble(now * 0.01) * 0.6,
-        y: pt.y + seededWobble(now * 0.017) * 0.6,
-        angle,
-      });
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(step);
-      } else {
+      if (i >= strokes.length) {
         setTimeout(() => {
           if (sessionRef.current === mySession) setPen(null);
         }, HOLD_MS);
+        return;
       }
+      setPieceIndex(i);
+      setPieceProgress(0);
+      // The path for piece `i` was unrendered (revealed === 0 -> null) a
+      // moment ago; setPieceIndex above only *schedules* the re-render that
+      // mounts it. Reading pathRefs.current[i] synchronously here would
+      // almost always see the stale/null ref from before that commit — wait
+      // a frame so React has actually painted it first.
+      rafRef.current = requestAnimationFrame(() => {
+        if (sessionRef.current !== mySession) return;
+        const pathEl = pathRefs.current[i];
+        if (!pathEl) {
+          drawPiece(i + 1);
+          return;
+        }
+        const total = pathEl.getTotalLength();
+        const start = performance.now();
+        const step = (now: number) => {
+          if (sessionRef.current !== mySession) return;
+          const t = Math.min(1, (now - start) / DRAW_MS_PER_PIECE);
+          const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          setPieceProgress(eased);
+          const pt = pathEl.getPointAtLength(eased * total);
+          const ahead = pathEl.getPointAtLength(Math.min(total, eased * total + 2));
+          const pAngle = Math.atan2(ahead.y - pt.y, ahead.x - pt.x);
+          setPen({
+            x: pt.x + seededWobble(now * 0.01) * 0.6,
+            y: pt.y + seededWobble(now * 0.017) * 0.6,
+            angle: pAngle,
+          });
+          if (t < 1) {
+            rafRef.current = requestAnimationFrame(step);
+          } else {
+            setTimeout(() => {
+              if (sessionRef.current === mySession) drawPiece(i + 1);
+            }, PIECE_PAUSE_MS);
+          }
+        };
+        rafRef.current = requestAnimationFrame(step);
+      });
     };
-    rafRef.current = requestAnimationFrame(step);
+    drawPiece(0);
   };
 
   const handleEnter = () => {
@@ -413,22 +494,24 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     sessionRef.current += 1;
     setActive(false);
     stopAnimation();
-    setProgress(0);
+    setPieceIndex(-1);
+    setPieceProgress(0);
     setPen(null);
   };
 
-  // Every hover (a fresh `session`) restarts the draw from scratch, even if
-  // landmarks are already cached from a previous hover on the same photo.
+  // Every hover (a fresh `session`) restarts the sequence from piece 0, even
+  // if landmarks are already cached from a previous hover on the same photo.
   useEffect(() => {
-    if (active && doodlePath) {
+    if (active && pieces && pieces.length > 0) {
       stopAnimation();
-      setProgress(0);
+      setPieceIndex(-1);
+      setPieceProgress(0);
       setPen(null);
-      animateIn(sessionRef.current);
+      animateSequence(sessionRef.current, pieces);
     }
     return stopAnimation;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, doodlePath, reduceMotion, session]);
+  }, [active, pieces, reduceMotion, session]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -497,64 +580,75 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
             </filter>
           </defs>
 
-          {doodlePath && (
-            <g filter={`url(#${filterId})`}>
-              {/* Outline first, underneath — the actual contrast guarantee
-                  against whatever patch of photo it's drawn over. */}
-              <path
-                d={doodlePath.d}
-                fill="none"
-                stroke={outlineColor}
-                strokeWidth={box.w * 0.026}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  strokeDasharray: pathRef.current?.getTotalLength() || 1000,
-                  strokeDashoffset:
-                    (pathRef.current?.getTotalLength() || 1000) * (1 - progress),
-                }}
-              />
-              {/* Signature neon ink on top. */}
-              <path
-                ref={pathRef}
-                d={doodlePath.d}
-                fill="none"
-                stroke={strokeColor}
-                strokeWidth={box.w * 0.013}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  filter: ACCENT_GLOW,
-                  strokeDasharray: pathRef.current?.getTotalLength() || 1000,
-                  strokeDashoffset:
-                    (pathRef.current?.getTotalLength() || 1000) * (1 - progress),
-                }}
-              />
-              {kind === "crown" &&
-                doodlePath.extraDots?.map((dot, i) => (
-                  <circle
-                    key={i}
-                    cx={dot.x}
-                    cy={dot.y}
-                    r={box.w * 0.014}
-                    fill={strokeColor}
-                    stroke={outlineColor}
-                    strokeWidth={box.w * 0.006}
-                    opacity={progress > 0.9 ? 1 : 0}
-                    style={{ filter: ACCENT_GLOW, transition: "opacity 200ms ease" }}
-                  />
-                ))}
+          {pieces && (
+            <g style={{ filter: `url(#${filterId}) ${INK_SHADOW}` }}>
+              {pieces.map((piece, i) => {
+                const revealed = i < pieceIndex ? 1 : i === pieceIndex ? pieceProgress : 0;
+                // Always mounted, even at revealed === 0 — strokeDashoffset
+                // alone hides it. The ref has to exist *before* its own
+                // piece starts animating (drawPiece needs getTotalLength()
+                // on it), so it can't be conditionally unmounted until then.
+                return (
+                  <g key={i}>
+                    {/* Dark, subtle outline underneath — edge definition, not
+                        a contrast mechanism; white ink already reads fine on
+                        most of the photo. */}
+                    <path
+                      d={piece.d}
+                      fill="none"
+                      stroke={OUTLINE_COLOR}
+                      strokeWidth={box.w * 0.024}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        strokeDasharray: pathRefs.current[i]?.getTotalLength() || 1000,
+                        strokeDashoffset: (pathRefs.current[i]?.getTotalLength() || 1000) * (1 - revealed),
+                      }}
+                    />
+                    <path
+                      ref={(el) => {
+                        pathRefs.current[i] = el;
+                      }}
+                      d={piece.d}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth={box.w * 0.012}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        strokeDasharray: pathRefs.current[i]?.getTotalLength() || 1000,
+                        strokeDashoffset: (pathRefs.current[i]?.getTotalLength() || 1000) * (1 - revealed),
+                      }}
+                    />
+                    {piece.extraDots?.map((dot, di) => (
+                      <circle
+                        key={di}
+                        cx={dot.x}
+                        cy={dot.y}
+                        r={box.w * 0.013}
+                        fill={strokeColor}
+                        stroke={OUTLINE_COLOR}
+                        strokeWidth={box.w * 0.005}
+                        opacity={revealed > 0.9 ? 1 : 0}
+                        style={{ transition: "opacity 200ms ease" }}
+                      />
+                    ))}
+                  </g>
+                );
+              })}
             </g>
           )}
 
           {pen && (
-            <g transform={`translate(${pen.x} ${pen.y}) rotate(${(pen.angle * 180) / Math.PI})`}>
+            <g
+              transform={`translate(${pen.x} ${pen.y}) rotate(${(pen.angle * 180) / Math.PI})`}
+              style={{ filter: INK_SHADOW }}
+            >
               <path
                 d={`M -2 -${box.w * 0.05} L 2 -${box.w * 0.05} L ${box.w * 0.01} ${box.w * 0.02} L 0 ${box.w * 0.03} L -${box.w * 0.01} ${box.w * 0.02} Z`}
                 fill={strokeColor}
-                stroke={outlineColor}
+                stroke={OUTLINE_COLOR}
                 strokeWidth={1}
-                style={{ filter: ACCENT_GLOW }}
               />
             </g>
           )}
