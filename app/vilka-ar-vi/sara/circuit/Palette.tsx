@@ -97,7 +97,7 @@ export const Palette = ({
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
 
-              <SimpleGrid cols={3} spacing={4}>
+              <SimpleGrid cols={3} spacing={2}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -109,7 +109,7 @@ export const Palette = ({
                   onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
                   style={{
                     cursor: "grab",
-                    width: 56,
+                    width: 44,
                     height: 40,
                     display: "flex",
                     alignItems: "center",
@@ -178,7 +178,7 @@ export const Palette = ({
                       opacity: used && !unlocked ? 0.35 : 1,
                       cursor: unlocked ? "pointer" : used ? "default" : "grab",
                       textAlign: "center",
-                      width: 56,
+                      width: 44,
                       padding: 1,
                       borderRadius: 8,
                       outline: armed ? `2px solid ${PCB.copperBright}` : undefined,
