@@ -260,14 +260,52 @@ export const Board = ({
   // closing over it, both to avoid one closure per grid cell and because
   // touching a ref from a closure defined during render trips the
   // react-hooks/refs lint rule even when the read itself is deferred.
-  const draggingRef = useRef<{ pieceId: string; startX: number; startY: number; moved: boolean } | null>(null);
+  type Drag =
+    | { mode: "move"; pieceId: string; startX: number; startY: number; moved: boolean }
+    | { mode: "extend"; pieceId: string; endCol: number; endRow: number; startX: number; startY: number; moved: boolean };
+  const draggingRef = useRef<Drag | null>(null);
   const suppressClickRef = useRef(false);
 
+  // Grabbing near one end of a piece stretches a new plain wire out from
+  // that grid point instead of moving the whole piece — grabbing the
+  // middle third still moves it.
+  const END_ZONE = 0.25;
+
   const handlePieceGrab = (event: PointerEvent<SVGRectElement>) => {
-    const pieceId = event.currentTarget.dataset.pieceId;
+    const ds = event.currentTarget.dataset;
+    const pieceId = ds.pieceId;
     if (!pieceId) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    draggingRef.current = { pieceId, startX: event.clientX, startY: event.clientY, moved: false };
+
+    const rectBox = event.currentTarget.getBoundingClientRect();
+    const horizontal = ds.rowA === ds.rowB;
+    const along = horizontal
+      ? (event.clientX - rectBox.left) / rectBox.width
+      : (event.clientY - rectBox.top) / rectBox.height;
+
+    if (along < END_ZONE) {
+      draggingRef.current = {
+        mode: "extend",
+        pieceId,
+        endCol: Number(ds.colA),
+        endRow: Number(ds.rowA),
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false,
+      };
+    } else if (along > 1 - END_ZONE) {
+      draggingRef.current = {
+        mode: "extend",
+        pieceId,
+        endCol: Number(ds.colB),
+        endRow: Number(ds.rowB),
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false,
+      };
+    } else {
+      draggingRef.current = { mode: "move", pieceId, startX: event.clientX, startY: event.clientY, moved: false };
+    }
   };
 
   const handlePieceDrag = (event: PointerEvent<SVGRectElement>) => {
@@ -292,6 +330,17 @@ export const Board = ({
     if (!piece || !target?.classList.contains("circuit-slot") || target.dataset.occupied === "true") return;
     const a = { col: Number(target.dataset.colA), row: Number(target.dataset.rowA) };
     const b = { col: Number(target.dataset.colB), row: Number(target.dataset.rowB) };
+
+    if (drag.mode === "extend") {
+      // Only extends into an edge that actually touches the endpoint that
+      // was grabbed — otherwise it isn't really "extending" anything.
+      const touchesEndpoint =
+        (a.col === drag.endCol && a.row === drag.endRow) || (b.col === drag.endCol && b.row === drag.endRow);
+      if (!touchesEndpoint) return;
+      onDropPiece(a, b, JSON.stringify({ kind: "wire" }));
+      return;
+    }
+
     onDropPiece(
       a,
       b,
@@ -490,7 +539,7 @@ export const Board = ({
           }
 
           const label = piece
-            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort, eller dra för att flytta`
+            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort, dra i mitten för att flytta eller i en ände för att förlänga med en wire`
             : armed
               ? "Tom plats, tryck för att placera den valda komponenten"
               : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
