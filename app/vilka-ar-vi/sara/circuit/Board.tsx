@@ -1,9 +1,8 @@
 "use client";
 
 import type { DragEvent } from "react";
-import Link from "next/link";
 
-import { KIND_LABELS } from "./componentKinds";
+import { KIND_LABELS, type ComponentKind } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, ROWS, type GridPoint } from "./grid";
 import type { PlacedPiece } from "./graph";
 
@@ -15,42 +14,139 @@ type BoardProps = {
   onTogglePiece: (id: string) => void;
 };
 
-const KIND_COLOR: Record<string, string> = {
+const KIND_COLOR: Record<ComponentKind, string> = {
   battery: "#E0CCBE",
   resistor: "#95B354",
   wire: "#C3CED9",
   capacitor: "#824529",
   switch: "#757263",
   led: "#95B354",
+  ground: "#C3CED9",
 };
 
-const PieceSymbol = ({ piece }: { piece: PlacedPiece }) => {
-  const label =
-    piece.kind === "switch"
-      ? piece.closed
-        ? "⏻"
-        : "⏼"
-      : piece.kind === "led"
-        ? "◉"
-        : piece.kind === "resistor"
-          ? "⌇"
-          : piece.kind === "capacitor"
-            ? "⫲"
-            : piece.kind === "battery"
-              ? "⎓"
-              : "—";
-  return (
-    <span
-      style={{
-        fontSize: 14,
-        color: KIND_COLOR[piece.kind],
-        lineHeight: 1,
-      }}
-      aria-hidden
-    >
-      {label}
-    </span>
-  );
+const L = CELL;
+
+/**
+ * Standard schematic symbols, drawn in local coordinates for a horizontal
+ * edge running from (0,0) to (L,0) — the caller rotates/translates the
+ * whole <g> into place for vertical edges. IEC-ish conventions: zigzag
+ * resistor, parallel-plate capacitor, knife switch, multi-line battery,
+ * diode-triangle LED with emission arrows, ground hatch.
+ */
+const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => {
+  const stroke = KIND_COLOR[kind];
+  const common = { stroke, strokeWidth: 2, fill: "none" } as const;
+
+  switch (kind) {
+    case "wire":
+      return <line x1={0} y1={0} x2={L} y2={0} {...common} />;
+    case "resistor": {
+      const a = L * 0.32;
+      const b = L * 0.68;
+      const seg = (b - a) / 6;
+      const amp = 8;
+      const zig = [
+        [a, 0],
+        [a + seg, -amp],
+        [a + seg * 2, amp],
+        [a + seg * 3, -amp],
+        [a + seg * 4, amp],
+        [a + seg * 5, -amp],
+        [b, 0],
+      ]
+        .map((p) => p.join(","))
+        .join(" ");
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={a} y2={0} />
+          <polyline points={zig} />
+          <line x1={b} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    case "capacitor": {
+      const a = L * 0.46;
+      const b = L * 0.54;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={a} y2={0} />
+          <line x1={a} y1={-11} x2={a} y2={11} />
+          <line x1={b} y1={-11} x2={b} y2={11} />
+          <line x1={b} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    case "switch": {
+      const a = L * 0.35;
+      const b = L * 0.65;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={a} y2={0} />
+          <line x1={b} y1={0} x2={L} y2={0} />
+          <circle cx={a} cy={0} r={2.5} fill={stroke} />
+          <circle cx={b} cy={0} r={2.5} fill={stroke} />
+          {closed ? (
+            <line x1={a} y1={0} x2={b} y2={0} />
+          ) : (
+            <line x1={a} y1={0} x2={b - 6} y2={-14} />
+          )}
+        </g>
+      );
+    }
+    case "battery": {
+      const mid = L / 2;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={mid - 8} y2={0} />
+          <line x1={mid - 8} y1={-13} x2={mid - 8} y2={13} strokeWidth={2} />
+          <line x1={mid - 2} y1={-6} x2={mid - 2} y2={6} strokeWidth={4} />
+          <line x1={mid + 4} y1={-13} x2={mid + 4} y2={13} strokeWidth={2} />
+          <line x1={mid + 10} y1={-6} x2={mid + 10} y2={6} strokeWidth={4} />
+          <line x1={mid + 10} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    case "led": {
+      const a = L * 0.4;
+      const b = L * 0.6;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={a} y2={0} />
+          <polygon
+            points={`${a},-10 ${a},10 ${b},0`}
+            fill={stroke}
+            stroke={stroke}
+          />
+          <line x1={b} y1={-10} x2={b} y2={10} />
+          <line x1={b} y1={0} x2={L} y2={0} />
+          <g strokeWidth={1.5}>
+            <line x1={a + 6} y1={-14} x2={a + 12} y2={-20} />
+            <line x1={a + 12} y1={-20} x2={a + 8} y2={-20} />
+            <line x1={a + 12} y1={-20} x2={a + 12} y2={-16} />
+            <line x1={a + 12} y1={-10} x2={a + 18} y2={-16} />
+            <line x1={a + 18} y1={-16} x2={a + 14} y2={-16} />
+            <line x1={a + 18} y1={-16} x2={a + 18} y2={-12} />
+          </g>
+        </g>
+      );
+    }
+    case "ground": {
+      const mid = L / 2;
+      return (
+        <g {...common}>
+          <line x1={0} y1={0} x2={mid} y2={0} />
+          <line x1={mid} y1={0} x2={mid} y2={10} />
+          <line x1={mid - 10} y1={10} x2={mid + 10} y2={10} />
+          <line x1={mid - 6} y1={14} x2={mid + 6} y2={14} />
+          <line x1={mid - 2} y1={18} x2={mid + 2} y2={18} />
+          <line x1={mid} y1={0} x2={mid} y2={-1} />
+          <line x1={mid} y1={0} x2={L} y2={0} />
+        </g>
+      );
+    }
+    default:
+      return null;
+  }
 };
 
 export const Board = ({
@@ -74,12 +170,12 @@ export const Board = ({
     );
   });
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (event: DragEvent<SVGRectElement>) => {
     event.preventDefault();
   };
 
   const handleDrop = (a: GridPoint, b: GridPoint) => (
-    event: DragEvent<HTMLDivElement>,
+    event: DragEvent<SVGRectElement>,
   ) => {
     event.preventDefault();
     const payload = event.dataTransfer.getData("text/plain");
@@ -88,140 +184,160 @@ export const Board = ({
   };
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width,
-        height,
-        margin: "0 auto",
-      }}
-    >
-      {/* Grid dots */}
-      {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
-        const col = index % (COLS + 1);
-        const row = Math.floor(index / (COLS + 1));
-        const { x, y } = pixelOf({ col, row });
-        return (
-          <div
-            key={`dot-${col}-${row}`}
-            style={{
-              position: "absolute",
-              left: x - 2,
-              top: y - 2,
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              background: "#757263",
-            }}
-          />
-        );
-      })}
+    <>
+      <style>{`
+        .circuit-flow {
+          stroke-dasharray: 8 8;
+          animation: circuit-flow-move 0.7s linear infinite;
+        }
+        @keyframes circuit-flow-move {
+          to { stroke-dashoffset: -16; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .circuit-flow { animation: none; }
+        }
+      `}</style>
+      <svg
+        width={width}
+        height={height}
+        style={{ display: "block", margin: "0 auto", overflow: "visible" }}
+      >
+        {/* Grid dots */}
+        {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
+          const col = index % (COLS + 1);
+          const row = Math.floor(index / (COLS + 1));
+          const { x, y } = pixelOf({ col, row });
+          return <circle key={`dot-${col}-${row}`} cx={x} cy={y} r={1.5} fill="#757263" />;
+        })}
 
-      {edges.map(([a, b]) => {
-        const id = edgeId(a, b);
-        const piece = placedByEdge.get(id);
-        const horizontal = a.row === b.row;
-        const pa = pixelOf(a);
-        const isBattery = piece?.kind === "battery";
-        const energized = piece ? energizedIds.has(piece.id) : false;
-        const unlockedLink =
-          piece?.consultantSlug && energized ? piece.consultantSlug : null;
+        {edges.map(([a, b]) => {
+          const id = edgeId(a, b);
+          const piece = placedByEdge.get(id);
+          const horizontal = a.row === b.row;
+          const pa = pixelOf(a);
+          const energized = piece ? energizedIds.has(piece.id) : false;
+          const unlockedLink =
+            piece?.consultantSlug && piece.consultantSlug !== "sara" && energized
+              ? piece.consultantSlug
+              : null;
 
-        const baseStyle = horizontal
-          ? {
-              left: pa.x,
-              top: pa.y - 12,
-              width: CELL,
-              height: 24,
-            }
-          : {
-              left: pa.x - 12,
-              top: pa.y,
-              width: 24,
-              height: CELL,
-            };
+          const avatar = piece?.consultantSlug ? (
+            <g>
+              <clipPath id={`clip-${id}`}>
+                <circle cx={horizontal ? L / 2 : 0} cy={0} r={13} />
+              </clipPath>
+              <circle
+                cx={horizontal ? L / 2 : 0}
+                cy={0}
+                r={14}
+                fill="#0D0D0C"
+                stroke={KIND_COLOR[piece.kind]}
+                strokeWidth={1.5}
+              />
+              <image
+                href={`/photos/${piece.consultantPhoto}`}
+                x={(horizontal ? L / 2 : 0) - 13}
+                y={-13}
+                width={26}
+                height={26}
+                clipPath={`url(#clip-${id})`}
+                preserveAspectRatio="xMidYMid slice"
+              />
+            </g>
+          ) : null;
 
-        return (
-          <div
-            key={id}
-            onDragOver={piece ? undefined : handleDragOver}
-            onDrop={piece ? undefined : handleDrop(a, b)}
-            onClick={
-              piece && !isBattery && !unlockedLink
-                ? () =>
-                    piece.kind === "switch"
-                      ? onTogglePiece(piece.id)
-                      : onRemovePiece(piece.id)
-                : undefined
-            }
-            title={
-              piece
-                ? unlockedLink
-                  ? `${piece.consultantName} — klar! Klicka för att gå till sidan.`
-                  : `${piece.consultantName ?? KIND_LABELS[piece.kind]}${
-                      isBattery ? "" : " (klicka för att ta bort)"
-                    }`
-                : "Släpp en komponent här"
-            }
-            style={{
-              position: "absolute",
-              ...baseStyle,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: piece
-                ? unlockedLink
-                  ? "pointer"
-                  : isBattery
-                    ? "default"
-                    : "pointer"
-                : "copy",
-              border: piece
-                ? `2px solid ${energized ? "#95B354" : KIND_COLOR[piece.kind]}`
-                : "1px dashed rgba(195, 206, 217, 0.25)",
-              borderRadius: 4,
-              background: energized ? "rgba(149, 179, 84, 0.15)" : "transparent",
-              boxShadow: energized ? "0 0 8px rgba(149,179,84,0.6)" : undefined,
-            }}
-          >
-            {piece?.consultantSlug ? (
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: "50%",
-                  overflow: "hidden",
-                  border: `1px solid ${KIND_COLOR[piece.kind]}`,
-                }}
-              >
-                {unlockedLink ? (
-                  <Link href={`/vilka-ar-vi/${unlockedLink}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/photos/${piece.consultantPhoto}`}
-                      alt={piece.consultantName ?? ""}
-                      width={20}
-                      height={20}
-                      style={{ objectFit: "cover", width: 20, height: 20 }}
+          return (
+            <g
+              key={id}
+              transform={`translate(${pa.x},${pa.y}) rotate(${horizontal ? 0 : 90})`}
+            >
+              {piece ? (
+                <>
+                  <Symbol kind={piece.kind} closed={piece.closed} />
+                  {energized && (
+                    <line
+                      x1={0}
+                      y1={0}
+                      x2={L}
+                      y2={0}
+                      stroke="#B7E07A"
+                      strokeWidth={3}
+                      className="circuit-flow"
                     />
-                  </Link>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/photos/${piece.consultantPhoto}`}
-                    alt={piece.consultantName ?? ""}
-                    width={20}
-                    height={20}
-                    style={{ objectFit: "cover", width: 20, height: 20 }}
-                  />
-                )}
-              </div>
-            ) : (
-              piece && <PieceSymbol piece={piece} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+                  )}
+                  {unlockedLink ? (
+                    <a href={`/vilka-ar-vi/${unlockedLink}`}>{avatar}</a>
+                  ) : (
+                    avatar
+                  )}
+                </>
+              ) : (
+                <line
+                  x1={0}
+                  y1={0}
+                  x2={L}
+                  y2={0}
+                  stroke="rgba(195, 206, 217, 0.2)"
+                  strokeWidth={1}
+                  strokeDasharray="3 4"
+                />
+              )}
+            </g>
+          );
+        })}
+
+        {/* Hit-areas / drop targets on top, in board coordinates (not
+            rotated) so drag/click math stays simple. */}
+        {edges.map(([a, b]) => {
+          const id = edgeId(a, b);
+          const piece = placedByEdge.get(id);
+          const horizontal = a.row === b.row;
+          const pa = pixelOf(a);
+          const unlockedLink =
+            piece?.consultantSlug && piece.consultantSlug !== "sara" &&
+            energizedIds.has(piece?.id ?? "")
+              ? piece.consultantSlug
+              : null;
+          const hitW = horizontal ? L : 28;
+          const hitH = horizontal ? 28 : L;
+          const hitX = horizontal ? pa.x : pa.x - hitW / 2;
+          const hitY = horizontal ? pa.y - hitH / 2 : pa.y;
+
+          if (unlockedLink) {
+            // Real link handles its own clicks; still need it to sit above
+            // the hit-rect so navigation works instead of being swallowed.
+            return null;
+          }
+
+          return (
+            <rect
+              key={`hit-${id}`}
+              x={hitX}
+              y={hitY}
+              width={hitW}
+              height={hitH}
+              fill="transparent"
+              style={{ cursor: piece ? "pointer" : "copy" }}
+              onDragOver={piece ? undefined : handleDragOver}
+              onDrop={piece ? undefined : handleDrop(a, b)}
+              onClick={
+                piece
+                  ? () =>
+                      piece.kind === "switch"
+                        ? onTogglePiece(piece.id)
+                        : onRemovePiece(piece.id)
+                  : undefined
+              }
+            >
+              <title>
+                {piece
+                  ? `${piece.consultantName ?? KIND_LABELS[piece.kind]} (klicka för att ta bort)`
+                  : "Släpp en komponent här"}
+              </title>
+            </rect>
+          );
+        })}
+      </svg>
+    </>
   );
 };

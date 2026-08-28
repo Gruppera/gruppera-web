@@ -65,8 +65,9 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
               </div>
 
               {people.map((consultant) => {
+                const isSara = consultant.slug === "sara";
                 const used = usedConsultantSlugs.has(consultant.slug);
-                const unlocked = unlockedSlugs.has(consultant.slug);
+                const unlocked = !isSara && unlockedSlugs.has(consultant.slug);
                 const avatar = (
                   <div
                     style={{

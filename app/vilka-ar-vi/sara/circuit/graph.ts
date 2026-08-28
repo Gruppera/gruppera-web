@@ -21,62 +21,69 @@ export type CircuitResult = {
   hint: string | null;
 };
 
-const adjacency = (
-  pieces: PlacedPiece[],
-  { includeOpenSwitches }: { includeOpenSwitches: boolean },
-) => {
-  const adj = new Map<NodeId, { to: NodeId; piece: PlacedPiece }[]>();
-  const add = (a: NodeId, b: NodeId, piece: PlacedPiece) => {
-    if (!adj.has(a)) adj.set(a, []);
-    adj.get(a)?.push({ to: b, piece });
-  };
-  pieces.forEach((piece) => {
-    if (piece.kind === "battery") return; // never a conductor for the loop
-    if (piece.kind === "switch" && !piece.closed && !includeOpenSwitches) {
-      return;
-    }
-    add(piece.from, piece.to, piece);
-    add(piece.to, piece.from, piece);
-  });
-  return adj;
-};
-
-const connectedComponent = (
-  start: NodeId,
-  adj: Map<NodeId, { to: NodeId; piece: PlacedPiece }[]>,
-) => {
-  const seen = new Set<NodeId>([start]);
-  const usedPieces = new Set<string>();
-  const stack = [start];
-  while (stack.length > 0) {
-    const node = stack.pop() as NodeId;
-    (adj.get(node) ?? []).forEach(({ to, piece }) => {
-      usedPieces.add(piece.id);
-      if (!seen.has(to)) {
-        seen.add(to);
-        stack.push(to);
-      }
-    });
-  }
-  return { nodes: seen, usedPieces };
-};
+type Component = { nodes: Set<NodeId>; pieces: Set<string> };
 
 /**
- * Evaluates the board: is there a closed loop from the battery's two
- * terminals back to itself, through at least one lit LED? Simplification —
- * "energized" means "in the same connected sub-circuit as the closed loop",
- * not strictly on the shortest A-B path. A branch that isn't load-bearing
- * still counts; that's a deliberate generosity, not a bug, so using extra
- * people beyond the minimum is always rewarded, never penalized.
+ * Batteries are just another conductive edge now (any number of them,
+ * anywhere) — a "closed loop" is any connected component that contains a
+ * cycle (edges >= nodes, since a tree has exactly nodes-1 edges; more than
+ * that means some path doubles back on itself). Open switches simply don't
+ * conduct, so they split the graph instead of forming edges.
  */
-export const evaluateCircuit = (
+const buildComponents = (
   pieces: PlacedPiece[],
-  batteryFrom: NodeId,
-  batteryTo: NodeId,
-): CircuitResult => {
-  const others = pieces.filter((p) => p.kind !== "battery");
+  { includeOpenSwitches }: { includeOpenSwitches: boolean },
+): Component[] => {
+  const adj = new Map<NodeId, { to: NodeId; pieceId: string }[]>();
+  const add = (a: NodeId, b: NodeId, pieceId: string) => {
+    if (!adj.has(a)) adj.set(a, []);
+    adj.get(a)?.push({ to: b, pieceId });
+  };
+  const allNodes = new Set<NodeId>();
+  pieces.forEach((piece) => {
+    if (piece.kind === "switch" && !piece.closed && !includeOpenSwitches) {
+      allNodes.add(piece.from);
+      allNodes.add(piece.to);
+      return;
+    }
+    add(piece.from, piece.to, piece.id);
+    add(piece.to, piece.from, piece.id);
+    allNodes.add(piece.from);
+    allNodes.add(piece.to);
+  });
 
-  if (others.length === 0) {
+  const visited = new Set<NodeId>();
+  const components: Component[] = [];
+  allNodes.forEach((start) => {
+    if (visited.has(start)) return;
+    const nodes = new Set<NodeId>([start]);
+    const pieceIds = new Set<string>();
+    const stack = [start];
+    visited.add(start);
+    while (stack.length > 0) {
+      const node = stack.pop() as NodeId;
+      (adj.get(node) ?? []).forEach(({ to, pieceId }) => {
+        pieceIds.add(pieceId);
+        if (!visited.has(to)) {
+          visited.add(to);
+          nodes.add(to);
+          stack.push(to);
+        }
+      });
+    }
+    components.push({ nodes, pieces: pieceIds });
+  });
+  return components;
+};
+
+const hasCycle = (component: Component) =>
+  component.pieces.size >= component.nodes.size;
+
+const isIndicator = (kind: ComponentKind) =>
+  (INDICATOR_KINDS as ComponentKind[]).includes(kind);
+
+export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
+  if (pieces.length === 0) {
     return {
       won: false,
       energizedIds: new Set(),
@@ -84,35 +91,68 @@ export const evaluateCircuit = (
     };
   }
 
-  const realAdj = adjacency(pieces, { includeOpenSwitches: false });
-  const real = connectedComponent(batteryFrom, realAdj);
+  const byId = new Map(pieces.map((p) => [p.id, p]));
+  const real = buildComponents(pieces, { includeOpenSwitches: false });
 
-  if (real.nodes.has(batteryTo)) {
-    const hasIndicator = others.some(
-      (p) =>
-        (INDICATOR_KINDS as ComponentKind[]).includes(p.kind) &&
-        real.usedPieces.has(p.id),
-    );
-    if (hasIndicator) {
-      return { won: true, energizedIds: real.usedPieces, hint: null };
-    }
+  const winner = real.find((component) => {
+    if (!hasCycle(component)) return false;
+    let battery = false;
+    let indicator = false;
+    component.pieces.forEach((id) => {
+      const piece = byId.get(id);
+      if (!piece) return;
+      if (piece.kind === "battery") battery = true;
+      if (isIndicator(piece.kind)) indicator = true;
+    });
+    return battery && indicator;
+  });
+
+  if (winner) {
+    return { won: true, energizedIds: winner.pieces, hint: null };
+  }
+
+  // Nothing works with real switch states. Figure out *why*, prioritizing
+  // the most specific, most encouraging explanation.
+  const loose = buildComponents(pieces, { includeOpenSwitches: true });
+
+  const closedLoops = real.filter(hasCycle);
+  const withBatteryAndLoop = closedLoops.find((component) =>
+    [...component.pieces].some((id) => byId.get(id)?.kind === "battery"),
+  );
+  if (withBatteryAndLoop) {
     return {
       won: false,
       energizedIds: new Set(),
-      hint: "Kretsen är sluten men saknar en lysdiod — lägg till en för att se att den fungerar.",
+      hint: "Kretsen är sluten och har ett batteri men saknar en lysdiod — lägg till en för att se att den fungerar.",
+    };
+  }
+  if (closedLoops.length > 0) {
+    return {
+      won: false,
+      energizedIds: new Set(),
+      hint: "Kretsen är sluten men saknar ett batteri — lägg till ett för att ge den ström.",
     };
   }
 
-  // Not closed with real switch states — check if it *would* close with
-  // every switch treated as conducting, to tell open-switch from no-loop.
-  const loeseAdj = adjacency(pieces, { includeOpenSwitches: true });
-  const loose = connectedComponent(batteryFrom, loeseAdj);
+  const looseWinner = loose.find((component) => {
+    if (!hasCycle(component)) return false;
+    let battery = false;
+    let indicator = false;
+    component.pieces.forEach((id) => {
+      const piece = byId.get(id);
+      if (!piece) return;
+      if (piece.kind === "battery") battery = true;
+      if (isIndicator(piece.kind)) indicator = true;
+    });
+    return battery && indicator;
+  });
 
-  if (loose.nodes.has(batteryTo)) {
-    const openSwitches = others.filter(
-      (p) =>
-        p.kind === "switch" && !p.closed && loose.usedPieces.has(p.id),
-    );
+  if (looseWinner) {
+    const openSwitches = [...looseWinner.pieces]
+      .map((id) => byId.get(id))
+      .filter(
+        (p): p is PlacedPiece => Boolean(p) && p?.kind === "switch" && !p?.closed,
+      );
     const names = openSwitches
       .map((p) => p.consultantName)
       .filter((name): name is string => Boolean(name));
@@ -127,6 +167,6 @@ export const evaluateCircuit = (
   return {
     won: false,
     energizedIds: new Set(),
-    hint: "Kretsen är inte sluten — dra fler ledningar eller komponenter så den går runt tillbaka till batteriet.",
+    hint: "Kretsen är inte sluten — dra fler komponenter så den går runt i en loop.",
   };
 };

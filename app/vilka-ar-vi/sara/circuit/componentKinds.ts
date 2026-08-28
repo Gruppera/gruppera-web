@@ -13,8 +13,9 @@ export type ComponentKind =
 /** Kinds that light up when they're part of a closed loop. */
 export const INDICATOR_KINDS: ComponentKind[] = ["led"];
 
-/** Palette grouping/order — battery isn't listed, it's fixed on the board. */
+/** Palette grouping/order. */
 export const KIND_ORDER: ComponentKind[] = [
+  "battery",
   "resistor",
   "wire",
   "capacitor",
@@ -23,13 +24,16 @@ export const KIND_ORDER: ComponentKind[] = [
   "ground",
 ];
 
-// Sara is the page's fixed Battery — the company's power source, not a
-// draggable/unlockable piece. Everyone else maps to a component kind by role:
-// architecture/senior roles stabilize the flow (Resistor), fullstack
-// generalists connect front- and back-end (Wire), backend specialists persist
-// state (Capacitor), coaching/project-leadership roles gate flow (Switch),
-// and UX & accessibility is the visible, user-facing output (LED).
+// Sara — VD — is a Battery option, same as everyone else is a role-mapped
+// component; she's just not required, and the board can hold more than one
+// battery (or none, if you'd rather use the generic one). Everyone else maps
+// to a component kind by role: architecture/senior roles stabilize the flow
+// (Resistor), fullstack generalists connect front- and back-end (Wire),
+// backend specialists persist state (Capacitor), coaching/project-leadership
+// roles gate flow (Switch), and UX & accessibility is the visible,
+// user-facing output (LED).
 const SLUG_TO_KIND: Record<string, ComponentKind> = {
+  sara: "battery",
   daniel: "resistor",
   shane: "resistor",
   christopher: "resistor",
@@ -52,10 +56,7 @@ export type ConsultantComponent = {
 
 const consultants = consultantListSchema.parse(mockData);
 
-export const SARA = consultants.find((c) => c.slug === "sara");
-
 export const CONSULTANT_COMPONENTS: ConsultantComponent[] = consultants
-  .filter((c) => c.slug !== "sara")
   .map((c) => ({
     slug: c.slug,
     name: c.name,
@@ -79,7 +80,7 @@ export const KIND_LABELS: Record<ComponentKind, string> = {
 
 /** Why each kind maps to the role(s) it does — shown under the heading. */
 export const KIND_DESCRIPTIONS: Record<ComponentKind, string> = {
-  battery: "Kretsens strömkälla — alltid på plats.",
+  battery: "Kretsens strömkälla — du kan använda flera.",
   resistor: "Stabiliserar flödet.",
   wire: "Arbetar i hela kedjan och får allt att fungera.",
   capacitor: "Lagrar och buffrar.",

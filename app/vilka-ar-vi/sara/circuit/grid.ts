@@ -1,9 +1,8 @@
-export const COLS = 6;
-export const ROWS = 4;
-export const CELL = 64;
-
-export const BATTERY_FROM = { col: 0, row: 1 };
-export const BATTERY_TO = { col: 0, row: 2 };
+// A bit roomier than a single loop needs — multiple batteries means
+// multiple independent loops are a reasonable thing to want to build.
+export const COLS = 8;
+export const ROWS = 5;
+export const CELL = 60;
 
 export type GridPoint = { col: number; row: number };
 

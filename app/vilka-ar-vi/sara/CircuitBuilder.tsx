@@ -6,18 +6,8 @@ import { Alert, Stack, Text } from "@mantine/core";
 import { Board } from "./circuit/Board";
 import { Palette } from "./circuit/Palette";
 import { evaluateCircuit, type PlacedPiece } from "./circuit/graph";
-import { BATTERY_FROM, BATTERY_TO, pointId, type GridPoint } from "./circuit/grid";
+import { pointId, type GridPoint } from "./circuit/grid";
 import type { ComponentKind } from "./circuit/componentKinds";
-
-const batteryFromId = pointId(BATTERY_FROM);
-const batteryToId = pointId(BATTERY_TO);
-
-const BATTERY_PIECE: PlacedPiece = {
-  id: "battery",
-  kind: "battery",
-  from: batteryFromId,
-  to: batteryToId,
-};
 
 type DropPayload = {
   kind: ComponentKind;
@@ -29,13 +19,10 @@ type DropPayload = {
 let nextId = 1;
 
 export const CircuitBuilder = () => {
-  const [placed, setPlaced] = useState<PlacedPiece[]>([BATTERY_PIECE]);
+  const [placed, setPlaced] = useState<PlacedPiece[]>([]);
   const [unlockedSlugs, setUnlockedSlugs] = useState<Set<string>>(new Set());
 
-  const result = useMemo(
-    () => evaluateCircuit(placed, batteryFromId, batteryToId),
-    [placed],
-  );
+  const result = useMemo(() => evaluateCircuit(placed), [placed]);
 
   useEffect(() => {
     if (!result.won || result.energizedIds.size === 0) return;
