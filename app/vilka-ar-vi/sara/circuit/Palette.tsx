@@ -2,7 +2,7 @@
 
 import type { DragEvent, KeyboardEvent } from "react";
 import Link from "next/link";
-import { Badge, Card, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Card, Group, Stack, Text } from "@mantine/core";
 
 import {
   ALWAYS_SHOWN_KINDS,
@@ -13,6 +13,7 @@ import {
   type ComponentKind,
 } from "./componentKinds";
 import { PCB } from "./theme";
+import { Symbol } from "./symbols";
 
 type ArmedPayload = {
   kind: ComponentKind;
@@ -61,7 +62,7 @@ export const Palette = ({
     armedPayload?.consultantSlug === payload.consultantSlug;
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+    <Stack gap={6}>
       {KIND_ORDER.filter(
         (kind) =>
           ALWAYS_SHOWN_KINDS.includes(kind) ||
@@ -71,7 +72,7 @@ export const Palette = ({
         return (
           <Card
             key={kind}
-            padding="sm"
+            padding={6}
             radius="sm"
             style={{
               backgroundColor: PCB.chip,
@@ -79,7 +80,7 @@ export const Palette = ({
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
             }}
           >
-            <Stack gap="xs">
+            <Stack gap={4}>
               <Text
                 size="sm"
                 fw={700}
@@ -87,44 +88,43 @@ export const Palette = ({
                   color: PCB.copperBright,
                   fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
                   letterSpacing: 0.5,
+                  lineHeight: 1.2,
                 }}
               >
                 {KIND_LABELS[kind]}
               </Text>
-              <Text size="xs" style={{ color: PCB.silkDim }}>
+              <Text size="xs" style={{ color: PCB.silkDim, lineHeight: 1.25 }}>
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
-              <div
-                role="button"
-                tabIndex={0}
-                aria-pressed={isArmed(buildPayload(kind))}
-                aria-label={`Välj ${KIND_LABELS[kind]} för att placera i schemat`}
-                draggable
-                onDragStart={onDragStart(JSON.stringify(buildPayload(kind)))}
-                onClick={() => onArmPiece(buildPayload(kind))}
-                onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
-                style={{
-                  cursor: "grab",
-                  alignSelf: "flex-start",
-                  outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
-                  outlineOffset: 2,
-                  borderRadius: 4,
-                }}
-              >
-                <Badge
-                  variant="outline"
+
+              <Group gap={2} wrap="wrap">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isArmed(buildPayload(kind))}
+                  aria-label={`Välj ${KIND_LABELS[kind]} för att placera i schemat`}
+                  draggable
+                  onDragStart={onDragStart(JSON.stringify(buildPayload(kind)))}
+                  onClick={() => onArmPiece(buildPayload(kind))}
+                  onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
                   style={{
                     cursor: "grab",
-                    color: PCB.copper,
-                    borderColor: PCB.copper,
-                    fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+                    width: 44,
+                    height: 40,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 1,
+                    borderRadius: 8,
+                    outline: isArmed(buildPayload(kind)) ? `2px solid ${PCB.copperBright}` : undefined,
+                    outlineOffset: 2,
                   }}
                 >
-                  {KIND_LABELS[kind]}
-                </Badge>
-              </div>
+                  <svg viewBox="-6 -26 92 52" width={44} height={25} style={{ overflow: "visible", display: "block" }}>
+                    <Symbol kind={kind} />
+                  </svg>
+                </div>
 
-              <SimpleGrid cols={{ base: 4, xs: 5 }} spacing={4}>
                 {people.map((consultant) => {
                 const isSara = consultant.slug === "sara";
                 const used = usedConsultantSlugs.has(consultant.slug);
@@ -178,8 +178,8 @@ export const Palette = ({
                       opacity: used && !unlocked ? 0.35 : 1,
                       cursor: unlocked ? "pointer" : used ? "default" : "grab",
                       textAlign: "center",
-                      width: 56,
-                      padding: 4,
+                      width: 44,
+                      padding: 1,
                       borderRadius: 8,
                       outline: armed ? `2px solid ${PCB.copperBright}` : undefined,
                       outlineOffset: 2,
@@ -198,11 +198,11 @@ export const Palette = ({
                   </div>
                 );
                 })}
-              </SimpleGrid>
+              </Group>
             </Stack>
           </Card>
         );
       })}
-    </SimpleGrid>
+    </Stack>
   );
 };

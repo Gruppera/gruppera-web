@@ -190,15 +190,8 @@ export const CircuitBuilder = () => {
 
   return (
     <Stack gap="lg">
-      <Palette
-        usedConsultantSlugs={usedConsultantSlugs}
-        unlockedSlugs={unlockedSlugs}
-        armedPayload={armedPayload}
-        onArmPiece={handleArmPiece}
-      />
-
-      <Group align="flex-start" wrap="wrap" gap="md">
-        <div style={{ flex: "1 1 320px", padding: "8px 0" }}>
+      <Group align="stretch" wrap="wrap" gap="md">
+        <div style={{ flex: "3 1 480px", padding: "8px 0", display: "flex", flexDirection: "column" }}>
           <Board
             placed={placed}
             energizedIds={result.won ? result.energizedIds : new Set()}
@@ -213,19 +206,29 @@ export const CircuitBuilder = () => {
             onCornerClick={handleCornerClick}
           />
         </div>
-        <Button
-          variant="outline"
-          size="xs"
-          disabled={placed.length === 0}
-          onClick={handleClearCircuit}
-          style={{
-            color: PCB.copperBright,
-            borderColor: PCB.copper,
-            fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
-          }}
-        >
-          Rensa krets
-        </Button>
+
+        <Stack style={{ flex: "1 1 240px" }} gap="xs">
+          <Button
+            variant="outline"
+            size="xs"
+            disabled={placed.length === 0}
+            onClick={handleClearCircuit}
+            style={{
+              alignSelf: "flex-start",
+              color: PCB.copperBright,
+              borderColor: PCB.copper,
+              fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+            }}
+          >
+            Rensa krets
+          </Button>
+          <Palette
+            usedConsultantSlugs={usedConsultantSlugs}
+            unlockedSlugs={unlockedSlugs}
+            armedPayload={armedPayload}
+            onArmPiece={handleArmPiece}
+          />
+        </Stack>
       </Group>
 
       <div aria-live="polite">
