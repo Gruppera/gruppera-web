@@ -62,7 +62,7 @@ export const Palette = ({
     armedPayload?.consultantSlug === payload.consultantSlug;
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+    <Stack gap={6}>
       {KIND_ORDER.filter(
         (kind) =>
           ALWAYS_SHOWN_KINDS.includes(kind) ||
@@ -72,7 +72,7 @@ export const Palette = ({
         return (
           <Card
             key={kind}
-            padding="sm"
+            padding={6}
             radius="sm"
             style={{
               backgroundColor: PCB.chip,
@@ -80,7 +80,7 @@ export const Palette = ({
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
             }}
           >
-            <Stack gap="xs">
+            <Stack gap={4}>
               <Text
                 size="sm"
                 fw={700}
@@ -88,15 +88,16 @@ export const Palette = ({
                   color: PCB.copperBright,
                   fontFamily: 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
                   letterSpacing: 0.5,
+                  lineHeight: 1.2,
                 }}
               >
                 {KIND_LABELS[kind]}
               </Text>
-              <Text size="xs" style={{ color: PCB.silkDim }}>
+              <Text size="xs" style={{ color: PCB.silkDim, lineHeight: 1.25 }}>
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
 
-              <SimpleGrid cols={{ base: 4, xs: 5 }} spacing={4}>
+              <SimpleGrid cols={3} spacing={4}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -202,6 +203,6 @@ export const Palette = ({
           </Card>
         );
       })}
-    </SimpleGrid>
+    </Stack>
   );
 };
