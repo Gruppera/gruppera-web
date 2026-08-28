@@ -21,6 +21,7 @@ let nextId = 1;
 export const CircuitBuilder = () => {
   const [placed, setPlaced] = useState<PlacedPiece[]>([]);
   const [unlockedSlugs, setUnlockedSlugs] = useState<Set<string>>(new Set());
+  const [armedPayload, setArmedPayload] = useState<DropPayload | null>(null);
 
   const result = useMemo(() => evaluateCircuit(placed), [placed]);
 
@@ -87,11 +88,37 @@ export const CircuitBuilder = () => {
     setPlaced([]);
   };
 
+  /**
+   * Keyboard/touch alternative to drag-and-drop: pressing a palette item
+   * "arms" it (same payload shape a drag would carry), then pressing an
+   * empty board slot places it there. Drag-and-drop keeps working
+   * unchanged — this is additive, not a replacement.
+   */
+  const handleArmPiece = (payload: DropPayload) => {
+    setArmedPayload((prev) =>
+      prev &&
+      prev.kind === payload.kind &&
+      prev.consultantSlug === payload.consultantSlug
+        ? null
+        : payload,
+    );
+  };
+
+  const handlePlaceArmedPiece = (a: GridPoint, b: GridPoint) => {
+    if (!armedPayload) return;
+    handleDropPiece(a, b, JSON.stringify(armedPayload));
+    // A named piece is one-shot (that consultant is now used); a bare kind
+    // badge stays armed so several plain wires/pieces can be placed in a row.
+    if (armedPayload.consultantSlug) setArmedPayload(null);
+  };
+
   return (
     <Stack gap="lg">
       <Palette
         usedConsultantSlugs={usedConsultantSlugs}
         unlockedSlugs={unlockedSlugs}
+        armedPayload={armedPayload}
+        onArmPiece={handleArmPiece}
       />
 
       <Group align="flex-start" wrap="wrap" gap="md">
@@ -100,7 +127,9 @@ export const CircuitBuilder = () => {
             placed={placed}
             energizedIds={result.won ? result.energizedIds : new Set()}
             flowDirection={result.won ? result.flowDirection : new Map()}
+            armed={armedPayload !== null}
             onDropPiece={handleDropPiece}
+            onPlaceArmedPiece={handlePlaceArmedPiece}
             onRemovePiece={handleRemovePiece}
             onTogglePiece={handleTogglePiece}
             onFlipPiece={handleFlipPiece}
@@ -118,21 +147,24 @@ export const CircuitBuilder = () => {
       </Group>
 
       <Text c="dimmed" size="sm" maw={560}>
-        Dra komponenter till schemat för att bygga kretsen.
+        Dra komponenter till schemat för att bygga kretsen, eller välj en
+        komponent och tryck sedan på en tom plats.
       </Text>
 
-      {result.won ? (
-        <Alert color="sprout" variant="light">
-          Kretsen lyser! Klicka på en upplåst kollega ovan för att gå till deras
-          sida.
-        </Alert>
-      ) : (
-        result.hint && (
-          <Alert color="cloud" variant="light">
-            {result.hint}
+      <div aria-live="polite">
+        {result.won ? (
+          <Alert color="sprout" variant="light">
+            Kretsen lyser! Klicka på en upplåst kollega ovan för att gå till
+            deras sida.
           </Alert>
-        )
-      )}
+        ) : (
+          result.hint && (
+            <Alert color="cloud" variant="light">
+              {result.hint}
+            </Alert>
+          )
+        )}
+      </div>
     </Stack>
   );
 };

@@ -2,7 +2,7 @@
 // multiple independent loops are a reasonable thing to want to build.
 export const COLS = 8;
 export const ROWS = 5;
-export const CELL = 60;
+export const CELL = 80;
 
 export type GridPoint = { col: number; row: number };
 

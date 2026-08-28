@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent } from "react";
+import type { DragEvent, KeyboardEvent } from "react";
 
 import { KIND_LABELS, type ComponentKind } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, pointId, ROWS, type GridPoint } from "./grid";
@@ -10,10 +10,19 @@ type BoardProps = {
   placed: PlacedPiece[];
   energizedIds: Set<string>;
   flowDirection: FlowDirection;
+  armed: boolean;
   onDropPiece: (from: GridPoint, to: GridPoint, dataTransferPayload: string) => void;
+  onPlaceArmedPiece: (from: GridPoint, to: GridPoint) => void;
   onRemovePiece: (id: string) => void;
   onTogglePiece: (id: string) => void;
   onFlipPiece: (id: string) => void;
+};
+
+const activateOnKey = (onActivate: () => void) => (event: KeyboardEvent) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onActivate();
+  }
 };
 
 const KIND_COLOR: Record<ComponentKind, string> = {
@@ -204,7 +213,9 @@ export const Board = ({
   placed,
   energizedIds,
   flowDirection,
+  armed,
   onDropPiece,
+  onPlaceArmedPiece,
   onRemovePiece,
   onTogglePiece,
   onFlipPiece,
@@ -249,19 +260,28 @@ export const Board = ({
         @media (prefers-reduced-motion: reduce) {
           .circuit-flow { animation: none; }
         }
+        .circuit-control:focus-visible,
+        .circuit-slot:focus-visible {
+          outline: 2px solid #B7E07A;
+          outline-offset: 2px;
+        }
       `}</style>
       <svg
         width={width}
         height={height}
+        role="group"
+        aria-label="Kretsschema — komponenter kan tas bort, vändas eller (för brytare) öppnas/stängas med tangentbordet"
         style={{ display: "block", margin: "0 auto", overflow: "visible" }}
       >
-        {/* Grid dots */}
-        {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
-          const col = index % (COLS + 1);
-          const row = Math.floor(index / (COLS + 1));
-          const { x, y } = pixelOf({ col, row });
-          return <circle key={`dot-${col}-${row}`} cx={x} cy={y} r={1.5} fill="#757263" />;
-        })}
+        {/* Grid dots: purely decorative. */}
+        <g aria-hidden="true">
+          {Array.from({ length: (COLS + 1) * (ROWS + 1) }).map((_, index) => {
+            const col = index % (COLS + 1);
+            const row = Math.floor(index / (COLS + 1));
+            const { x, y } = pixelOf({ col, row });
+            return <circle key={`dot-${col}-${row}`} cx={x} cy={y} r={1.5} fill="#757263" />;
+          })}
+        </g>
 
         {edges.map(([a, b]) => {
           const id = edgeId(a, b);
@@ -308,28 +328,37 @@ export const Board = ({
             >
               {piece ? (
                 <>
-                  <g transform={piece.flipped ? `translate(${L},0) scale(-1,1)` : undefined}>
-                    <Symbol kind={piece.kind} closed={piece.closed} />
+                  {/* Decorative — the accessible name/controls for this piece
+                      live on the hit-rect and flip/toggle buttons below. */}
+                  <g aria-hidden="true">
+                    <g transform={piece.flipped ? `translate(${L},0) scale(-1,1)` : undefined}>
+                      <Symbol kind={piece.kind} closed={piece.closed} />
+                    </g>
+                    {energized && (
+                      <line
+                        x1={enteringAtA ? 0 : L}
+                        y1={0}
+                        x2={enteringAtA ? L : 0}
+                        y2={0}
+                        stroke="#B7E07A"
+                        strokeWidth={3}
+                        className="circuit-flow"
+                      />
+                    )}
+                    {!unlockedLink && avatar}
                   </g>
-                  {energized && (
-                    <line
-                      x1={enteringAtA ? 0 : L}
-                      y1={0}
-                      x2={enteringAtA ? L : 0}
-                      y2={0}
-                      stroke="#B7E07A"
-                      strokeWidth={3}
-                      className="circuit-flow"
-                    />
-                  )}
-                  {unlockedLink ? (
-                    <a href={`/vilka-ar-vi/${unlockedLink}`}>{avatar}</a>
-                  ) : (
-                    avatar
+                  {unlockedLink && (
+                    <a
+                      href={`/vilka-ar-vi/${unlockedLink}`}
+                      aria-label={`${piece.consultantName} — gå till profilsidan`}
+                    >
+                      {avatar}
+                    </a>
                   )}
                 </>
               ) : (
                 <line
+                  aria-hidden="true"
                   x1={0}
                   y1={0}
                   x2={L}
@@ -355,8 +384,8 @@ export const Board = ({
             energizedIds.has(piece?.id ?? "")
               ? piece.consultantSlug
               : null;
-          const hitW = horizontal ? L : 28;
-          const hitH = horizontal ? 28 : L;
+          const hitW = horizontal ? L : 34;
+          const hitH = horizontal ? 34 : L;
           const hitX = horizontal ? pa.x : pa.x - hitW / 2;
           const hitY = horizontal ? pa.y - hitH / 2 : pa.y;
 
@@ -366,24 +395,34 @@ export const Board = ({
             return null;
           }
 
+          const activate = piece
+            ? () => onRemovePiece(piece.id)
+            : () => onPlaceArmedPiece(a, b);
+          const label = piece
+            ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort`
+            : armed
+              ? "Tom plats, tryck för att placera den valda komponenten"
+              : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
+
           return (
             <rect
               key={`hit-${id}`}
+              className="circuit-slot"
               x={hitX}
               y={hitY}
               width={hitW}
               height={hitH}
               fill="transparent"
-              style={{ cursor: piece ? "pointer" : "copy" }}
+              role="button"
+              tabIndex={0}
+              aria-label={label}
+              style={{ cursor: piece ? "pointer" : armed ? "cell" : "copy" }}
               onDragOver={piece ? undefined : handleDragOver}
               onDrop={piece ? undefined : handleDrop(a, b)}
-              onClick={piece ? () => onRemovePiece(piece.id) : undefined}
+              onClick={activate}
+              onKeyDown={activateOnKey(activate)}
             >
-              <title>
-                {piece
-                  ? `${piece.consultantName ?? KIND_LABELS[piece.kind]} (klicka för att ta bort)`
-                  : "Släpp en komponent här"}
-              </title>
+              <title>{label}</title>
             </rect>
           );
         })}
@@ -403,6 +442,7 @@ export const Board = ({
               transform={`translate(${pa.x},${pa.y}) rotate(${horizontal ? 0 : 90})`}
             >
               <g
+                className="circuit-control"
                 role="button"
                 tabIndex={0}
                 aria-label={`Vänd ${piece.consultantName ?? KIND_LABELS[piece.kind]}`}
@@ -410,12 +450,7 @@ export const Board = ({
                   event.stopPropagation();
                   onFlipPiece(piece.id);
                 }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onFlipPiece(piece.id);
-                  }
-                }}
+                onKeyDown={activateOnKey(() => onFlipPiece(piece.id))}
                 style={{ cursor: "pointer" }}
                 transform={`translate(${L * 0.18},-20)`}
               >
@@ -432,6 +467,7 @@ export const Board = ({
 
               {piece.kind === "oscillator" && (
                 <g
+                  className="circuit-control"
                   role="button"
                   tabIndex={0}
                   aria-label={`${piece.closed ? "Öppna" : "Stäng"} ${piece.consultantName ?? KIND_LABELS[piece.kind]}`}
@@ -439,12 +475,7 @@ export const Board = ({
                     event.stopPropagation();
                     onTogglePiece(piece.id);
                   }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onTogglePiece(piece.id);
-                    }
-                  }}
+                  onKeyDown={activateOnKey(() => onTogglePiece(piece.id))}
                   style={{ cursor: "pointer" }}
                   transform={`translate(${L * 0.82},-20)`}
                 >

@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent } from "react";
+import type { DragEvent, KeyboardEvent } from "react";
 import Link from "next/link";
 import { Badge, Card, Group, SimpleGrid, Stack, Text } from "@mantine/core";
 
@@ -13,27 +13,51 @@ import {
   type ComponentKind,
 } from "./componentKinds";
 
+type ArmedPayload = {
+  kind: ComponentKind;
+  consultantSlug?: string;
+  consultantName?: string;
+  consultantPhoto?: string;
+};
+
 type PaletteProps = {
   usedConsultantSlugs: Set<string>;
   unlockedSlugs: Set<string>;
+  armedPayload: ArmedPayload | null;
+  onArmPiece: (payload: ArmedPayload) => void;
 };
 
-const dragPayload = (
+const buildPayload = (
   kind: ComponentKind,
   consultant?: { slug: string; name: string; photo: string },
-) =>
-  JSON.stringify({
-    kind,
-    consultantSlug: consultant?.slug,
-    consultantName: consultant?.name,
-    consultantPhoto: consultant?.photo,
-  });
+): ArmedPayload => ({
+  kind,
+  consultantSlug: consultant?.slug,
+  consultantName: consultant?.name,
+  consultantPhoto: consultant?.photo,
+});
 
-export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) => {
+const activateOnKey = (onActivate: () => void) => (event: KeyboardEvent) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onActivate();
+  }
+};
+
+export const Palette = ({
+  usedConsultantSlugs,
+  unlockedSlugs,
+  armedPayload,
+  onArmPiece,
+}: PaletteProps) => {
   const onDragStart = (payload: string) => (event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.setData("text/plain", payload);
     event.dataTransfer.effectAllowed = "copy";
   };
+
+  const isArmed = (payload: ArmedPayload) =>
+    armedPayload?.kind === payload.kind &&
+    armedPayload?.consultantSlug === payload.consultantSlug;
 
   return (
     <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
@@ -60,9 +84,21 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
               <div
+                role="button"
+                tabIndex={0}
+                aria-pressed={isArmed(buildPayload(kind))}
+                aria-label={`Välj ${KIND_LABELS[kind]} för att placera i schemat`}
                 draggable
-                onDragStart={onDragStart(dragPayload(kind))}
-                style={{ cursor: "grab", alignSelf: "flex-start" }}
+                onDragStart={onDragStart(JSON.stringify(buildPayload(kind)))}
+                onClick={() => onArmPiece(buildPayload(kind))}
+                onKeyDown={activateOnKey(() => onArmPiece(buildPayload(kind)))}
+                style={{
+                  cursor: "grab",
+                  alignSelf: "flex-start",
+                  outline: isArmed(buildPayload(kind)) ? "2px solid #95B354" : undefined,
+                  outlineOffset: 2,
+                  borderRadius: 4,
+                }}
               >
                 <Badge variant="outline" color="cloud" style={{ cursor: "grab" }}>
                   {KIND_LABELS[kind]}
@@ -96,18 +132,25 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
                     />
                   </div>
                 );
+                const payload = buildPayload(kind, consultant);
+                const armed = isArmed(payload);
+                const label = unlocked
+                  ? `${consultant.name} — klar! Gå till sidan.`
+                  : used
+                    ? `${consultant.name} — redan i kretsen`
+                    : `Välj ${consultant.name} (${KIND_LABELS[kind]}) för att placera i schemat`;
                 return (
                   <div
                     key={consultant.slug}
+                    role={used ? undefined : "button"}
+                    tabIndex={used ? undefined : 0}
+                    aria-pressed={used ? undefined : armed}
+                    aria-label={used ? undefined : label}
                     draggable={!used}
-                    onDragStart={
-                      used
-                        ? undefined
-                        : onDragStart(dragPayload(kind, consultant))
-                    }
-                    title={`${consultant.name} — ${KIND_LABELS[kind]}${
-                      unlocked ? " — klar! Klicka för att gå till sidan." : ""
-                    }`}
+                    onDragStart={used ? undefined : onDragStart(JSON.stringify(payload))}
+                    onClick={used ? undefined : () => onArmPiece(payload)}
+                    onKeyDown={used ? undefined : activateOnKey(() => onArmPiece(payload))}
+                    title={label}
                     style={{
                       opacity: used && !unlocked ? 0.35 : 1,
                       cursor: unlocked ? "pointer" : used ? "default" : "grab",
@@ -115,11 +158,13 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
                       width: 56,
                       padding: 4,
                       borderRadius: 8,
+                      outline: armed ? "2px solid #95B354" : undefined,
+                      outlineOffset: 2,
                       backgroundColor: unlocked ? "rgba(149, 179, 84, 0.25)" : undefined,
                     }}
                   >
                     {unlocked ? (
-                      <Link href={`/vilka-ar-vi/${consultant.slug}`}>
+                      <Link href={`/vilka-ar-vi/${consultant.slug}`} aria-label={label}>
                         {avatar}
                       </Link>
                     ) : (
