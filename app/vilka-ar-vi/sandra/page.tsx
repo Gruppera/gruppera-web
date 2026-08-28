@@ -1,20 +1,10 @@
 import Link from "next/link";
-import {
-  AspectRatio,
-  Box,
-  Card,
-  CardSection,
-  Container,
-  Divider,
-  Flex,
-  Image,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
+import { Box, Container, Divider, Flex, Stack, Text, Title } from "@mantine/core";
 
 import mockData from "@/app/mockdata.json";
 import { consultantListSchema } from "@/features/consultants/schemas";
+
+import { DoodlePortrait } from "./DoodlePortrait";
 
 export const metadata = {
   title: "Sandra — Gruppera",
@@ -43,28 +33,11 @@ export default function SandraPage() {
             gap={{ base: "lg", sm: 56 }}
             w={{ base: "100%", sm: "auto" }}
           >
-            <Card
-              radius="md"
-              p={0}
-              w={{ base: "100%", sm: 358 }}
-              style={{ flexShrink: 0 }}
-            >
-              <CardSection
-                bg="sprout.6"
-                style={{
-                  borderRadius: "var(--mantine-radius-md)",
-                  overflow: "hidden",
-                }}
-              >
-                <AspectRatio ratio={358 / 460}>
-                  <Image
-                    alt={`${sandra.name} portrait`}
-                    src={`/photos/${sandra.photo}`}
-                    fit="cover"
-                  />
-                </AspectRatio>
-              </CardSection>
-            </Card>
+            <DoodlePortrait
+              src={`/photos/${sandra.photo}`}
+              alt={`${sandra.name} portrait`}
+              doodle="random"
+            />
 
             <Stack gap="xs" maw={{ sm: 471 }}>
               <Title order={1} fz={{ base: 28, sm: 36 }}>
