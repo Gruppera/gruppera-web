@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FaceLandmarker as FaceLandmarkerType } from "@mediapipe/tasks-vision";
 import { AspectRatio, Box, Card, CardSection, Image } from "@mantine/core";
 
@@ -127,7 +127,11 @@ type DoodlePath = { d: string; extraDots?: Point[] };
 function buildDoodle(kind: Exclude<DoodleKind, "random">, lm: Landmarks): DoodlePath {
   const eyeDist = Math.hypot(lm.rightEye.x - lm.leftEye.x, lm.rightEye.y - lm.leftEye.y);
   const angle = Math.atan2(lm.rightEye.y - lm.leftEye.y, lm.rightEye.x - lm.leftEye.x);
-  const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
+  // Wobble amplitude bumped up from the first pass — combined with the
+  // feTurbulence "sketch-wobble" filter applied to the rendered stroke
+  // (see the component below), this is what keeps the line from reading as
+  // a clean geometric curve.
+  const w = (n: number, seed: number) => n + seededWobble(seed) * 0.1;
 
   if (kind === "mustache") {
     const origin: Point = { x: (lm.mouthTop.x + lm.noseTip.x) / 2, y: (lm.mouthTop.y + lm.noseTip.y) / 2 };
@@ -214,6 +218,18 @@ const DOODLE_KINDS: Exclude<DoodleKind, "random">[] = ["mustache", "horns", "cro
 const DRAW_MS = 1700;
 const HOLD_MS = 350;
 
+// Signature "ink" colour — a neon orange, not the light-vs-dark black/green
+// switch from the first pass. Orange alone has poor grayscale contrast
+// against the sprout-green card backdrop specifically (~1.1:1 — barely
+// distinguishable), so it's always paired with a thin outline stroke
+// underneath whose colour DOES flip with the sampled backdrop luminance.
+// That outline is what actually guarantees legibility on any given patch
+// of the photo (skin, hair, the green background peeking through); the
+// orange on top is what gives it the "glowing ink" personality.
+const ACCENT_COLOR = "#ff7a1a";
+const ACCENT_GLOW =
+  "drop-shadow(0 0 3px rgba(255,122,26,0.85)) drop-shadow(0 0 8px rgba(255,140,40,0.5))";
+
 export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460, color }: DoodlePortraitProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -226,10 +242,15 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
   const [active, setActive] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1 draw progress
   const [pen, setPen] = useState<{ x: number; y: number; angle: number } | null>(null);
-  const [strokeColor, setStrokeColor] = useState(color ?? "#0d0d0c");
+  const strokeColor = color ?? ACCENT_COLOR;
+  // Outline colour is the actual contrast mechanism (see ACCENT_COLOR
+  // comment) — dark ink on light backdrop, light ink on dark backdrop.
+  const [outlineColor, setOutlineColor] = useState("rgba(13,13,12,0.85)");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [session, setSession] = useState(0);
   const sessionRef = useRef(0);
+  const rawId = useId().replace(/:/g, "_");
+  const filterId = `doodle-sketch-${rawId}`;
 
   const kind = useMemo<Exclude<DoodleKind, "random">>(() => {
     if (doodle !== "random") return doodle;
@@ -247,9 +268,8 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
 
   // Sample average luminance (composited over the card's sprout backdrop,
   // since that's what's actually behind the photo's transparent edges) to
-  // pick a stroke colour with good contrast, unless one was passed in.
+  // pick an outline colour with good contrast against THIS photo.
   useEffect(() => {
-    if (color) return;
     const sample = (img: HTMLImageElement) => {
       try {
         const canvas = document.createElement("canvas");
@@ -268,7 +288,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
           count += 1;
         }
         const avg = sum / count / 255;
-        setStrokeColor(avg < 0.45 ? "#39ff14" : "#0d0d0c");
+        setOutlineColor(avg < 0.45 ? "rgba(253,253,253,0.9)" : "rgba(13,13,12,0.85)");
       } catch {
         // canvas can throw on cross-origin taint in some browsers — keep default
       }
@@ -282,7 +302,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     img.onload = () => sample(img);
     img.src = src;
     if (img.complete && img.naturalWidth > 0) sample(img);
-  }, [src, color]);
+  }, [src]);
 
   const runDetection = async () => {
     const imgEl = imgRef.current;
@@ -454,25 +474,60 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
           }}
           aria-hidden="true"
         >
+          <defs>
+            {/* Displaces the stroke along a fixed noise field so the line
+                wobbles unevenly along its whole length, not just at a
+                handful of control points — reads as an actual unsteady
+                hand instead of a smooth curve with jittered endpoints. */}
+            <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.09"
+                numOctaves={2}
+                seed={kind.length + 3}
+                result="noise"
+              />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale={box.w * 0.007}
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+
           {doodlePath && (
-            <>
+            <g filter={`url(#${filterId})`}>
+              {/* Outline first, underneath — the actual contrast guarantee
+                  against whatever patch of photo it's drawn over. */}
+              <path
+                d={doodlePath.d}
+                fill="none"
+                stroke={outlineColor}
+                strokeWidth={box.w * 0.026}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  strokeDasharray: pathRef.current?.getTotalLength() || 1000,
+                  strokeDashoffset:
+                    (pathRef.current?.getTotalLength() || 1000) * (1 - progress),
+                }}
+              />
+              {/* Signature neon ink on top. */}
               <path
                 ref={pathRef}
                 d={doodlePath.d}
                 fill="none"
                 stroke={strokeColor}
-                strokeWidth={box.w * 0.014}
+                strokeWidth={box.w * 0.013}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 style={{
-                  filter:
-                    strokeColor === "#39ff14"
-                      ? "drop-shadow(0 0 3px rgba(57,255,20,0.65))"
-                      : undefined,
+                  filter: ACCENT_GLOW,
                   strokeDasharray: pathRef.current?.getTotalLength() || 1000,
                   strokeDashoffset:
                     (pathRef.current?.getTotalLength() || 1000) * (1 - progress),
-                  transition: reduceMotion ? undefined : "stroke-dashoffset 16ms linear",
                 }}
               />
               {kind === "crown" &&
@@ -481,13 +536,15 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
                     key={i}
                     cx={dot.x}
                     cy={dot.y}
-                    r={box.w * 0.012}
+                    r={box.w * 0.014}
                     fill={strokeColor}
+                    stroke={outlineColor}
+                    strokeWidth={box.w * 0.006}
                     opacity={progress > 0.9 ? 1 : 0}
-                    style={{ transition: "opacity 200ms ease" }}
+                    style={{ filter: ACCENT_GLOW, transition: "opacity 200ms ease" }}
                   />
                 ))}
-            </>
+            </g>
           )}
 
           {pen && (
@@ -495,8 +552,9 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
               <path
                 d={`M -2 -${box.w * 0.05} L 2 -${box.w * 0.05} L ${box.w * 0.01} ${box.w * 0.02} L 0 ${box.w * 0.03} L -${box.w * 0.01} ${box.w * 0.02} Z`}
                 fill={strokeColor}
-                stroke="#0d0d0c"
-                strokeWidth={0.5}
+                stroke={outlineColor}
+                strokeWidth={1}
+                style={{ filter: ACCENT_GLOW }}
               />
             </g>
           )}
