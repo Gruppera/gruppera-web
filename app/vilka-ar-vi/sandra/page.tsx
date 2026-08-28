@@ -24,25 +24,28 @@ export default function SandraPage() {
   return (
     <Box>
       <Container size="lg" py={{ base: "lg", sm: "xl" }}>
-        <Stack gap="lg" align="center">
+        {/* Both gaps match the Figma frame exactly (node 56:374/56:384):
+            photo-to-text is 56px on desktop / 24px stacked on mobile, and
+            the gap down to the divider below is 48px / 24px. */}
+        <Flex direction="column" gap={{ base: 24, sm: 48 }} align="center">
           {/* ---------- YOURS TO DESIGN ---------- */}
           <Flex
             direction={{ base: "column", sm: "row" }}
-            gap={{ base: "lg", sm: 56 }}
+            gap={{ base: 24, sm: 56 }}
             w={{ base: "100%", sm: "auto" }}
           >
             <Box w={{ base: "100%", sm: 358 }} style={{ flexShrink: 0 }}>
               <Card radius="md" p={0} style={{ overflow: "hidden" }}>
                 <CardSection bg="sprout.6">
-                  {/* Photo itself is pre-cropped to the exact framing set on
-                      the Figma frame (Sandra, node 56:374) — the raw source
-                      photo has a lot of empty space above/around her, and
-                      Figma's frame zooms in past what a plain centered
-                      object-fit: cover would show. */}
+                  {/* A dedicated crop, not the shared `sandra.photo` used on
+                      the /vilka-ar-vi grid — this frame (Figma node 56:374)
+                      zooms in further than the grid's crop, which stays
+                      wider to match the framing of the other consultants'
+                      cards. */}
                   <AspectRatio ratio={358 / 460}>
                     <Image
                       alt={`${sandra.name} portrait`}
-                      src={`/photos/${sandra.photo}`}
+                      src="/photos/sandra-page.png"
                       fit="cover"
                     />
                   </AspectRatio>
@@ -98,7 +101,7 @@ export default function SandraPage() {
               </Text>
             </Link>
           </Flex>
-        </Stack>
+        </Flex>
       </Container>
     </Box>
   );
