@@ -109,19 +109,22 @@ export const Palette = ({
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       border: unlocked
                         ? "2px solid #95B354"
                         : "1px solid #757263",
+                      backgroundColor: unlocked ? "rgba(149, 179, 84, 0.35)" : undefined,
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`/photos/${consultant.photo}`}
                       alt={consultant.name}
-                      width={40}
-                      height={40}
-                      style={{ objectFit: "cover", width: 40, height: 40 }}
+                      width={34}
+                      height={34}
+                      style={{ objectFit: "cover", width: 34, height: 34, borderRadius: "50%" }}
                     />
                   </div>
                 );
@@ -153,7 +156,6 @@ export const Palette = ({
                       borderRadius: 8,
                       outline: armed ? "2px solid #95B354" : undefined,
                       outlineOffset: 2,
-                      backgroundColor: unlocked ? "rgba(149, 179, 84, 0.25)" : undefined,
                     }}
                   >
                     {unlocked ? (

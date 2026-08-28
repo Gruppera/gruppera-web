@@ -300,10 +300,10 @@ export const Board = ({
           const avatar = piece?.consultantSlug ? (
             <g>
               <clipPath id={`clip-${id}`}>
-                <circle cx={horizontal ? L / 2 : 0} cy={0} r={13} />
+                <circle cx={L / 2} cy={0} r={13} />
               </clipPath>
               <circle
-                cx={horizontal ? L / 2 : 0}
+                cx={L / 2}
                 cy={0}
                 r={14}
                 fill="#0D0D0C"
@@ -312,7 +312,7 @@ export const Board = ({
               />
               <image
                 href={`/photos/${piece.consultantPhoto}`}
-                x={(horizontal ? L / 2 : 0) - 13}
+                x={L / 2 - 13}
                 y={-13}
                 width={26}
                 height={26}
