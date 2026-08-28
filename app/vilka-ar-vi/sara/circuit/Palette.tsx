@@ -2,7 +2,7 @@
 
 import type { DragEvent, KeyboardEvent } from "react";
 import Link from "next/link";
-import { Card, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Card, Group, Stack, Text } from "@mantine/core";
 
 import {
   ALWAYS_SHOWN_KINDS,
@@ -97,7 +97,7 @@ export const Palette = ({
                 {KIND_DESCRIPTIONS[kind]}
               </Text>
 
-              <SimpleGrid cols={3} spacing={2}>
+              <Group gap={2} wrap="wrap">
                 <div
                   role="button"
                   tabIndex={0}
@@ -198,7 +198,7 @@ export const Palette = ({
                   </div>
                 );
                 })}
-              </SimpleGrid>
+              </Group>
             </Stack>
           </Card>
         );
