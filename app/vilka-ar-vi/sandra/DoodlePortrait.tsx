@@ -211,8 +211,8 @@ function buildDoodle(kind: Exclude<DoodleKind, "random">, lm: Landmarks): Doodle
 
 const DOODLE_KINDS: Exclude<DoodleKind, "random">[] = ["mustache", "horns", "crown", "sunglasses"];
 
-const DRAW_MS = 750;
-const HOLD_MS = 220;
+const DRAW_MS = 1700;
+const HOLD_MS = 350;
 
 export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460, color }: DoodlePortraitProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -228,6 +228,8 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
   const [pen, setPen] = useState<{ x: number; y: number; angle: number } | null>(null);
   const [strokeColor, setStrokeColor] = useState(color ?? "#0d0d0c");
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [session, setSession] = useState(0);
+  const sessionRef = useRef(0);
 
   const kind = useMemo<Exclude<DoodleKind, "random">>(() => {
     if (doodle !== "random") return doodle;
@@ -248,10 +250,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
   // pick a stroke colour with good contrast, unless one was passed in.
   useEffect(() => {
     if (color) return;
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
-    img.onload = () => {
+    const sample = (img: HTMLImageElement) => {
       try {
         const canvas = document.createElement("canvas");
         canvas.width = 32;
@@ -274,6 +273,15 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
         // canvas can throw on cross-origin taint in some browsers — keep default
       }
     };
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    // Handler must be wired up BEFORE `.src` is set — for an already-cached
+    // image (near-certain here, since the same URL is already on screen via
+    // the <Image> below) the load can resolve before an onload assigned
+    // afterwards would ever be seen, silently leaving the default colour.
+    img.onload = () => sample(img);
+    img.src = src;
+    if (img.complete && img.naturalWidth > 0) sample(img);
   }, [src, color]);
 
   const runDetection = async () => {
@@ -334,7 +342,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     rafRef.current = null;
   };
 
-  const animateIn = () => {
+  const animateIn = (mySession: number) => {
     const pathEl = pathRef.current;
     if (!pathEl) return;
     if (reduceMotion) {
@@ -345,48 +353,62 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
     const total = pathEl.getTotalLength();
     const start = performance.now();
     const step = (now: number) => {
+      // A later hover (leave + re-enter) bumps the session — bail out so
+      // this stale loop can't keep animating (or snap progress backwards)
+      // over the new one.
+      if (sessionRef.current !== mySession) return;
       const t = Math.min(1, (now - start) / DRAW_MS);
-      const eased = 1 - Math.pow(1 - t, 2);
+      // Ease-in-out cubic: the pen "sets down" gently, draws at speed
+      // through the middle, and eases off at the end — reads as a hand
+      // actually drawing rather than a mechanical wipe.
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       setProgress(eased);
       const pt = pathEl.getPointAtLength(eased * total);
       const ahead = pathEl.getPointAtLength(Math.min(total, eased * total + 2));
       const angle = Math.atan2(ahead.y - pt.y, ahead.x - pt.x);
-      const shakeAmt = (1 - eased) * 0 + 0.6;
       setPen({
-        x: pt.x + seededWobble(now * 0.01) * shakeAmt,
-        y: pt.y + seededWobble(now * 0.017) * shakeAmt,
+        x: pt.x + seededWobble(now * 0.01) * 0.6,
+        y: pt.y + seededWobble(now * 0.017) * 0.6,
         angle,
       });
       if (t < 1) {
         rafRef.current = requestAnimationFrame(step);
       } else {
-        setTimeout(() => setPen(null), HOLD_MS);
+        setTimeout(() => {
+          if (sessionRef.current === mySession) setPen(null);
+        }, HOLD_MS);
       }
     };
     rafRef.current = requestAnimationFrame(step);
   };
 
   const handleEnter = () => {
+    sessionRef.current += 1;
+    setSession(sessionRef.current);
     setActive(true);
     void runDetection();
   };
 
   const handleLeave = () => {
+    sessionRef.current += 1;
     setActive(false);
     stopAnimation();
     setProgress(0);
     setPen(null);
   };
 
+  // Every hover (a fresh `session`) restarts the draw from scratch, even if
+  // landmarks are already cached from a previous hover on the same photo.
   useEffect(() => {
     if (active && doodlePath) {
       stopAnimation();
       setProgress(0);
-      animateIn();
+      setPen(null);
+      animateIn(sessionRef.current);
     }
     return stopAnimation;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, doodlePath, reduceMotion]);
+  }, [active, doodlePath, reduceMotion, session]);
 
   useEffect(() => {
     const el = wrapRef.current;
