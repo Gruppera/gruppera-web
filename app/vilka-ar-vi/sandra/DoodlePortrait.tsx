@@ -156,9 +156,9 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
 
   sunglasses: (lm, eyeDist, angle) => {
     const rad = eyeDist * 0.34;
-    const lens = (origin: Point, seedBase: number): Stroke => {
+    const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
       const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
-      const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
+      const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
       return {
         d: [
           `M ${p([w(-0.34, seedBase), 0])}`,
@@ -172,7 +172,7 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
     const bridge: Stroke = {
       d: `M ${fmt({ x: lm.leftEye.x + rad * 0.9, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.9, y: lm.rightEye.y })}`,
     };
-    return [lens(lm.leftEye, 1), lens(lm.rightEye, 20), bridge];
+    return [lens(lm.leftEye, 1, 1), lens(lm.rightEye, -1, 20), bridge];
   },
 
   horns: (lm, eyeDist, angle) => {
@@ -310,6 +310,11 @@ const THEME_KINDS: Record<ThemeKind, BasePiece[]> = {
 };
 const THEME_NAMES: ThemeKind[] = ["old", "cool", "devil", "angel"];
 
+function pickRandomTheme(exclude?: ThemeKind): ThemeKind {
+  const pool = exclude ? THEME_NAMES.filter((t) => t !== exclude) : THEME_NAMES;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function buildPieces(kind: Exclude<DoodleKind, "random">, lm: Landmarks): Stroke[] {
   const eyeDist = Math.hypot(lm.rightEye.x - lm.leftEye.x, lm.rightEye.y - lm.leftEye.y);
   const angle = Math.atan2(lm.rightEye.y - lm.leftEye.y, lm.rightEye.x - lm.leftEye.x);
@@ -349,11 +354,13 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
   const rawId = useId().replace(/:/g, "_");
   const filterId = `doodle-sketch-${rawId}`;
 
-  const kind = useMemo<Exclude<DoodleKind, "random">>(() => {
-    if (doodle !== "random") return doodle;
-    const idx = Math.abs(Math.floor(seededWobble(src.length * 7.13) * THEME_NAMES.length));
-    return THEME_NAMES[idx % THEME_NAMES.length];
-  }, [doodle, src]);
+  const [kind, setKind] = useState<Exclude<DoodleKind, "random">>(() =>
+    doodle === "random" ? pickRandomTheme() : doodle
+  );
+
+  useEffect(() => {
+    if (doodle !== "random") setKind(doodle);
+  }, [doodle]);
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -486,6 +493,9 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
   const handleEnter = () => {
     sessionRef.current += 1;
     setSession(sessionRef.current);
+    if (doodle === "random") {
+      setKind((prev) => pickRandomTheme(THEME_NAMES.includes(prev as ThemeKind) ? (prev as ThemeKind) : undefined));
+    }
     setActive(true);
     void runDetection();
   };
