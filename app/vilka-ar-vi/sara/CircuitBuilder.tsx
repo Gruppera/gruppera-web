@@ -122,7 +122,7 @@ export const CircuitBuilder = () => {
       />
 
       <Group align="flex-start" wrap="wrap" gap="md">
-        <div style={{ overflowX: "auto", padding: "8px 0" }}>
+        <div style={{ flex: "1 1 320px", padding: "8px 0" }}>
           <Board
             placed={placed}
             energizedIds={result.won ? result.energizedIds : new Set()}

@@ -267,11 +267,12 @@ export const Board = ({
         }
       `}</style>
       <svg
-        width={width}
-        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        height="auto"
         role="group"
         aria-label="Kretsschema — komponenter kan tas bort, vändas eller (för brytare) öppnas/stängas med tangentbordet"
-        style={{ display: "block", margin: "0 auto", overflow: "visible" }}
+        style={{ display: "block", overflow: "visible" }}
       >
         {/* Grid dots: purely decorative. */}
         <g aria-hidden="true">
