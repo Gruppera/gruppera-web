@@ -1,4 +1,4 @@
-import { Box, Container, Stack, Title } from "@mantine/core";
+import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
 import { CircuitBuilder } from "./CircuitBuilder";
 import { PCB } from "./circuit/theme";
@@ -32,6 +32,12 @@ export default function SaraPage() {
               <span style={{ color: PCB.glow }}>&gt;</span> Viktiga på egen
               hand, starkare tillsammans
             </Title>
+            <Text size="sm" maw={560} style={{ color: PCB.silkDim }}>
+              Dra komponenter till schemat för att bygga kretsen, eller välj
+              en komponent och tryck sedan på en tom plats. Tryck på ett
+              hörn på en komponent och sedan ett ledigt hörn i rak linje för
+              att förlänga med en wire.
+            </Text>
           </Stack>
 
           <CircuitBuilder />

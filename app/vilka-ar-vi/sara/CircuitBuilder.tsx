@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Group, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, Stack } from "@mantine/core";
 
 import { Board } from "./circuit/Board";
 import { Palette } from "./circuit/Palette";
@@ -227,13 +227,6 @@ export const CircuitBuilder = () => {
           Rensa krets
         </Button>
       </Group>
-
-      <Text size="sm" maw={560} style={{ color: PCB.silkDim }}>
-        Dra komponenter till schemat för att bygga kretsen, eller välj en
-        komponent och tryck sedan på en tom plats. Tryck på ett hörn på en
-        komponent och sedan ett ledigt hörn i rak linje för att förlänga med
-        en wire.
-      </Text>
 
       <div aria-live="polite">
         {result.won ? (
