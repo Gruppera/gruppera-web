@@ -128,7 +128,29 @@ function fmt(p: Point): string {
   return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
 }
 
-type Stroke = { d: string; extraDots?: Point[]; fast?: boolean };
+type Stroke = {
+  d: string;
+  extraDots?: Point[];
+  fast?: boolean;
+  /** Solid fill (e.g. sunglasses lenses, an eyepatch) instead of outline-only. */
+  fillColor?: string;
+  /** Overrides the doodle's ink colour for just this stroke (e.g. gold chain links). */
+  inkColor?: string;
+};
+
+// A small circle path, used for chain links and other round filled bits —
+// centered on `origin`, radius in eye-distance units.
+function circlePath(origin: Point, r: number, eyeDist: number, angle: number): string {
+  const p = (local: [number, number]) => fmt(place(local, origin, eyeDist * r, angle));
+  return [
+    `M ${p([1, 0])}`,
+    `C ${p([1, 0.55])} ${p([0.55, 1])} ${p([0, 1])}`,
+    `C ${p([-0.55, 1])} ${p([-1, 0.55])} ${p([-1, 0])}`,
+    `C ${p([-1, -0.55])} ${p([-0.55, -1])} ${p([0, -1])}`,
+    `C ${p([0.55, -1])} ${p([1, -0.55])} ${p([1, 0])}`,
+    "Z",
+  ].join(" ");
+}
 
 // A tiny hand-sketched monoline font — only the glyphs the three theme
 // words actually need. Each glyph is one or more strokes, authored as
@@ -213,9 +235,9 @@ function wordStrokes(
   baseYOffset = 0.5,
 ): Stroke[] {
   const origin: Point = { x: (lm.faceLeft.x + lm.faceRight.x) / 2, y: lm.chin.y };
-  const letterW = 0.17;
-  const gap = 0.045;
-  const letterH = 0.24;
+  const letterW = 0.13;
+  const gap = 0.035;
+  const letterH = 0.18;
   const baseY = baseYOffset;
   const totalW = word.length * letterW + (word.length - 1) * gap;
   const w = (n: number, seed: number) => n + seededWobble(seed) * 0.025;
@@ -284,21 +306,22 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
   mustache: (lm, eyeDist, angle) => {
     // MediaPipe's `mouthTop` landmark sits at the inner lip line (close to
     // mouth center), not the outer edge of the upper lip, so the origin is
-    // pulled up toward the nose to actually land above the lip.
+    // pulled up toward the nose to actually land above the lip. Scaled to
+    // roughly mouth width, not a caricature.
     const origin: Point = {
-      x: lm.mouthTop.x * 0.4 + lm.noseTip.x * 0.6,
-      y: lm.mouthTop.y * 0.4 + lm.noseTip.y * 0.6,
+      x: lm.mouthTop.x * 0.35 + lm.noseTip.x * 0.65,
+      y: lm.mouthTop.y * 0.35 + lm.noseTip.y * 0.65,
     };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
     return [
       {
         d: [
-          `M ${p([w(-0.38, 1), w(0.03, 2)])}`,
-          `C ${p([w(-0.28, 3), w(-0.14, 4)])} ${p([w(-0.12, 5), w(-0.13, 6)])} ${p([0, w(-0.01, 7)])}`,
-          `C ${p([w(0.12, 8), w(-0.13, 9)])} ${p([w(0.28, 10), w(-0.14, 11)])} ${p([w(0.38, 12), w(0.03, 13)])}`,
-          `C ${p([w(0.29, 14), w(0.12, 15)])} ${p([w(0.15, 16), w(0.06, 17)])} ${p([0, w(0.07, 18)])}`,
-          `C ${p([w(-0.15, 19), w(0.06, 20)])} ${p([w(-0.29, 21), w(0.12, 22)])} ${p([w(-0.38, 23), w(0.03, 24)])}`,
+          `M ${p([w(-0.26, 1), w(0.02, 2)])}`,
+          `C ${p([w(-0.19, 3), w(-0.1, 4)])} ${p([w(-0.08, 5), w(-0.09, 6)])} ${p([0, w(-0.01, 7)])}`,
+          `C ${p([w(0.08, 8), w(-0.09, 9)])} ${p([w(0.19, 10), w(-0.1, 11)])} ${p([w(0.26, 12), w(0.02, 13)])}`,
+          `C ${p([w(0.2, 14), w(0.08, 15)])} ${p([w(0.1, 16), w(0.04, 17)])} ${p([0, w(0.05, 18)])}`,
+          `C ${p([w(-0.1, 19), w(0.04, 20)])} ${p([w(-0.2, 21), w(0.08, 22)])} ${p([w(-0.26, 23), w(0.02, 24)])}`,
           "Z",
         ].join(" "),
       },
@@ -306,119 +329,129 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
   },
 
   goatee: (lm, eyeDist, angle) => {
-    // Spans from just below the mouth down to the chin — a pointed tuft,
-    // not a full beard.
+    // Spans from just below the mouth down to the chin — a small pointed
+    // tuft, not a full beard.
     const origin: Point = {
       x: (lm.mouthTop.x + lm.chin.x) / 2,
       y: (lm.mouthTop.y + lm.chin.y) / 2,
     };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.08;
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
     return [
       {
         d: [
-          `M ${p([w(-0.28, 1), w(-0.5, 2)])}`,
-          `C ${p([w(-0.32, 3), w(-0.1, 4)])} ${p([w(-0.2, 5), w(0.35, 6)])} ${p([w(0, 7), w(0.62, 8)])}`,
-          `C ${p([w(0.2, 9), w(0.35, 10)])} ${p([w(0.32, 11), w(-0.1, 12)])} ${p([w(0.28, 13), w(-0.5, 14)])}`,
+          `M ${p([w(-0.19, 1), w(-0.4, 2)])}`,
+          `C ${p([w(-0.22, 3), w(-0.05, 4)])} ${p([w(-0.13, 5), w(0.28, 6)])} ${p([w(0, 7), w(0.48, 8)])}`,
+          `C ${p([w(0.13, 9), w(0.28, 10)])} ${p([w(0.22, 11), w(-0.05, 12)])} ${p([w(0.19, 13), w(-0.4, 14)])}`,
         ].join(" "),
       },
     ];
   },
 
   eyepatch: (lm, eyeDist, angle) => {
-    // Covers her right eye (screen-left), strap running up and across
-    // toward the opposite temple.
+    // A real eyepatch just about covers the eye socket — sized to the eye
+    // itself, filled solid black, strap running up and across toward the
+    // opposite temple.
     const origin: Point = lm.leftEye;
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.06;
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.04;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
     const patch: Stroke = {
+      fillColor: DARK_FILL,
       d: [
-        `M ${p([w(-0.3, 1), w(-0.24, 2)])}`,
-        `C ${p([w(-0.32, 3), w(-0.38, 4)])} ${p([w(0.32, 5), w(-0.38, 6)])} ${p([w(0.3, 7), w(-0.24, 8)])}`,
-        `C ${p([w(0.38, 9), w(0, 10)])} ${p([w(0.34, 11), w(0.3, 12)])} ${p([w(0.26, 13), w(0.32, 14)])}`,
-        `C ${p([w(0, 15), w(0.38, 16)])} ${p([w(-0.26, 17), w(0.32, 18)])} ${p([w(-0.26, 19), w(0.3, 20)])}`,
-        `C ${p([w(-0.38, 21), w(0.26, 22)])} ${p([w(-0.38, 23), w(-0.04, 24)])} ${p([w(-0.3, 25), w(-0.24, 26)])}`,
+        `M ${p([w(-0.2, 1), w(-0.16, 2)])}`,
+        `C ${p([w(-0.22, 3), w(-0.26, 4)])} ${p([w(0.22, 5), w(-0.26, 6)])} ${p([w(0.2, 7), w(-0.16, 8)])}`,
+        `C ${p([w(0.26, 9), w(0, 10)])} ${p([w(0.23, 11), w(0.2, 12)])} ${p([w(0.17, 13), w(0.22, 14)])}`,
+        `C ${p([w(0, 15), w(0.26, 16)])} ${p([w(-0.17, 17), w(0.22, 18)])} ${p([w(-0.17, 19), w(0.2, 20)])}`,
+        `C ${p([w(-0.26, 21), w(0.17, 22)])} ${p([w(-0.26, 23), w(-0.02, 24)])} ${p([w(-0.2, 25), w(-0.16, 26)])}`,
         "Z",
       ].join(" "),
     };
     const strap: Stroke = {
       d: [
-        `M ${p([w(0.3, 30), w(-0.12, 31)])}`,
-        `Q ${fmt(place([1.0, -0.5], origin, eyeDist, angle))} ${fmt({ x: lm.faceRight.x, y: lm.faceRight.y - eyeDist * 0.25 })}`,
+        `M ${p([w(0.2, 30), w(-0.08, 31)])}`,
+        `Q ${fmt(place([0.75, -0.35], origin, eyeDist, angle))} ${fmt({ x: lm.faceRight.x, y: lm.faceRight.y - eyeDist * 0.2 })}`,
       ].join(" "),
     };
     return [patch, strap];
   },
 
   bossGlasses: (lm, eyeDist, angle) => {
-    // Same lens shape as the old sunglasses piece, scaled up for a bigger,
-    // flashier frame.
-    const rad = eyeDist * 0.42;
+    // A teardrop "aviator" silhouette — clearly a different shape from the
+    // round nerd-glasses frame — filled solid dark like a real tinted lens.
+    const rad = eyeDist * 0.3;
     const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
-      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.07;
+      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.04;
       const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
       return {
+        fillColor: DARK_FILL,
         d: [
-          `M ${p([w(-0.42, seedBase), 0])}`,
-          `C ${p([-0.42, w(-0.28, seedBase + 1)])} ${p([w(0.12, seedBase + 2), -0.38])} ${p([0.42, w(-0.15, seedBase + 3)])}`,
-          `C ${p([0.62, w(0.03, seedBase + 4)])} ${p([w(0.5, seedBase + 5), 0.38])} ${p([w(0.12, seedBase + 6), 0.4])}`,
-          `C ${p([w(-0.22, seedBase + 7), 0.42])} ${p([-0.44, w(0.25, seedBase + 8)])} ${p([w(-0.42, seedBase + 9), 0])}`,
+          `M ${p([w(-0.3, seedBase), w(-0.05, seedBase + 1)])}`,
+          `C ${p([w(-0.32, seedBase + 2), -0.25])} ${p([w(-0.1, seedBase + 3), -0.34])} ${p([w(0.05, seedBase + 4), -0.32])}`,
+          `C ${p([w(0.24, seedBase + 5), -0.3])} ${p([w(0.34, seedBase + 6), -0.15])} ${p([w(0.32, seedBase + 7), 0.05])}`,
+          `C ${p([w(0.3, seedBase + 8), 0.24])} ${p([w(0.15, seedBase + 9), 0.4])} ${p([w(-0.02, seedBase + 10), 0.38])}`,
+          `C ${p([w(-0.2, seedBase + 11), 0.36])} ${p([w(-0.32, seedBase + 12), 0.18])} ${p([w(-0.3, seedBase + 13), -0.05])}`,
           "Z",
         ].join(" "),
       };
     };
     const bridge: Stroke = {
-      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.9, y: lm.leftEye.y })} L ${fmt({ x: lm.rightEye.x - rad * 0.9, y: lm.rightEye.y })}`,
+      d: `M ${fmt({ x: lm.leftEye.x + rad * 0.85, y: lm.leftEye.y - rad * 0.15 })} L ${fmt({ x: lm.rightEye.x - rad * 0.85, y: lm.rightEye.y - rad * 0.15 })}`,
     };
     return [lens(lm.leftEye, 1, 1), lens(lm.rightEye, -1, 20), bridge];
   },
 
   goldChain: (lm, eyeDist, angle) => {
+    // A row of small filled links along the collar, rather than a single
+    // wavy line — reads as an actual chain instead of a squiggle.
     const origin: Point = { x: lm.chin.x, y: lm.chin.y };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    const chain: Stroke = {
-      d: [
-        `M ${p([w(-0.75, 1), w(0.2, 2)])}`,
-        `Q ${p([w(-0.35, 3), w(0.75, 4)])} ${p([0, w(0.82, 5)])}`,
-        `Q ${p([w(0.35, 6), w(0.75, 7)])} ${p([w(0.75, 8), w(0.2, 9)])}`,
-      ].join(" "),
-    };
-    const beadAt = (t: number, seed: number): Point => {
-      const x = -0.75 + t * 1.5;
-      const y = 0.2 + Math.sin(t * Math.PI) * 0.62;
-      return place([w(x, seed), w(y, seed + 1)], origin, eyeDist, angle);
-    };
-    return [
-      {
-        ...chain,
-        extraDots: [beadAt(0.15, 10), beadAt(0.35, 12), beadAt(0.5, 14), beadAt(0.65, 16), beadAt(0.85, 18)],
-      },
-    ];
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.03;
+    const linkCount = 9;
+    const links: Stroke[] = [];
+    for (let i = 0; i < linkCount; i++) {
+      const t = i / (linkCount - 1);
+      const x = w(-0.55 + t * 1.1, i * 3);
+      const y = w(0.16 + Math.sin(t * Math.PI) * 0.42, i * 3 + 1);
+      const linkOrigin = place([x, y], origin, eyeDist, angle);
+      links.push({
+        d: circlePath(linkOrigin, 0.06, eyeDist, angle),
+        fillColor: GOLD_FILL,
+        inkColor: GOLD_INK,
+        fast: true,
+      });
+    }
+    // A slightly bigger pendant at the lowest point of the curve.
+    const pendantOrigin = place([w(0, 40), w(0.58, 41)], origin, eyeDist, angle);
+    links.push({
+      d: circlePath(pendantOrigin, 0.1, eyeDist, angle),
+      fillColor: GOLD_FILL,
+      inkColor: GOLD_INK,
+      fast: true,
+    });
+    return links;
   },
 
   cigarSmoke: (lm, eyeDist, angle) => {
     const origin: Point = lm.mouthRight;
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.03;
     const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
     // Kept short — mouthRight already sits close to the photo's right edge,
     // so a wide/tall reach here bleeds past the card into the text column
     // next to it.
     const cigar: Stroke = {
       d: [
-        `M ${p([w(0.02, 1), w(0.05, 2)])}`,
-        `L ${p([w(0.42, 3), w(0, 4)])}`,
-        `L ${p([w(0.5, 5), w(0.1, 6)])}`,
-        `L ${p([w(0.42, 7), w(0.2, 8)])}`,
-        `L ${p([w(0.02, 9), w(0.15, 10)])}`,
+        `M ${p([w(0.02, 1), w(0.03, 2)])}`,
+        `L ${p([w(0.26, 3), w(0, 4)])}`,
+        `L ${p([w(0.32, 5), w(0.06, 6)])}`,
+        `L ${p([w(0.26, 7), w(0.12, 8)])}`,
+        `L ${p([w(0.02, 9), w(0.09, 10)])}`,
         "Z",
       ].join(" "),
     };
     const smokeLine = (seedBase: number, dir: 1 | -1): Stroke => ({
       d: [
-        `M ${p([w(0.5, seedBase), w(0.05, seedBase + 1)])}`,
-        `Q ${p([w(0.6, seedBase + 2), w(-0.15 * dir, seedBase + 3)])} ${p([w(0.5, seedBase + 4), w(-0.35, seedBase + 5)])}`,
-        `Q ${p([w(0.4, seedBase + 6), w(-0.5 * dir, seedBase + 7)])} ${p([w(0.52, seedBase + 8), w(-0.65, seedBase + 9)])}`,
+        `M ${p([w(0.32, seedBase), w(0.03, seedBase + 1)])}`,
+        `Q ${p([w(0.4, seedBase + 2), w(-0.1 * dir, seedBase + 3)])} ${p([w(0.32, seedBase + 4), w(-0.24, seedBase + 5)])}`,
+        `Q ${p([w(0.25, seedBase + 6), w(-0.34 * dir, seedBase + 7)])} ${p([w(0.34, seedBase + 8), w(-0.44, seedBase + 9)])}`,
       ].join(" "),
       fast: true,
     });
@@ -426,6 +459,8 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
   },
 
   stars: (lm, eyeDist, angle) => {
+    // Pushed out past the photo's edge on purpose — background texture
+    // that bleeds beyond the frame, the way horns/crown used to.
     const w = (n: number, seed: number) => n + seededWobble(seed) * 0.04;
     const star = (origin: Point, scale: number, seedBase: number): Stroke => {
       const p = (local: [number, number]) => fmt(place(local, origin, eyeDist * scale, angle));
@@ -440,17 +475,17 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
           .join(" ") + " Z";
       return { d, fast: true };
     };
-    const p1: Point = { x: lm.faceLeft.x - eyeDist * 0.5, y: lm.faceLeft.y - eyeDist * 0.55 };
-    const p2: Point = { x: lm.faceLeft.x - eyeDist * 0.75, y: lm.faceLeft.y + eyeDist * 0.35 };
-    return [star(p1, 0.32, 1), star(p2, 0.24, 40)];
+    const p1: Point = { x: lm.faceLeft.x - eyeDist * 0.85, y: lm.faceLeft.y - eyeDist * 0.5 };
+    const p2: Point = { x: lm.faceLeft.x - eyeDist * 1.1, y: lm.faceLeft.y + eyeDist * 0.5 };
+    return [star(p1, 0.22, 1), star(p2, 0.16, 40)];
   },
 
   nerdGlasses: (lm, eyeDist, angle) => {
-    // Big, round, unfilled frames — bigger and rounder than the sunglasses
-    // lens so the two read as clearly different accessories.
-    const rad = eyeDist * 0.46;
+    // Round frames, sized to the eye itself rather than dominating the
+    // face — thick unfilled rim (double stroke already gives it weight).
+    const rad = eyeDist * 0.3;
     const lens = (origin: Point, side: 1 | -1, seedBase: number): Stroke => {
-      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
+      const w = (n: number, seed: number) => n + seededWobble(seed) * 0.035;
       const p = (local: [number, number]) => fmt(place([local[0] * side, local[1]], origin, eyeDist, angle));
       return {
         d: [
@@ -470,53 +505,61 @@ const PIECE_BUILDERS: Record<BasePiece, (lm: Landmarks, eyeDist: number, angle: 
   },
 
   headphones: (lm, eyeDist, angle) => {
-    const origin: Point = { x: lm.forehead.x, y: lm.forehead.y };
-    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.05;
-    const p = (local: [number, number]) => fmt(place(local, origin, eyeDist, angle));
-    // Kept shallow — anything higher risks bleeding above the photo card
-    // into the site header, which has no room to scroll into (see the
-    // halo/horns headroom notes below).
+    // Ear cups anchored at actual ear height — between eye and nose-tip
+    // level, pulled slightly past the face's outer edge so they clear the
+    // glasses lenses instead of sitting on top of them — with the band's
+    // ends landing exactly on the cups so the two read as one object
+    // instead of two disconnected shapes.
+    const w = (n: number, seed: number) => n + seededWobble(seed) * 0.03;
+    const earY = (lm.leftEye.y + lm.noseTip.y) / 2;
+    const leftEar: Point = { x: lm.faceLeft.x - eyeDist * 0.06, y: earY };
+    const rightEar: Point = { x: lm.faceRight.x + eyeDist * 0.06, y: earY };
+    const peak: Point = { x: lm.forehead.x, y: lm.forehead.y - eyeDist * 0.6 };
+    const ctrlL: Point = { x: lm.forehead.x - eyeDist * 0.55, y: lm.forehead.y - eyeDist * 0.5 };
+    const ctrlR: Point = { x: lm.forehead.x + eyeDist * 0.55, y: lm.forehead.y - eyeDist * 0.5 };
     const band: Stroke = {
       d: [
-        `M ${p([w(-0.95, 1), w(0.3, 2)])}`,
-        `Q ${p([w(-0.6, 3), w(-0.6, 4)])} ${p([0, w(-0.75, 5)])}`,
-        `Q ${p([w(0.6, 6), w(-0.6, 7)])} ${p([w(0.95, 8), w(0.3, 9)])}`,
+        `M ${fmt({ x: leftEar.x + w(0, 1), y: leftEar.y + w(0, 2) })}`,
+        `Q ${fmt(ctrlL)} ${fmt({ x: peak.x + w(0, 3), y: peak.y + w(0, 4) })}`,
+        `Q ${fmt(ctrlR)} ${fmt({ x: rightEar.x + w(0, 5), y: rightEar.y + w(0, 6) })}`,
       ].join(" "),
     };
-    const earCup = (cupOrigin: Point, seedBase: number): Stroke => {
+    const earCup = (cupOrigin: Point, seedBase: number): Stroke[] => {
       const pp = (local: [number, number]) => fmt(place(local, cupOrigin, eyeDist, angle));
-      return {
+      const outer: Stroke = {
+        fillColor: DARK_FILL,
         d: [
-          `M ${pp([w(0, seedBase), w(-0.3, seedBase + 1)])}`,
-          `C ${pp([w(0.28, seedBase + 2), -0.3])} ${pp([0.28, w(0.3, seedBase + 3)])} ${pp([w(0, seedBase + 4), 0.3])}`,
-          `C ${pp([-0.28, w(0.3, seedBase + 5)])} ${pp([-0.28, w(-0.3, seedBase + 6)])} ${pp([w(0, seedBase + 7), -0.3])}`,
+          `M ${pp([w(0, seedBase), w(-0.22, seedBase + 1)])}`,
+          `C ${pp([w(0.2, seedBase + 2), -0.22])} ${pp([0.22, w(0.2, seedBase + 3)])} ${pp([w(0, seedBase + 4), 0.24])}`,
+          `C ${pp([-0.22, w(0.2, seedBase + 5)])} ${pp([-0.2, w(-0.22, seedBase + 6)])} ${pp([w(0, seedBase + 7), -0.22])}`,
           "Z",
         ].join(" "),
       };
+      const inner: Stroke = {
+        d: circlePath(cupOrigin, 0.09, eyeDist, angle),
+        fast: true,
+      };
+      return [outer, inner];
     };
-    return [
-      band,
-      earCup({ x: lm.faceLeft.x, y: lm.faceLeft.y }, 20),
-      earCup({ x: lm.faceRight.x, y: lm.faceRight.y }, 40),
-    ];
+    return [band, ...earCup(leftEar, 20), ...earCup(rightEar, 40)];
   },
 
   techNoise: (lm, eyeDist, angle) =>
     scatterGlyphs(
       [
-        { ch: "{", origin: { x: lm.faceLeft.x - eyeDist * 0.55, y: lm.faceLeft.y + eyeDist * 0.15 }, scale: 0.3, seed: 1 },
-        { ch: "}", origin: { x: lm.faceRight.x + eyeDist * 0.4, y: lm.faceRight.y - eyeDist * 0.5 }, scale: 0.28, seed: 20 },
-        { ch: "<", origin: { x: lm.faceLeft.x - eyeDist * 0.35, y: lm.faceLeft.y - eyeDist * 0.7 }, scale: 0.26, seed: 40 },
-        { ch: "1", origin: { x: lm.chin.x - eyeDist * 0.55, y: lm.chin.y + eyeDist * 0.3 }, scale: 0.28, seed: 60 },
-        { ch: "0", origin: { x: lm.chin.x + eyeDist * 0.15, y: lm.chin.y + eyeDist * 0.45 }, scale: 0.26, seed: 80 },
+        { ch: "{", origin: { x: lm.faceLeft.x - eyeDist * 0.85, y: lm.faceLeft.y + eyeDist * 0.1 }, scale: 0.2, seed: 1 },
+        { ch: "}", origin: { x: lm.faceRight.x + eyeDist * 0.75, y: lm.faceRight.y - eyeDist * 0.4 }, scale: 0.19, seed: 20 },
+        { ch: "<", origin: { x: lm.faceLeft.x - eyeDist * 0.6, y: lm.faceLeft.y - eyeDist * 0.55 }, scale: 0.17, seed: 40 },
+        { ch: "1", origin: { x: lm.chin.x - eyeDist * 0.8, y: lm.chin.y + eyeDist * 0.15 }, scale: 0.19, seed: 60 },
+        { ch: "0", origin: { x: lm.chin.x + eyeDist * 0.7, y: lm.chin.y + eyeDist * 0.2 }, scale: 0.17, seed: 80 },
       ],
       eyeDist,
       angle,
     ),
 
-  wordBoss: (lm, eyeDist, angle) => wordStrokes("BOSS", lm, eyeDist, angle, 0.95),
-  wordPirate: (lm, eyeDist, angle) => wordStrokes("AARGH!", lm, eyeDist, angle, 0.6),
-  wordDev: (lm, eyeDist, angle) => wordStrokes("404", lm, eyeDist, angle, 0.7),
+  wordBoss: (lm, eyeDist, angle) => wordStrokes("BOSS", lm, eyeDist, angle, 0.55),
+  wordPirate: (lm, eyeDist, angle) => wordStrokes("AARGH!", lm, eyeDist, angle, 0.35),
+  wordDev: (lm, eyeDist, angle) => wordStrokes("404", lm, eyeDist, angle, 0.4),
 };
 
 const THEME_KINDS: Record<ThemeKind, BasePiece[]> = {
@@ -553,6 +596,11 @@ const HOLD_MS = 350;
 const ACCENT_COLOR = "#fdfdfd";
 const OUTLINE_COLOR = "rgba(13,13,12,0.45)";
 const INK_SHADOW = "drop-shadow(1px 2.5px 1.5px rgba(0,0,0,0.4))";
+// A solid dark lens/patch colour — sunglasses and an eyepatch are actually
+// opaque in real life, so these fill instead of using the white sketch ink.
+const DARK_FILL = "rgba(20,18,16,0.92)";
+const GOLD_FILL = "#d9a94a";
+const GOLD_INK = "rgba(90,58,10,0.75)";
 
 export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460, color }: DoodlePortraitProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -822,6 +870,18 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
                 // on it), so it can't be conditionally unmounted until then.
                 return (
                   <g key={i}>
+                    {/* Solid fill (sunglasses lenses, an eyepatch, chain
+                        links) fades in once the outline has finished
+                        drawing — the sketch still "draws" first. */}
+                    {piece.fillColor && (
+                      <path
+                        d={piece.d}
+                        fill={piece.fillColor}
+                        stroke="none"
+                        opacity={revealed > 0.85 ? 1 : 0}
+                        style={{ transition: "opacity 220ms ease" }}
+                      />
+                    )}
                     {/* Dark, subtle outline underneath — edge definition, not
                         a contrast mechanism; white ink already reads fine on
                         most of the photo. */}
@@ -843,7 +903,7 @@ export function DoodlePortrait({ src, alt, doodle = "random", ratio = 358 / 460,
                       }}
                       d={piece.d}
                       fill="none"
-                      stroke={strokeColor}
+                      stroke={piece.inkColor ?? strokeColor}
                       strokeWidth={box.w * 0.012}
                       strokeLinecap="round"
                       strokeLinejoin="round"
