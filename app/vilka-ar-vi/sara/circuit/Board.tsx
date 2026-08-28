@@ -1,6 +1,7 @@
 "use client";
 
 import type { DragEvent } from "react";
+import Link from "next/link";
 
 import { KIND_LABELS } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, ROWS, type GridPoint } from "./grid";
@@ -123,6 +124,8 @@ export const Board = ({
         const pa = pixelOf(a);
         const isBattery = piece?.kind === "battery";
         const energized = piece ? energizedIds.has(piece.id) : false;
+        const unlockedLink =
+          piece?.consultantSlug && energized ? piece.consultantSlug : null;
 
         const baseStyle = horizontal
           ? {
@@ -144,7 +147,7 @@ export const Board = ({
             onDragOver={piece ? undefined : handleDragOver}
             onDrop={piece ? undefined : handleDrop(a, b)}
             onClick={
-              piece && !isBattery
+              piece && !isBattery && !unlockedLink
                 ? () =>
                     piece.kind === "switch"
                       ? onTogglePiece(piece.id)
@@ -153,9 +156,11 @@ export const Board = ({
             }
             title={
               piece
-                ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}${
-                    isBattery ? "" : " (klicka för att ta bort)"
-                  }`
+                ? unlockedLink
+                  ? `${piece.consultantName} — klar! Klicka för att gå till sidan.`
+                  : `${piece.consultantName ?? KIND_LABELS[piece.kind]}${
+                      isBattery ? "" : " (klicka för att ta bort)"
+                    }`
                 : "Släpp en komponent här"
             }
             style={{
@@ -164,7 +169,13 @@ export const Board = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: piece ? (isBattery ? "default" : "pointer") : "copy",
+              cursor: piece
+                ? unlockedLink
+                  ? "pointer"
+                  : isBattery
+                    ? "default"
+                    : "pointer"
+                : "copy",
               border: piece
                 ? `2px solid ${energized ? "#95B354" : KIND_COLOR[piece.kind]}`
                 : "1px dashed rgba(195, 206, 217, 0.25)",
@@ -183,14 +194,27 @@ export const Board = ({
                   border: `1px solid ${KIND_COLOR[piece.kind]}`,
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/photos/${piece.consultantPhoto}`}
-                  alt={piece.consultantName ?? ""}
-                  width={20}
-                  height={20}
-                  style={{ objectFit: "cover", width: 20, height: 20 }}
-                />
+                {unlockedLink ? (
+                  <Link href={`/vilka-ar-vi/${unlockedLink}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/photos/${piece.consultantPhoto}`}
+                      alt={piece.consultantName ?? ""}
+                      width={20}
+                      height={20}
+                      style={{ objectFit: "cover", width: 20, height: 20 }}
+                    />
+                  </Link>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/photos/${piece.consultantPhoto}`}
+                    alt={piece.consultantName ?? ""}
+                    width={20}
+                    height={20}
+                    style={{ objectFit: "cover", width: 20, height: 20 }}
+                  />
+                )}
               </div>
             ) : (
               piece && <PieceSymbol piece={piece} />

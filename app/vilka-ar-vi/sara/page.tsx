@@ -1,7 +1,5 @@
 import { Box, Container, Stack, Title } from "@mantine/core";
 
-import { ConsultantPeers } from "@/features/consultants/components/ConsultantPeers";
-
 import { CircuitBuilder } from "./CircuitBuilder";
 
 export const metadata = {
@@ -21,12 +19,6 @@ export default function SaraPage() {
           </Stack>
 
           <CircuitBuilder />
-
-          {/*
-            Always-reachable, ungated: every colleague's page must be a real
-            link regardless of whether anyone ever touches the circuit above.
-          */}
-          <ConsultantPeers currentSlug="sara" />
         </Stack>
       </Container>
     </Box>

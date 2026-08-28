@@ -1,4 +1,4 @@
-import type { ComponentKind } from "./componentKinds";
+import { INDICATOR_KINDS, type ComponentKind } from "./componentKinds";
 
 export type NodeId = string; // `${col},${row}`
 
@@ -88,10 +88,12 @@ export const evaluateCircuit = (
   const real = connectedComponent(batteryFrom, realAdj);
 
   if (real.nodes.has(batteryTo)) {
-    const hasLed = others.some(
-      (p) => p.kind === "led" && real.usedPieces.has(p.id),
+    const hasIndicator = others.some(
+      (p) =>
+        (INDICATOR_KINDS as ComponentKind[]).includes(p.kind) &&
+        real.usedPieces.has(p.id),
     );
-    if (hasLed) {
+    if (hasIndicator) {
       return { won: true, energizedIds: real.usedPieces, hint: null };
     }
     return {

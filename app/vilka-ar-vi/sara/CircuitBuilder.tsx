@@ -93,10 +93,7 @@ export const CircuitBuilder = () => {
   return (
     <Stack gap="lg">
       <Text c="dimmed" size="sm" maw={560}>
-        Dra en eller flera kollegor — eller komponenter ur biblioteket — in i
-        kretsen. Koppla ihop dem till en sluten slinga med en lysdiod någonstans i
-        den för att få den att fungera. En kollega vars komponent blir en del av en
-        fungerande krets går att klicka på för att nå deras sida.
+        Dra komponenter och slut kretsen.
       </Text>
 
       <Palette

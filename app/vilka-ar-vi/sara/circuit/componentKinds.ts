@@ -7,7 +7,21 @@ export type ComponentKind =
   | "wire"
   | "capacitor"
   | "switch"
-  | "led";
+  | "led"
+  | "ground";
+
+/** Kinds that light up when they're part of a closed loop. */
+export const INDICATOR_KINDS: ComponentKind[] = ["led"];
+
+/** Palette grouping/order — battery isn't listed, it's fixed on the board. */
+export const KIND_ORDER: ComponentKind[] = [
+  "resistor",
+  "wire",
+  "capacitor",
+  "switch",
+  "led",
+  "ground",
+];
 
 // Sara is the page's fixed Battery — the company's power source, not a
 // draggable/unlockable piece. Everyone else maps to a component kind by role:
@@ -50,11 +64,26 @@ export const CONSULTANT_COMPONENTS: ConsultantComponent[] = consultants
   }))
   .sort((a, b) => a.name.localeCompare(b.name, "sv"));
 
+// English electronics terminology — universal (schematic symbols and
+// abbreviations like LED are conventionally English regardless of locale),
+// unlike the surrounding Swedish copy.
 export const KIND_LABELS: Record<ComponentKind, string> = {
-  battery: "Batteri",
+  battery: "Battery",
   resistor: "Resistor",
-  wire: "Ledning",
-  capacitor: "Kondensator",
-  switch: "Brytare",
-  led: "Lysdiod",
+  wire: "Wire",
+  capacitor: "Capacitor",
+  switch: "Switch",
+  led: "LED",
+  ground: "Ground",
+};
+
+/** Why each kind maps to the role(s) it does — shown under the heading. */
+export const KIND_DESCRIPTIONS: Record<ComponentKind, string> = {
+  battery: "Kretsens strömkälla — alltid på plats.",
+  resistor: "Stabiliserar flödet.",
+  wire: "Arbetar i hela kedjan och får allt att fungera.",
+  capacitor: "Lagrar och buffrar.",
+  switch: "Styr och grindar flödet.",
+  led: "Det synliga resultatet.",
+  ground: "En neutral punkt att koppla kretsen mot.",
 };
