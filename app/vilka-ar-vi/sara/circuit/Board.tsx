@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent, KeyboardEvent, SVGProps } from "react";
+import { useRef, type DragEvent, type KeyboardEvent, type PointerEvent } from "react";
 
 import { KIND_LABELS, type ComponentKind } from "./componentKinds";
 import { allEdges, CELL, COLS, edgeId, pixelOf, pointId, ROWS, type GridPoint } from "./grid";
@@ -248,6 +248,75 @@ export const Board = ({
     onDropPiece(a, b, payload);
   };
 
+  // Moving an already-placed piece uses manual pointer tracking rather than
+  // native HTML5 drag-and-drop: `draggable` on an SVG element is unreliable
+  // across real browsers (it doesn't reliably fire dragstart), and pointer
+  // events work uniformly for mouse and touch. A press-without-movement
+  // still falls through to the normal click-to-remove handler; `draggingRef`
+  // distinguishes the two so a completed move doesn't also fire a remove.
+  // These handlers are static (not created per-edge inside the render map)
+  // and read the target piece from `event.currentTarget.dataset` instead of
+  // closing over it, both to avoid one closure per grid cell and because
+  // touching a ref from a closure defined during render trips the
+  // react-hooks/refs lint rule even when the read itself is deferred.
+  const draggingRef = useRef<{ pieceId: string; startX: number; startY: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const handlePieceGrab = (event: PointerEvent<SVGRectElement>) => {
+    const pieceId = event.currentTarget.dataset.pieceId;
+    if (!pieceId) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    draggingRef.current = { pieceId, startX: event.clientX, startY: event.clientY, moved: false };
+  };
+
+  const handlePieceDrag = (event: PointerEvent<SVGRectElement>) => {
+    const drag = draggingRef.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (Math.hypot(dx, dy) > 6) drag.moved = true;
+  };
+
+  const handlePieceRelease = (event: PointerEvent<SVGRectElement>) => {
+    const drag = draggingRef.current;
+    draggingRef.current = null;
+    const pieceId = event.currentTarget.dataset.pieceId;
+    if (!drag || !pieceId || drag.pieceId !== pieceId || !drag.moved) return;
+    // A real drag happened (regardless of whether it lands on a valid
+    // target) — the click that follows pointerup shouldn't also remove it.
+    suppressClickRef.current = true;
+
+    const piece = placed.find((p) => p.id === pieceId);
+    const target = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+    if (!piece || !target?.classList.contains("circuit-slot") || target.dataset.occupied === "true") return;
+    const a = { col: Number(target.dataset.colA), row: Number(target.dataset.rowA) };
+    const b = { col: Number(target.dataset.colB), row: Number(target.dataset.rowB) };
+    onDropPiece(
+      a,
+      b,
+      JSON.stringify({
+        kind: piece.kind,
+        consultantSlug: piece.consultantSlug,
+        consultantName: piece.consultantName,
+        consultantPhoto: piece.consultantPhoto,
+        moveFromId: piece.id,
+      }),
+    );
+  };
+
+  const handleSlotClick = (event: { currentTarget: { dataset: DOMStringMap } }) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    const { pieceId, colA, rowA, colB, rowB } = event.currentTarget.dataset;
+    if (pieceId) {
+      onRemovePiece(pieceId);
+    } else {
+      onPlaceArmedPiece({ col: Number(colA), row: Number(rowA) }, { col: Number(colB), row: Number(rowB) });
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -396,34 +465,22 @@ export const Board = ({
             return null;
           }
 
-          const activate = piece
-            ? () => onRemovePiece(piece.id)
-            : () => onPlaceArmedPiece(a, b);
           const label = piece
             ? `${piece.consultantName ?? KIND_LABELS[piece.kind]}, tryck för att ta bort, eller dra för att flytta`
             : armed
               ? "Tom plats, tryck för att placera den valda komponenten"
               : "Tom plats, dra en komponent hit eller välj en i biblioteket ovan och tryck här";
 
-          const handleMoveDragStart = (event: DragEvent<SVGRectElement>) => {
-            if (!piece) return;
-            event.dataTransfer.setData(
-              "text/plain",
-              JSON.stringify({
-                kind: piece.kind,
-                consultantSlug: piece.consultantSlug,
-                consultantName: piece.consultantName,
-                consultantPhoto: piece.consultantPhoto,
-                moveFromId: piece.id,
-              }),
-            );
-            event.dataTransfer.effectAllowed = "move";
-          };
-
           return (
             <rect
               key={`hit-${id}`}
               className="circuit-slot"
+              data-piece-id={piece?.id}
+              data-occupied={piece ? "true" : "false"}
+              data-col-a={a.col}
+              data-row-a={a.row}
+              data-col-b={b.col}
+              data-row-b={b.row}
               x={hitX}
               y={hitY}
               width={hitW}
@@ -433,12 +490,18 @@ export const Board = ({
               tabIndex={0}
               aria-label={label}
               style={{ cursor: piece ? "grab" : armed ? "cell" : "copy" }}
-              {...({ draggable: Boolean(piece) } as SVGProps<SVGRectElement>)}
-              onDragStart={piece ? handleMoveDragStart : undefined}
+              onPointerDown={piece ? handlePieceGrab : undefined}
+              onPointerMove={piece ? handlePieceDrag : undefined}
+              onPointerUp={piece ? handlePieceRelease : undefined}
               onDragOver={piece ? undefined : handleDragOver}
               onDrop={piece ? undefined : handleDrop(a, b)}
-              onClick={activate}
-              onKeyDown={activateOnKey(activate)}
+              onClick={handleSlotClick}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleSlotClick(event);
+                }
+              }}
             >
               <title>{label}</title>
             </rect>

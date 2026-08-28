@@ -115,7 +115,7 @@ export const Palette = ({
                       border: unlocked
                         ? "2px solid #95B354"
                         : "1px solid #757263",
-                      backgroundColor: unlocked ? "rgba(149, 179, 84, 0.35)" : undefined,
+                      backgroundColor: unlocked ? "#95B354" : undefined,
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
