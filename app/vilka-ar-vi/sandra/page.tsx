@@ -34,6 +34,11 @@ export default function SandraPage() {
             <Box w={{ base: "100%", sm: 358 }} style={{ flexShrink: 0 }}>
               <Card radius="md" p={0} style={{ overflow: "hidden" }}>
                 <CardSection bg="sprout.6">
+                  {/* Photo itself is pre-cropped to the exact framing set on
+                      the Figma frame (Sandra, node 56:374) — the raw source
+                      photo has a lot of empty space above/around her, and
+                      Figma's frame zooms in past what a plain centered
+                      object-fit: cover would show. */}
                   <AspectRatio ratio={358 / 460}>
                     <Image
                       alt={`${sandra.name} portrait`}
