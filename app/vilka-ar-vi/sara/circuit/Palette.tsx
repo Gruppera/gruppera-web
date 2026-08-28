@@ -2,7 +2,7 @@
 
 import type { DragEvent } from "react";
 import Link from "next/link";
-import { Badge, Group, Stack, Text } from "@mantine/core";
+import { Badge, Card, Group, SimpleGrid, Stack, Text } from "@mantine/core";
 
 import {
   CONSULTANT_COMPONENTS,
@@ -35,36 +35,37 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
   };
 
   return (
-    <Stack gap="lg">
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
       {KIND_ORDER.map((kind) => {
         const people = CONSULTANT_COMPONENTS.filter((c) => c.kind === kind);
         return (
-          <Stack key={kind} gap="xs">
-            <Group gap="xs" align="baseline">
-              <Text size="sm" fw={700} c="chamonix.0">
-                {KIND_LABELS[kind]}
+          <Card key={kind} withBorder padding="sm" radius="md" bg="chamonix.9">
+            <Stack gap="xs">
+              <Group gap="xs" align="baseline">
+                <Text size="sm" fw={700} c="chamonix.0">
+                  {KIND_LABELS[kind]}
+                </Text>
+                <Text size="xs" c="chamonix.4">
+                  {people.length > 0
+                    ? `— ${people.map((p) => p.name).join(", ")}`
+                    : ""}
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed">
+                {KIND_DESCRIPTIONS[kind]}
               </Text>
-              <Text size="xs" c="chamonix.4">
-                {people.length > 0
-                  ? `— ${people.map((p) => p.name).join(", ")}`
-                  : ""}
-              </Text>
-            </Group>
-            <Text size="xs" c="dimmed" maw={480}>
-              {KIND_DESCRIPTIONS[kind]}
-            </Text>
-            <Group gap="xs" align="flex-start">
               <div
                 draggable
                 onDragStart={onDragStart(dragPayload(kind))}
-                style={{ cursor: "grab" }}
+                style={{ cursor: "grab", alignSelf: "flex-start" }}
               >
                 <Badge variant="outline" color="cloud" style={{ cursor: "grab" }}>
                   {KIND_LABELS[kind]}
                 </Badge>
               </div>
 
-              {people.map((consultant) => {
+              <SimpleGrid cols={{ base: 4, xs: 5 }} spacing={4}>
+                {people.map((consultant) => {
                 const isSara = consultant.slug === "sara";
                 const used = usedConsultantSlugs.has(consultant.slug);
                 const unlocked = !isSara && unlockedSlugs.has(consultant.slug);
@@ -121,11 +122,12 @@ export const Palette = ({ usedConsultantSlugs, unlockedSlugs }: PaletteProps) =>
                     </Text>
                   </div>
                 );
-              })}
-            </Group>
-          </Stack>
+                })}
+              </SimpleGrid>
+            </Stack>
+          </Card>
         );
       })}
-    </Stack>
+    </SimpleGrid>
   );
 };

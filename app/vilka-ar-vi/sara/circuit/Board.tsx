@@ -3,15 +3,17 @@
 import type { DragEvent } from "react";
 
 import { KIND_LABELS, type ComponentKind } from "./componentKinds";
-import { allEdges, CELL, COLS, edgeId, pixelOf, ROWS, type GridPoint } from "./grid";
-import type { PlacedPiece } from "./graph";
+import { allEdges, CELL, COLS, edgeId, pixelOf, pointId, ROWS, type GridPoint } from "./grid";
+import type { FlowDirection, PlacedPiece } from "./graph";
 
 type BoardProps = {
   placed: PlacedPiece[];
   energizedIds: Set<string>;
+  flowDirection: FlowDirection;
   onDropPiece: (from: GridPoint, to: GridPoint, dataTransferPayload: string) => void;
   onRemovePiece: (id: string) => void;
   onTogglePiece: (id: string) => void;
+  onFlipPiece: (id: string) => void;
 };
 
 const KIND_COLOR: Record<ComponentKind, string> = {
@@ -152,9 +154,11 @@ const Symbol = ({ kind, closed }: { kind: ComponentKind; closed?: boolean }) => 
 export const Board = ({
   placed,
   energizedIds,
+  flowDirection,
   onDropPiece,
   onRemovePiece,
   onTogglePiece,
+  onFlipPiece,
 }: BoardProps) => {
   const edges = allEdges();
   const width = COLS * CELL;
@@ -220,6 +224,8 @@ export const Board = ({
             piece?.consultantSlug && piece.consultantSlug !== "sara" && energized
               ? piece.consultantSlug
               : null;
+          const flow = piece ? flowDirection.get(piece.id) : undefined;
+          const enteringAtA = flow ? flow.enter === pointId(a) : true;
 
           const avatar = piece?.consultantSlug ? (
             <g>
@@ -253,12 +259,14 @@ export const Board = ({
             >
               {piece ? (
                 <>
-                  <Symbol kind={piece.kind} closed={piece.closed} />
+                  <g transform={piece.flipped ? `translate(${L},0) scale(-1,1)` : undefined}>
+                    <Symbol kind={piece.kind} closed={piece.closed} />
+                  </g>
                   {energized && (
                     <line
-                      x1={0}
+                      x1={enteringAtA ? 0 : L}
                       y1={0}
-                      x2={L}
+                      x2={enteringAtA ? L : 0}
                       y2={0}
                       stroke="#B7E07A"
                       strokeWidth={3}
@@ -335,6 +343,51 @@ export const Board = ({
                   : "Släpp en komponent här"}
               </title>
             </rect>
+          );
+        })}
+
+        {/* Flip controls, on top of everything so they stay clickable/
+            focusable over the hit-rects above. */}
+        {edges.map(([a, b]) => {
+          const id = edgeId(a, b);
+          const piece = placedByEdge.get(id);
+          if (!piece) return null;
+          const horizontal = a.row === b.row;
+          const pa = pixelOf(a);
+
+          return (
+            <g
+              key={`flip-${id}`}
+              transform={`translate(${pa.x},${pa.y}) rotate(${horizontal ? 0 : 90})`}
+            >
+              <g
+                role="button"
+                tabIndex={0}
+                aria-label={`Vänd ${piece.consultantName ?? KIND_LABELS[piece.kind]}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onFlipPiece(piece.id);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onFlipPiece(piece.id);
+                  }
+                }}
+                style={{ cursor: "pointer" }}
+                transform={`translate(${L * 0.18},-20)`}
+              >
+                <circle r={9} fill="#0D0D0C" stroke="#757263" strokeWidth={1} />
+                <path
+                  d="M -4,-2 A 5 5 0 1 0 4,-2"
+                  stroke="#C3CED9"
+                  strokeWidth={1.4}
+                  fill="none"
+                />
+                <polygon points="4,-2 4,3 -1,-2" fill="#C3CED9" />
+                <title>Vänd komponenten</title>
+              </g>
+            </g>
           );
         })}
       </svg>

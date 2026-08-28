@@ -1,4 +1,4 @@
-import { Box, Container, Stack, Title } from "@mantine/core";
+import { Box, Container, Stack, Text, Title } from "@mantine/core";
 
 import { CircuitBuilder } from "./CircuitBuilder";
 
@@ -14,8 +14,11 @@ export default function SaraPage() {
         <Stack gap="xl">
           <Stack gap="sm">
             <Title order={1} fz={{ base: 36, md: 52 }}>
-              Sara bygger en krets
+              Gruppera är en sluten krets
             </Title>
+            <Text c="dimmed" size="sm">
+              — Saras bild av Gruppera
+            </Text>
           </Stack>
 
           <CircuitBuilder />

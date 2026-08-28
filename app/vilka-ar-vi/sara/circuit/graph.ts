@@ -13,12 +13,24 @@ export type PlacedPiece = {
   consultantName?: string;
   consultantPhoto?: string;
   closed?: boolean; // switches only: true = conducting
+  flipped?: boolean; // battery/led only: swaps which terminal is +/anode
 };
+
+/** Which terminal current leaves from — `from` unless the piece is flipped. */
+export const positiveTerminal = (piece: PlacedPiece): NodeId =>
+  piece.flipped ? piece.to : piece.from;
+
+export const negativeTerminal = (piece: PlacedPiece): NodeId =>
+  piece.flipped ? piece.from : piece.to;
+
+/** Per-piece current direction: current flows from `enter` to `exit`. */
+export type FlowDirection = Map<string, { enter: NodeId; exit: NodeId }>;
 
 export type CircuitResult = {
   won: boolean;
   energizedIds: Set<string>; // placed piece ids contributing to the win
   hint: string | null;
+  flowDirection: FlowDirection;
 };
 
 type Component = { nodes: Set<NodeId>; pieces: Set<string> };
@@ -82,33 +94,111 @@ const hasCycle = (component: Component) =>
 const isIndicator = (kind: ComponentKind) =>
   (INDICATOR_KINDS as ComponentKind[]).includes(kind);
 
+const hasBatteryAndIndicator = (component: Component, byId: Map<string, PlacedPiece>) => {
+  let battery = false;
+  let indicator = false;
+  component.pieces.forEach((id) => {
+    const piece = byId.get(id);
+    if (!piece) return;
+    if (piece.kind === "battery") battery = true;
+    if (isIndicator(piece.kind)) indicator = true;
+  });
+  return battery && indicator;
+};
+
+/**
+ * Walks the component outward from the first battery's + terminal, assigning
+ * every piece a current direction. Not a rigorous circuit solve (a second
+ * battery in the same loop, wired against the first, isn't netted out) — it
+ * only needs to give the flow animation and the LED polarity check a single
+ * consistent direction to agree on.
+ */
+const computeFlowDirection = (
+  component: Component,
+  byId: Map<string, PlacedPiece>,
+): FlowDirection => {
+  const direction: FlowDirection = new Map();
+  const battery = [...component.pieces]
+    .map((id) => byId.get(id))
+    .find((p): p is PlacedPiece => Boolean(p) && p?.kind === "battery");
+  if (!battery) return direction;
+
+  const adj = new Map<NodeId, { to: NodeId; pieceId: string }[]>();
+  const add = (a: NodeId, b: NodeId, pieceId: string) => {
+    if (!adj.has(a)) adj.set(a, []);
+    adj.get(a)?.push({ to: b, pieceId });
+  };
+  component.pieces.forEach((id) => {
+    const piece = byId.get(id);
+    if (!piece) return;
+    add(piece.from, piece.to, id);
+    add(piece.to, piece.from, id);
+  });
+
+  const start = positiveTerminal(battery);
+  const visited = new Set<NodeId>([start]);
+  const stack = [start];
+  while (stack.length > 0) {
+    const node = stack.pop() as NodeId;
+    (adj.get(node) ?? []).forEach(({ to, pieceId }) => {
+      if (direction.has(pieceId)) return;
+      direction.set(pieceId, { enter: node, exit: to });
+      if (!visited.has(to)) {
+        visited.add(to);
+        stack.push(to);
+      }
+    });
+  }
+  return direction;
+};
+
+const findBackwardsLed = (
+  component: Component,
+  byId: Map<string, PlacedPiece>,
+  direction: FlowDirection,
+): PlacedPiece | null => {
+  for (const id of component.pieces) {
+    const piece = byId.get(id);
+    if (!piece || piece.kind !== "led") continue;
+    const flow = direction.get(id);
+    if (flow && flow.enter !== positiveTerminal(piece)) return piece;
+  }
+  return null;
+};
+
 export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
   if (pieces.length === 0) {
     return {
       won: false,
       energizedIds: new Set(),
       hint: "Börja dra hit komponenter från biblioteket eller en kollega.",
+      flowDirection: new Map(),
     };
   }
 
   const byId = new Map(pieces.map((p) => [p.id, p]));
   const real = buildComponents(pieces, { includeOpenSwitches: false });
 
-  const winner = real.find((component) => {
-    if (!hasCycle(component)) return false;
-    let battery = false;
-    let indicator = false;
-    component.pieces.forEach((id) => {
-      const piece = byId.get(id);
-      if (!piece) return;
-      if (piece.kind === "battery") battery = true;
-      if (isIndicator(piece.kind)) indicator = true;
-    });
-    return battery && indicator;
-  });
+  const candidates = real.filter((component) => hasCycle(component) && hasBatteryAndIndicator(component, byId));
 
-  if (winner) {
-    return { won: true, energizedIds: winner.pieces, hint: null };
+  let backwardsLed: PlacedPiece | null = null;
+  for (const component of candidates) {
+    const flowDirection = computeFlowDirection(component, byId);
+    const backwards = findBackwardsLed(component, byId, flowDirection);
+    if (!backwards) {
+      return { won: true, energizedIds: component.pieces, hint: null, flowDirection };
+    }
+    backwardsLed = backwardsLed ?? backwards;
+  }
+
+  if (backwardsLed) {
+    const who = backwardsLed.consultantName ?? "Lysdioden";
+    return {
+      won: false,
+      energizedIds: new Set(),
+      hint: `${who} sitter åt fel håll — vänd den så strömmen kan passera.`,
+      flowDirection: new Map(),
+    };
   }
 
   // Nothing works with real switch states. Figure out *why*, prioritizing
@@ -124,6 +214,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
       won: false,
       energizedIds: new Set(),
       hint: "Kretsen är sluten och har ett batteri men saknar en lysdiod — lägg till en för att se att den fungerar.",
+      flowDirection: new Map(),
     };
   }
   if (closedLoops.length > 0) {
@@ -131,21 +222,11 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
       won: false,
       energizedIds: new Set(),
       hint: "Kretsen är sluten men saknar ett batteri — lägg till ett för att ge den ström.",
+      flowDirection: new Map(),
     };
   }
 
-  const looseWinner = loose.find((component) => {
-    if (!hasCycle(component)) return false;
-    let battery = false;
-    let indicator = false;
-    component.pieces.forEach((id) => {
-      const piece = byId.get(id);
-      if (!piece) return;
-      if (piece.kind === "battery") battery = true;
-      if (isIndicator(piece.kind)) indicator = true;
-    });
-    return battery && indicator;
-  });
+  const looseWinner = loose.find((component) => hasCycle(component) && hasBatteryAndIndicator(component, byId));
 
   if (looseWinner) {
     const openSwitches = [...looseWinner.pieces]
@@ -161,6 +242,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
       won: false,
       energizedIds: new Set(),
       hint: `${who} är öppen — klicka på den i kretsen för att stänga den.`,
+      flowDirection: new Map(),
     };
   }
 
@@ -168,5 +250,6 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     won: false,
     energizedIds: new Set(),
     hint: "Kretsen är inte sluten — dra fler komponenter så den går runt i en loop.",
+    flowDirection: new Map(),
   };
 };

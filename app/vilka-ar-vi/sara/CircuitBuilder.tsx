@@ -77,6 +77,12 @@ export const CircuitBuilder = () => {
     );
   };
 
+  const handleFlipPiece = (id: string) => {
+    setPlaced((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, flipped: !p.flipped } : p)),
+    );
+  };
+
   return (
     <Stack gap="lg">
       <Text c="dimmed" size="sm" maw={560}>
@@ -92,9 +98,11 @@ export const CircuitBuilder = () => {
         <Board
           placed={placed}
           energizedIds={result.won ? result.energizedIds : new Set()}
+          flowDirection={result.won ? result.flowDirection : new Map()}
           onDropPiece={handleDropPiece}
           onRemovePiece={handleRemovePiece}
           onTogglePiece={handleTogglePiece}
+          onFlipPiece={handleFlipPiece}
         />
       </div>
 
