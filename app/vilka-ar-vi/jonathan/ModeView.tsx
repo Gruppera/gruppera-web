@@ -106,23 +106,6 @@ export const ModeView = ({ children }: ModeViewProps) => {
           <Title order={1} fz={{ base: 36, md: 52 }}>
             Jonathan
           </Title>
-          {mode === "jobbet" ? (
-            <Transition mounted={showHint} transition="fade" duration={200}>
-              {(styles) => (
-                <Tooltip label="↑ ↑ ↓ ↓ ← → ← → B A" withArrow>
-                  <Text
-                    style={styles}
-                    component="span"
-                    tabIndex={0}
-                    c="dimmed"
-                    size="sm"
-                  >
-                    Kan du konami-koden?
-                  </Text>
-                </Tooltip>
-              )}
-            </Transition>
-          ) : null}
           <Transition mounted={showCheat} transition="pop" duration={200}>
             {(styles) => (
               <Badge style={styles} color="sprout" variant="filled" size="sm">
@@ -147,6 +130,23 @@ export const ModeView = ({ children }: ModeViewProps) => {
             ]}
             aria-label="Växla mellan jobbvyn och fikapaus"
           />
+          {mode === "jobbet" ? (
+            <Transition mounted={showHint} transition="fade" duration={200}>
+              {(styles) => (
+                <Tooltip label="↑ ↑ ↓ ↓ ← → ← → B A" withArrow>
+                  <Text
+                    style={styles}
+                    component="span"
+                    tabIndex={0}
+                    c="dimmed"
+                    size="sm"
+                  >
+                    Kan du konami-koden?
+                  </Text>
+                </Tooltip>
+              )}
+            </Transition>
+          ) : null}
         </Group>
       </Stack>
 
