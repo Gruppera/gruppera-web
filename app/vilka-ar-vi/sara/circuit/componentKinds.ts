@@ -17,9 +17,6 @@ export type ComponentKind =
   | "memory"
   | "fuse";
 
-/** Kinds that light up when they're part of a closed loop. */
-export const INDICATOR_KINDS: ComponentKind[] = ["led"];
-
 /**
  * Infrastructure kinds that stay in the palette even with nobody mapped to
  * them — a circuit always needs plain wire, a ground reference, and a power

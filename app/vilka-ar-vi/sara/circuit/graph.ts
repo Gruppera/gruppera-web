@@ -1,4 +1,4 @@
-import { INDICATOR_KINDS, type ComponentKind } from "./componentKinds";
+import type { ComponentKind } from "./componentKinds";
 
 export type NodeId = string; // `${col},${row}`
 
@@ -91,20 +91,11 @@ const buildComponents = (
 const hasCycle = (component: Component) =>
   component.pieces.size >= component.nodes.size;
 
-const isIndicator = (kind: ComponentKind) =>
-  (INDICATOR_KINDS as ComponentKind[]).includes(kind);
-
-const hasBatteryAndIndicator = (component: Component, byId: Map<string, PlacedPiece>) => {
-  let battery = false;
-  let indicator = false;
-  component.pieces.forEach((id) => {
-    const piece = byId.get(id);
-    if (!piece) return;
-    if (piece.kind === "battery") battery = true;
-    if (isIndicator(piece.kind)) indicator = true;
-  });
-  return battery && indicator;
-};
+// A closed loop only needs a battery to work — an LED is a nice-to-have
+// visible result, not a requirement, same as a real circuit doesn't need an
+// indicator lamp to conduct.
+const hasBattery = (component: Component, byId: Map<string, PlacedPiece>) =>
+  [...component.pieces].some((id) => byId.get(id)?.kind === "battery");
 
 /**
  * Walks the component outward from the first battery's + terminal, assigning
@@ -179,7 +170,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
   const byId = new Map(pieces.map((p) => [p.id, p]));
   const real = buildComponents(pieces, { includeOpenSwitches: false });
 
-  const candidates = real.filter((component) => hasCycle(component) && hasBatteryAndIndicator(component, byId));
+  const candidates = real.filter((component) => hasCycle(component) && hasBattery(component, byId));
 
   let backwardsLed: PlacedPiece | null = null;
   for (const component of candidates) {
@@ -202,21 +193,13 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
   }
 
   // Nothing works with real switch states. Figure out *why*, prioritizing
-  // the most specific, most encouraging explanation.
+  // the most specific, most encouraging explanation. Note: a closed loop
+  // with a battery would already have been caught by `candidates` above
+  // (as either a win or a backwards-LED hint), so reaching here means every
+  // closed loop is missing a battery.
   const loose = buildComponents(pieces, { includeOpenSwitches: true });
 
   const closedLoops = real.filter(hasCycle);
-  const withBatteryAndLoop = closedLoops.find((component) =>
-    [...component.pieces].some((id) => byId.get(id)?.kind === "battery"),
-  );
-  if (withBatteryAndLoop) {
-    return {
-      won: false,
-      energizedIds: new Set(),
-      hint: "Kretsen är sluten och har ett batteri men saknar en lysdiod — lägg till en för att se att den fungerar.",
-      flowDirection: new Map(),
-    };
-  }
   if (closedLoops.length > 0) {
     return {
       won: false,
@@ -226,7 +209,7 @@ export const evaluateCircuit = (pieces: PlacedPiece[]): CircuitResult => {
     };
   }
 
-  const looseWinner = loose.find((component) => hasCycle(component) && hasBatteryAndIndicator(component, byId));
+  const looseWinner = loose.find((component) => hasCycle(component) && hasBattery(component, byId));
 
   if (looseWinner) {
     const openOscillators = [...looseWinner.pieces]
